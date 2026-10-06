@@ -38,14 +38,16 @@ def usage_from_events(events):
     return result
 
 
-def stream_events(process, started, events, timeline, timeout=240):
-    """Drain raw bytes so buffered text cannot hide events from select."""
+def stream_events(process, started, events, timeline, timeout=None):
+    """Drain until EOF; only explicitly requested deadlines stop a live call."""
     pending = b""
     while True:
-        remaining = timeout - (time.monotonic() - started)
-        if remaining <= 0:
+        remaining = None if timeout is None else timeout - (time.monotonic() - started)
+        if remaining is not None and remaining <= 0:
             raise TimeoutError(f"Model call exceeded {timeout:g} seconds")
-        if not select.select([process.stdout], [], [], min(1, remaining))[0]:
+        if not select.select(
+            [process.stdout], [], [], 1 if remaining is None else min(1, remaining)
+        )[0]:
             continue
         chunk = os.read(process.stdout.fileno(), 65536)
         pending += chunk
@@ -151,7 +153,9 @@ class DepthPolicy:
                     "grid_shape": [16, 16],
                     "action_repeat_max": 8,
                     "max_cli_attempts": 3000,
-                    "max_wall_seconds": 21600,
+                    "max_wall_seconds": None,
+                    "model_call_timeout_seconds": None,
+                    "capacity_retry_wait_seconds": 15,
                     "depth_quantity": "camera optical-axis Z meters",
                     "world_coordinates": False,
                     "depth_retention": "current float32 camera arrays outside per-step logs",
@@ -264,7 +268,7 @@ class DepthPolicy:
             process.stdin.close()
             try:
                 stream_events(process, started, events, timeline)
-                code = process.wait(timeout=10)
+                code = process.wait()
             except Exception:
                 process.terminate()
                 try:
@@ -358,9 +362,10 @@ class DepthPolicy:
                 "At most 4 query rounds before movement."
             )
         answers = []
-        for query_round in range(5):
-            if self.index >= 3000 or time.monotonic() - self.started > 21600:
-                raise RuntimeError("Common model-call or wall-time budget exceeded")
+        query_round = 0
+        while query_round <= 4:
+            if self.index >= 3000:
+                raise RuntimeError("Common model-call attempt budget exceeded")
             folder = self.output / f"call-{self.index:05d}"
             folder.mkdir(exist_ok=False)
             self.index += 1
@@ -390,7 +395,7 @@ class DepthPolicy:
                 value = self.call(prompt, images, folder)
             except RuntimeError:
                 raw = (folder / "events.jsonl").read_text() + (folder / "stderr.log").read_text()
-                if "capacity" not in raw.lower() or query_round == 4:
+                if "capacity" not in raw.lower():
                     raise
                 time.sleep(15)
                 continue
@@ -417,6 +422,7 @@ class DepthPolicy:
                     self.query_count += 1
                     answers.append(result)
                 (folder / "query-results.json").write_text(json.dumps(answers, indent=2))
+                query_round += 1
                 continue
             action, repeat = CodexPolicy.validate(self, value)
             self.history.append(value)

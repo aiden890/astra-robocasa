@@ -1,0 +1,1 @@
+Astra depth evaluations wait for a live model call to finish without a call or episode wall-time deadline. Capacity retries preserve the observation and do not consume depth query rounds. Every attempt retains its timing and token receipt.

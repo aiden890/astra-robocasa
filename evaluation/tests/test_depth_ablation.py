@@ -205,3 +205,27 @@ def test_memory_slots_include_shared_lab_host():
     assert safe_memory_slots({"available_gib": 74, "lab_available_gib": 6.3}, 1) == 2
     assert safe_memory_slots({"available_gib": 60, "lab_available_gib": 1.5}, 4) < 4
     assert safe_memory_slots({"available_gib": 16, "lab_available_gib": 30}, 2) == 2
+
+
+def test_stream_default_waits_past_old_deadline():
+    """A live call older than 240 seconds still drains its valid completion."""
+    payload = b'{"type":"turn.completed"}\n'
+    process = subprocess.Popen(
+        [
+            sys.executable,
+            "-c",
+            "import os,time; time.sleep(0.05); os.write(1, " + repr(payload) + ")",
+        ],
+        stdout=subprocess.PIPE,
+        bufsize=0,
+    )
+    events, timeline = [], []
+    try:
+        stream_events(process, time.monotonic() - 241, events, timeline)
+        assert process.wait(timeout=5) == 0
+        assert events == [{"type": "turn.completed"}]
+    finally:
+        process.stdout.close()
+        if process.poll() is None:
+            process.kill()
+            process.wait()
