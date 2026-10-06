@@ -1,0 +1,1 @@
+Allow explicit kitchen layout and style selection for common evaluation scenes. Restore the recorded kitchen before applying snapshots, synchronize initial kinematics before export, and reject duplicate asset compositions within a task.

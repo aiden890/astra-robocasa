@@ -1,7 +1,8 @@
 # Common RoboCasa evaluation
 
 The common environment uses PandaOmron, 20 Hz native control and frozen scene snapshots.
-Each task has ten recorded seed IDs. A snapshot, rather than a seed alone, defines an episode.
+Each task has ten recorded seed IDs with ten distinct kitchen layouts and ten distinct styles.
+The realized asset composition hashes must also be distinct within each task. A snapshot, rather than a seed alone, defines an episode.
 The participant supplies only a policy factory. Do not change assets, initial state, instruction,
 controller, action bounds, horizon or native success check when comparing policies.
 
@@ -64,15 +65,15 @@ The scene identity is its manifest SHA256. Keep the archive separate from Git an
 
 ## Download the fixed scene set
 
-[Scene archive (2.09 GB)](http://100.86.183.64:8906/media/common-eval-panda-scenes-20261006.tar.gz)
+[Scene archive (2.09 GB)](http://100.86.183.64:8906/media/common-eval-panda-diverse-scenes-20261006.tar.gz)
 contains the fifty initial snapshots and their required asset/model blobs.
-[Archive checksum](http://100.86.183.64:8906/media/common-eval-panda-scenes-20261006.json)
+[Archive checksum](http://100.86.183.64:8906/media/common-eval-panda-diverse-scenes-20261006.json)
 records its size and SHA256. These addresses require access to the lab network.
 
 ```bash
-curl -fLO http://100.86.183.64:8906/media/common-eval-panda-scenes-20261006.tar.gz
-printf '%s  %s\n' 17c228bd779d448c2090dcff56a424899e08a2c6c8e5b5a636ed349dc147a220 common-eval-panda-scenes-20261006.tar.gz | sha256sum -c -
-tar -xzf common-eval-panda-scenes-20261006.tar.gz
+curl -fLO http://100.86.183.64:8906/media/common-eval-panda-diverse-scenes-20261006.tar.gz
+# Verify the SHA256 against the downloaded archive checksum JSON before extraction.
+tar -xzf common-eval-panda-diverse-scenes-20261006.tar.gz
 ```
 
 The archive is scene data, not a complete simulator installation. Install official RoboCasa assets
@@ -81,13 +82,28 @@ currently local to Spark2; its tag is not a public image download. The worker ch
 package versions before restoration. Results from another software or renderer configuration
 must be reported as a separate environment.
 
-## Verified scope
+## Diversity and restoration checks
 
-All 50 scenes passed independent restoration of simulator state, compiled model arrays, object
-geometry and camera poses. Initial images were byte-identical in 29 scenes. The other 21 retain
-pixel disagreement as a diagnostic. The cause has not been established. This protocol fixes
-the initial physical scene but does not promise byte-identical rendered observations.
+The original layout-1/style-1 scene set has been deleted at the owner's request.
+Seed IDs remain fixed; the new archive is a different scene version identified by new manifest
+checksums. Never mix its results with the retired set.
 
-Scoped evaluator/plugin/operations tests: 24 passed. Existing core tests: 2,089 passed,
-6 skipped, with 100% core coverage. Whole-repository Ruff and mypy still report pre-existing
-issues in unrelated core/plugin files. They are not changed by this branch.
+Each task uses layouts 1 through 10 and styles 1 through 10, one pair per seed in seed-list
+order. Generation verifies the actual episode metadata rather than relying on the constructor
+arguments. SHA256 fingerprints of the complete referenced mesh/texture asset sets must be
+unique within each task. Shared robot assets may be reused across scenes. Different kitchen
+asset composition does not mean every individual object model is unique.
+
+The builder independently restores every snapshot and checks the exact simulator state,
+world geometry and camera poses before accepting it. Initial camera pixel agreement remains
+a separate diagnostic; physical scene equality does not imply bitwise rendering equality.
+
+Generate a new collection with explicit kitchen diversity:
+
+```bash
+PYTHONPATH=evaluation:src:plugins/inspect-robots-robocasa-astra/src \
+python scripts/robocasa-astra/astra_ops/assets/build_frozen_scenes.py \
+  --seeds evaluation/seeds.json --root /path/to/new-scene-collection --workers 2 --diverse
+```
+
+Completed snapshots are immutable. Failed attempts remain separate from the shared archive.

@@ -18,7 +18,9 @@ def test_export_deduplicates_assets_and_keeps_state(tmp_path):
         robot="PandaOmron",
         horizon=1800,
         env=SimpleNamespace(
+            robots=[SimpleNamespace(part_controllers={})],
             sim=SimpleNamespace(
+                forward=lambda: None,
                 model=SimpleNamespace(
                     _model=SimpleNamespace(
                         body_pos=np.zeros((2, 3)),
