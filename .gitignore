@@ -231,3 +231,5 @@ logs/
 # Local RoboCasa Astra experiment credentials and generated artifacts
 .runtime/
 runs/
+
+status-page/media/
