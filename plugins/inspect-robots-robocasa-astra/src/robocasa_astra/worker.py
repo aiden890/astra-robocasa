@@ -3,6 +3,7 @@
 import argparse
 import base64
 import contextlib
+import ctypes
 import io
 import json
 import os
@@ -14,6 +15,21 @@ import traceback
 import numpy as np
 
 from robocasa_astra.depth import encode_depth, normalize_depth_buffer, validate_depth
+
+
+@contextlib.contextmanager
+def native_diagnostics():
+    """Keep Python and native renderer diagnostics off the JSON response stream."""
+    sys.stdout.flush()
+    saved = os.dup(1)
+    try:
+        os.dup2(2, 1)
+        with contextlib.redirect_stdout(sys.stderr):
+            yield
+    finally:
+        ctypes.CDLL(None).fflush(None)
+        os.dup2(saved, 1)
+        os.close(saved)
 
 
 def protect_assets():
@@ -360,7 +376,7 @@ def main():
     parser.add_argument("--placement", action="store_true")
     parser.add_argument("--depth", action="store_true")
     args = parser.parse_args()
-    with contextlib.redirect_stdout(sys.stderr):
+    with native_diagnostics():
         sim = Simulator(
             args.robot,
             args.task,
@@ -374,7 +390,7 @@ def main():
     for line in sys.stdin:
         try:
             request = json.loads(line)
-            with contextlib.redirect_stdout(sys.stderr):
+            with native_diagnostics():
                 if request["op"] == "reset":
                     result = sim.reset(request["seed"])
                 elif request["op"] == "step":
