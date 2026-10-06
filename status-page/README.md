@@ -1,8 +1,9 @@
 # Status page
 
-Standalone, empty project status scaffold inspired by the academic layout of
-[RoboCasa365](https://robocasa.ai/). No experiment data or runtime files are loaded.
+An empty two-page scaffold matching RoboCasa365's purple gradient header,
+Open Sans typography, translucent navigation buttons, and 64rem content layout.
+Reference: https://robocasa.ai/
 
-Serve this directory alone. Do not serve the repository root, which contains
-private runtime files. The page includes overview, updates, robot, and evaluation
-sections. Populate these only when requested.
+Only main (`index.html`) and video (`videos.html`) tabs are provided. Content is
+intentionally empty. No experiment data or private runtime files are loaded.
+Serve this directory alone, never the repository root.

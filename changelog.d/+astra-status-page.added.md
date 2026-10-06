@@ -1,1 +1,1 @@
-Add a standalone empty RoboCasa Astra project status page.
+Add an empty RoboCasa365-style project page with main and video tabs.
