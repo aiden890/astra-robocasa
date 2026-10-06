@@ -105,3 +105,26 @@ compatible CPU MuJoCo renderer. It never overwrites an existing output directory
 Supplemental diagnostic records are kept in `status-page/media/supplemental-catalog.json`,
 separate from the queue-generated catalog. The video board tolerates an absent
 supplemental file and honors the existing delete controls for these entries.
+
+### Native RoboCasa preview
+
+`astra_ops.media.robocasa_depth_preview` uses a reserved idle container on
+`--host` (default Spark2). It resets the actual PrepareCoffee environment with
+PandaOmron, records three synchronized cameras for 60 frames, and sends zero
+controller actions for 59 steps. It does not call Astra or assign a task score.
+All RGB and float32 metric observations are stored on Lab-desktop. The initial
+CPU run needs both `MUJOCO_GL=osmesa` and `PYOPENGL_PLATFORM=osmesa`; it does not
+require a GPU. Host choice does not alter the production rollout queue.
+
+The actual [RoboCasa camera preview](http://100.86.183.64:8906/topic.html?topic=robocasa-depth-preview)
+was rendered on Spark2 after a native job released its slot. New dispatches were
+briefly held while all existing episodes continued, keeping at most four active
+Spark2 simulators. Dispatch resumed automatically afterward. The clip decodes to
+60 frames at 20 fps (3 seconds), RGB above depth, three Panda cameras. The
+[publication report](../reports/depth/robocasa-preview-20261006.json) records the
+video checksum and unscored sensor-only result. No model calls were made.
+
+The user requested Spark2 only. The earlier AMP CPU preparation was cancelled,
+its owned temporary container and incomplete asset copies were removed, and its
+failed initialization logs were retained on Lab. No existing AMP workloads were
+changed. Future previews for this project use Spark2.

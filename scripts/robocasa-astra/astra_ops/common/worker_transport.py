@@ -7,11 +7,11 @@ import tarfile
 from astra_ops.common.paths import REPO_ROOT
 
 
-def stage_worker(container: str, seed: int) -> bool:
+def stage_worker(container: str, seed: int, host: str = "spark2") -> bool:
     """Stage this branch's complete Python worker package only in a verified idle slot."""
     destination = f"/tmp/astra-depth-{seed}"
     create = subprocess.run(
-        ["ssh", "spark2", "docker", "exec", container, "mkdir", "-p", destination],
+        ["ssh", host, "docker", "exec", container, "mkdir", "-p", destination],
         capture_output=True,
         timeout=30,
     )
@@ -23,7 +23,7 @@ def stage_worker(container: str, seed: int) -> bool:
         for path in sorted(source.glob("*.py")):
             bundle.add(path, arcname="robocasa_astra/" + path.name)
     copied = subprocess.run(
-        ["ssh", "spark2", "docker", "exec", "-i", container, "tar", "-xf", "-", "-C", destination],
+        ["ssh", host, "docker", "exec", "-i", container, "tar", "-xf", "-", "-C", destination],
         input=archive.getvalue(),
         capture_output=True,
         timeout=30,

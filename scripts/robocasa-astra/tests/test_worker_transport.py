@@ -23,3 +23,18 @@ def test_complete_package_is_staged(monkeypatch):
     assert "robocasa_astra/worker.py" in names
     assert "robocasa_astra/depth.py" in names
     assert all(name.endswith(".py") for name in names)
+
+
+def test_branch_worker_process_blocks_container_lease(monkeypatch):
+    """A worker launched by file path must keep its container unavailable."""
+    from astra_ops.queue import multitask
+
+    monkeypatch.setattr(
+        multitask.subprocess,
+        "run",
+        lambda *args, **kwargs: SimpleNamespace(
+            returncode=0,
+            stdout="python3 /tmp/astra-depth-786601/robocasa_astra/worker.py --depth",
+        ),
+    )
+    assert not multitask.container_idle("test-container")

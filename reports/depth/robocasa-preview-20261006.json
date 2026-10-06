@@ -1,0 +1,33 @@
+{
+  "kind": "sensor_diagnostic",
+  "environment": "RoboCasa",
+  "task": "PrepareCoffee",
+  "robot": "PandaOmron",
+  "seed": 786601,
+  "fps": 20,
+  "frames": 60,
+  "steps": 59,
+  "duration_s": 3,
+  "cameras": [
+    "robot0_agentview_left",
+    "robot0_agentview_right",
+    "robot0_eye_in_hand"
+  ],
+  "unit": "m",
+  "preview_range_m": [
+    0,
+    3
+  ],
+  "model_calls": 0,
+  "task_score": null,
+  "action": "zero native controller action",
+  "video_sha256": "b256b53311a25957b579470004878d8bdba981cd9b659ceee32c1c72cac0e956",
+  "decoded_frames": 60,
+  "decoded_fps": 20.0,
+  "decoded_size": [
+    768,
+    584
+  ],
+  "server": "Spark2",
+  "page": "http://100.86.183.64:8906/topic.html?topic=robocasa-depth-preview"
+}

@@ -1,5 +1,25 @@
 [
   {
+    "id": "robocasa-depth-preview",
+    "title": "RoboCasa 커피 환경 · RGB / Depth",
+    "category": "센서 시각화",
+    "description": "실제 PrepareCoffee 환경에서 기본 PandaOmron 로봇의 카메라를 렌더링했습니다. 위쪽은 RGB, 아래쪽은 같은 시점의 카메라 기준 깊이입니다. 가까울수록 흰색이며 3m 이상은 검은색입니다. 접근·집기·놓기를 수행하는 모델 데모가 아니라 센서 입력을 확인하는 영상입니다.",
+    "task": "PrepareCoffee",
+    "model": "모델 호출 없음",
+    "environment": "Spark2 · RoboCasa",
+    "date": "2026-10-06",
+    "tags": [
+      "실제 RoboCasa",
+      "RGB+Depth",
+      "카메라 기준",
+      "미터",
+      "20fps"
+    ],
+    "run_ids": [
+      "robocasa-camera-depth-20261006-v1"
+    ]
+  },
+  {
     "id": "camera-depth-preview",
     "title": "카메라 기준 깊이 · RGB / Depth 미리보기",
     "category": "센서 시각화",

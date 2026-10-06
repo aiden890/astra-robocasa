@@ -38,10 +38,10 @@ def write_status(state: dict[str, Any]) -> None:
         write_json_atomic(target, state)
 
 
-def container_idle(name: str) -> bool:
+def container_idle(name: str, host: str = "spark2") -> bool:
     """Only lease an own container with no existing simulator process."""
     r = subprocess.run(
-        ["ssh", "spark2", "docker", "top", name, "-eo", "pid,args"],
+        ["ssh", host, "docker", "top", name, "-eo", "pid,args"],
         capture_output=True,
         text=True,
         timeout=30,
@@ -49,6 +49,7 @@ def container_idle(name: str) -> bool:
     return (
         r.returncode == 0
         and "robocasa_astra.worker" not in r.stdout
+        and "robocasa_astra/worker.py" not in r.stdout
         and "multitask-worker" not in r.stdout
         and "resume-worker" not in r.stdout
     )
