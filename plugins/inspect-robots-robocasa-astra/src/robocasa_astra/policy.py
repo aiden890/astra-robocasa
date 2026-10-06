@@ -110,7 +110,7 @@ class CodexPolicy:
                 "-m",
                 self.model,
                 "-c",
-                "model_reasoning_effort=\"low\"",
+                'model_reasoning_effort="low"',
                 "-c",
                 "project_doc_max_bytes=0",
                 "-c",
