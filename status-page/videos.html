@@ -17,18 +17,21 @@
   </nav>
 </header>
 <main id="content" class="wrap" aria-label="롤아웃 영상 게시판">
-<h1>롤아웃 영상</h1>
-<p class="dim">매 제어 스텝을 저장한 20fps 영상입니다. 재생 시간은 시뮬레이션 시간이며 모델 응답 대기는 포함하지 않습니다.</p>
+<h1>영상 주제</h1>
+<p class="dim">주제별로 실험 목적과 관련 영상을 모았습니다. 주제를 선택하면 여러 로봇과 실행의 영상을 한 페이지에서 볼 수 있습니다.</p>
 <div class="card filters">
+<label for="category">분류 <select id="category"><option value="">전체</option></select></label>
+<label for="model">모델 <select id="model"><option value="">전체</option></select></label>
 <label>로봇 <select id="robot"><option value="">전체</option><option>PandaOmron</option><option>GR1FloatingBody</option></select></label>
 <label>태스크 <select id="task"><option value="">전체</option><option>PrepareCoffee</option></select></label>
 <label>결과 <select id="status"><option value="">전체</option><option>진행 중</option><option>성공</option><option>미성공</option><option>오류</option></select></label>
-<label class="search">검색 <input id="search" type="search" placeholder="실행 이름 검색"></label>
+<label class="search">검색 <input id="search" type="search" placeholder="주제, 설명, 태그, 로봇, 실행 이름 검색"></label>
 </div>
 <p id="count" class="dim" aria-live="polite">목록을 불러오는 중입니다.</p>
-<div class="card board"><table><thead><tr><th>번호</th><th>실행 / 로봇</th><th>태스크</th><th>결과</th><th>스텝</th><th>영상 길이</th><th>영상</th></tr></thead><tbody id="rows"></tbody></table></div>
+<div class="card board"><table><thead><tr><th>번호</th><th>주제 / 설명</th><th>분류 · 태스크</th><th>로봇</th><th>결과</th><th>영상 / 실행</th><th>등록일</th></tr></thead><tbody id="rows"></tbody></table></div>
 <div class="pagination"><button id="prev">이전</button><span id="page"></span><button id="next">다음</button></div>
-<dialog id="player"><div class="player-head"><h2 id="player-title"></h2><button id="close-player" aria-label="영상 닫기">닫기</button></div><video id="video" controls playsinline preload="metadata"></video><p id="detail" class="dim"></p></dialog>
+
+<script src="assets/topics.js"></script>
 <script src="assets/videos.js"></script>
 </main>
 </body>

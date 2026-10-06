@@ -1,0 +1,42 @@
+[
+  {
+    "id": "coffee-full",
+    "title": "커피 태스크 끝까지 수행하기",
+    "category": "전체 태스크 실행",
+    "description": "컵 집기부터 커피 머신 아래 놓기, 손 놓기, 시작 버튼 누르기까지 수행하는 실험입니다. 로봇별로 최대 1,800스텝을 제공하고 native 태스크 성공 판정이 나오면 종료합니다.",
+    "task": "PrepareCoffee",
+    "model": "gpt-6-astra",
+    "environment": "Spark2 · RoboCasa",
+    "date": "2026-10-06",
+    "tags": [
+      "커피",
+      "컵 놓기",
+      "양팔 비교",
+      "1800스텝"
+    ],
+    "match": {
+      "task": "PrepareCoffee",
+      "max_steps": 1800
+    }
+  },
+  {
+    "id": "coffee-smoke",
+    "title": "기본 로봇과 양팔 로봇 연결 확인",
+    "category": "동작 확인",
+    "description": "관측 → Astra 구독 호출 → 행동 실행 연결을 확인한 64스텝 테스트입니다. 짧은 실행으로 태스크 성공률을 평가하는 실험은 아닙니다.",
+    "task": "PrepareCoffee",
+    "model": "gpt-6-astra",
+    "environment": "Spark2 · RoboCasa",
+    "date": "2026-10-06",
+    "tags": [
+      "연결 확인",
+      "기본 로봇",
+      "양팔",
+      "64스텝"
+    ],
+    "match": {
+      "task": "PrepareCoffee",
+      "max_steps": 64
+    }
+  }
+]

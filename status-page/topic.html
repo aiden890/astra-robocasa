@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>RoboCasa · Astra | 영상 주제</title>
+<link rel="stylesheet" href="assets/site.css">
+<link rel="stylesheet" href="style.css">
+<script src="assets/theme.js"></script>
+</head>
+<body>
+<a class="skip" href="#content">본문으로 이동</a>
+<header>
+  <nav class="nav">
+    <div class="brand">Robo<span>Casa</span> · Astra</div>
+    <div class="nav-tabs" aria-label="페이지 탭"><a href="index.html">메인</a><a href="videos.html" class="active" aria-current="page">영상</a></div>
+  </nav>
+</header>
+<main id="content" class="wrap" aria-label="주제별 영상 페이지">
+<a class="back-link" href="videos.html">← 영상 주제 목록</a>
+<h1 id="topic-title">주제를 불러오는 중입니다.</h1>
+<p id="topic-description"></p>
+<div id="topic-meta" class="topic-meta"></div>
+<div id="topic-tags" class="tags"></div>
+<p class="dim">매 스텝 연속 기록 · 20fps · 영상 길이는 시뮬레이션 시간입니다. 모델 응답 대기 시간은 제외됩니다.</p>
+<div class="card filters"><label>로봇 <select id="detail-robot"><option value="">전체</option></select></label><label>결과 <select id="detail-status"><option value="">전체</option><option>진행 중</option><option>성공</option><option>미성공</option><option>오류</option></select></label></div>
+<p id="detail-count" class="dim" aria-live="polite"></p>
+<div id="video-list" class="topic-videos"></div>
+<script src="assets/topics.js"></script>
+<script src="assets/topic.js"></script>
+</main>
+</body>
+</html>

@@ -18,3 +18,13 @@ validated synchronized recordings exported automatically.
 
 Install imageio-ffmpeg into the private Lab runtime to encode recordings. Media
 is ignored by Git. Serve only this directory, never the repository root.
+
+## Topic library
+
+The board now lists topics, not individual runs. `topics.json` stores titles,
+descriptions, categories, model/environment, date, tags, and matching conditions
+or explicit run IDs. `topic.html?topic=<id>` groups multiple recordings and
+shows their per-run status, horizon, frame rate, cameras, and MP4 links.
+Search spans descriptions and tags as well as run IDs and robot names.
+Uncategorized runs remain visible. Auto-refresh preserves mounted video
+elements and playback. The main tab remains empty.
