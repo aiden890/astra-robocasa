@@ -1,9 +1,8 @@
 # Status page
 
-An empty two-page scaffold matching RoboCasa365's purple gradient header,
-Open Sans typography, translucent navigation buttons, and 64rem content layout.
-Reference: https://robocasa.ai/
+Empty main and video pages using the user's existing RoboCasa tracking template:
+http://100.86.183.64:8899/
 
-Only main (`index.html`) and video (`videos.html`) tabs are provided. Content is
-intentionally empty. No experiment data or private runtime files are loaded.
-Serve this directory alone, never the repository root.
+`assets/site.css`, `assets/theme.css`, and `assets/theme.js` are copied from that
+page. Content and runtime integrations are intentionally omitted. Serve only
+this directory, never the repository root.

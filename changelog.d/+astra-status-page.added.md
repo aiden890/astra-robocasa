@@ -1,1 +1,1 @@
-Add an empty RoboCasa365-style project page with main and video tabs.
+Add empty main and video pages using the existing user RoboCasa tracking template.
