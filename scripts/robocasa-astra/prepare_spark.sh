@@ -5,10 +5,14 @@ repo_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
 archive_file="$(mktemp /tmp/astra-robocasa-code.XXXXXX.tar.gz)"
 trap 'rm -f "$archive_file"' EXIT
 cd "$repo_dir"
-tar -czf "$archive_file" src plugins/inspect-robots-robocasa-astra
+tar --exclude=__pycache__ -czf "$archive_file" src plugins/inspect-robots-robocasa-astra
 scp "$archive_file" spark2:/tmp/astra-robocasa-code.tar.gz
 ssh spark2 'set -eu
 runtime_root=/home/csi-agent-dgx_spark2/workspace/astra-robocasa-20261006
+if docker top astra-robocasa-20261006 -eo args 2>/dev/null | grep -q robocasa_astra.worker; then
+  echo "An experiment rollout is active; finish it before refreshing simulator code." >&2
+  exit 1
+fi
 mkdir -p "$runtime_root/code" "$runtime_root/fixtures"
 tar xzf /tmp/astra-robocasa-code.tar.gz -C "$runtime_root/code"
 if ! test -f "$runtime_root/fixtures/episodes.json"; then
@@ -16,8 +20,11 @@ if ! test -f "$runtime_root/fixtures/episodes.json"; then
 fi
 if docker inspect astra-robocasa-20261006 >/dev/null 2>&1; then
   docker start astra-robocasa-20261006 >/dev/null
-  docker cp /tmp/astra-robocasa-code.tar.gz astra-robocasa-20261006:/tmp/code.tar.gz
-  docker exec astra-robocasa-20261006 tar xzf /tmp/code.tar.gz -C /astra
+  source_mount=$(docker inspect --format '\''{{range .Mounts}}{{if eq .Destination "/astra"}}{{.Source}}{{end}}{{end}}'\'' astra-robocasa-20261006)
+  if test -z "$source_mount"; then
+    docker cp /tmp/astra-robocasa-code.tar.gz astra-robocasa-20261006:/tmp/code.tar.gz
+    docker exec astra-robocasa-20261006 tar xzf /tmp/code.tar.gz -C /astra
+  fi
 else
   docker run -d --name astra-robocasa-20261006 --cpus 2 --memory 12g --gpus all \
     -e MUJOCO_GL=egl \
