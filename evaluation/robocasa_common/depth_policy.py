@@ -38,6 +38,31 @@ def usage_from_events(events):
     return result
 
 
+def stream_events(process, started, events, timeline, timeout=240):
+    """Drain raw bytes so buffered text cannot hide events from select."""
+    pending = b""
+    while True:
+        remaining = timeout - (time.monotonic() - started)
+        if remaining <= 0:
+            raise TimeoutError(f"Model call exceeded {timeout:g} seconds")
+        if not select.select([process.stdout], [], [], min(1, remaining))[0]:
+            continue
+        chunk = os.read(process.stdout.fileno(), 65536)
+        pending += chunk
+        lines = pending.split(b"\n")
+        pending = lines.pop()
+        if not chunk and pending:
+            lines.append(pending)
+            pending = b""
+        for line in lines:
+            if line.strip():
+                event = json.loads(line)
+                events.append(event)
+                timeline.append({"elapsed_seconds": time.monotonic() - started, "event": event})
+        if not chunk:
+            return
+
+
 class DepthPolicy:
     """Keep camera depth private unless the selected condition explicitly exposes it."""
 
@@ -230,29 +255,23 @@ class DepthPolicy:
                 stdin=subprocess.PIPE,
                 stdout=subprocess.PIPE,
                 stderr=stderr,
-                text=True,
+                text=False,
                 env=env,
                 cwd=cwd,
-                bufsize=1,
+                bufsize=0,
             )
-            process.stdin.write(prompt)
+            process.stdin.write(prompt.encode("utf-8"))
             process.stdin.close()
             try:
-                while True:
-                    if time.monotonic() - started > 240:
-                        raise TimeoutError("Model call exceeded 240 seconds")
-                    if not select.select([process.stdout], [], [], 1)[0]:
-                        continue
-                    line = process.stdout.readline()
-                    if not line:
-                        break
-                    event = json.loads(line)
-                    events.append(event)
-                    timeline.append({"elapsed_seconds": time.monotonic() - started, "event": event})
+                stream_events(process, started, events, timeline)
                 code = process.wait(timeout=10)
             except Exception:
                 process.terminate()
-                process.wait(timeout=15)
+                try:
+                    process.wait(timeout=15)
+                except subprocess.TimeoutExpired:
+                    process.kill()
+                    process.wait(timeout=5)
                 raise
             finally:
                 (folder / "events.jsonl").write_text(

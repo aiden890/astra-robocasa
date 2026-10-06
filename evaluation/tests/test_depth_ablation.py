@@ -1,12 +1,15 @@
 """Protect exact usage accounting, camera conventions and the RGB-only control."""
 
 import json
+import subprocess
+import sys
+import time
 from types import SimpleNamespace
 
 import numpy as np
 import pytest
 from robocasa_astra.depth_query import query_depth
-from robocasa_common.depth_policy import DepthPolicy, usage_from_events
+from robocasa_common.depth_policy import DepthPolicy, stream_events, usage_from_events
 
 from inspect_robots.spaces import Box
 
@@ -136,3 +139,46 @@ def test_adoption_checks_exact_runtime_scene_and_condition(tmp_path):
     (proc / "cmdline").write_bytes("\0".join(args).encode())
     (proc / "stat").write_text("123 (python) Z 1")
     assert adopted.poll() is not None
+
+
+def test_stream_drains_burst_and_partial_final_line():
+    """A single pipe burst contains all events, including a non-newline EOF."""
+    payload = '{"type":"turn.started"}\n{"type":"item.completed"}\n{"type":"turn.completed"}'
+    process = subprocess.Popen(
+        [sys.executable, "-c", "import os; os.write(1, " + repr(payload.encode()) + ")"],
+        stdout=subprocess.PIPE,
+        bufsize=0,
+    )
+    events, timeline = [], []
+    try:
+        stream_events(process, time.monotonic(), events, timeline, timeout=5)
+        assert process.wait(timeout=5) == 0
+        assert [e["type"] for e in events] == ["turn.started", "item.completed", "turn.completed"]
+        assert len(timeline) == 3
+    finally:
+        process.stdout.close()
+        if process.poll() is None:
+            process.kill()
+            process.wait()
+
+
+def test_stream_timeout_preserves_received_usage():
+    """Completed usage alone does not turn an unfinished CLI into a valid action."""
+    payload = (
+        b'{"type":"turn.completed","usage":{"input_tokens":3,'
+        b'"cached_input_tokens":1,"output_tokens":2}}\n'
+    )
+    process = subprocess.Popen(
+        [sys.executable, "-c", "import os,time; os.write(1, " + repr(payload) + "); time.sleep(5)"],
+        stdout=subprocess.PIPE,
+        bufsize=0,
+    )
+    events, timeline = [], []
+    try:
+        with pytest.raises(TimeoutError):
+            stream_events(process, time.monotonic(), events, timeline, timeout=0.5)
+        assert usage_from_events(events)["total_tokens"] == 5
+    finally:
+        process.kill()
+        process.wait()
+        process.stdout.close()
