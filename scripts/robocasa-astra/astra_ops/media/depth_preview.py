@@ -10,7 +10,7 @@ from types import SimpleNamespace
 import imageio_ffmpeg
 import numpy as np
 from PIL import Image, ImageDraw
-from robocasa_astra.depth import decode_depth, preview_depth
+from robocasa_astra.depth import decode_depth, preview_depth, preview_scale
 from robocasa_astra.worker import Simulator
 
 
@@ -96,7 +96,7 @@ def main():
             )
             draw.text(
                 (10, 24),
-                "Depth: fixed 0m white -> 3m black | raw values preserved in meters",
+                "Depth: per-camera p2 white -> p98 black | range below in meters",
                 fill="white",
             )
             row = {"frame": frame, "time_s": frame / 20, "cameras": {}}
@@ -108,8 +108,18 @@ def main():
                 metric = decode_depth(raw["depths"][name], (256, 256))
                 canvas.paste(rgb, (index * 256, 48))
                 canvas.paste(Image.fromarray(preview_depth(metric)), (index * 256, 320))
-                draw.text((index * 256 + 4, 306), name.replace("robot0_", ""), fill="white")
-                row["cameras"][name] = {"min_m": float(metric.min()), "max_m": float(metric.max())}
+                scale = preview_scale(metric)
+                draw.text(
+                    (index * 256 + 4, 306),
+                    f"{name.replace('robot0_', '')} "
+                    f"{scale['near_white_m']:.2f}-{scale['far_black_m']:.2f}m",
+                    fill="white",
+                )
+                row["cameras"][name] = {
+                    "min_m": float(metric.min()),
+                    "max_m": float(metric.max()),
+                    "preview": scale,
+                }
                 if frame in (0, 40, 80, 120, 159):
                     folder = output / "samples" / f"frame-{frame:04d}"
                     folder.mkdir(parents=True, exist_ok=True)

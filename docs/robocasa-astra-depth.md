@@ -16,9 +16,10 @@ The Lab bridge stores them under `worker/depth/observation-NNNNNN/`, alongside
 metadata. No depth frames or videos are recorded to Spark2 disk.
 
 The policy receives each original RGB image plus a named depth preview image
-through the actual Codex image arguments. Previews map 0–3 meters from white
-to black; distances beyond 3 meters saturate only in the preview. The prompt
-also includes an 8×8 grid of metric distances with explicit pixel coordinates.
+through the actual Codex image arguments. Previews map the current camera's
+2nd–98th depth percentiles from white to black. The prompt includes the actual
+display range in meters and a 16×16 grid of metric distances with explicit pixel
+coordinates. Smaller images use fewer unique sample coordinates.
 Raw arrays and calibration are copied into each model-call record. The model
 receives PNG previews and text samples; a raw NPY is not a native model input.
 Panda normally supplies three RGB and three depth images; GR1 normally supplies
@@ -81,13 +82,32 @@ model behavior remain unverified. Existing production episodes remain RGB-only.
 ## Camera-only input contract
 
 The initial input uses each camera's RGB PNG followed by a named 8-bit RGB
-greyscale depth PNG at 256×256. The depth preview has a fixed scale: 0 m is
-white and 3 m or farther is black. Per-frame min/max normalization is avoided
-because the same shade must mean the same distance across observations and
-cameras. Quantization applies only to the preview; float32 NPY remains the
-metric source of truth. The 8×8 text grid supplements the image with meters.
+greyscale depth PNG at 256×256. The depth preview uses relative contrast for
+each camera and observation: the 2nd percentile is white and the 98th is black.
+Values outside that range saturate in the image, and a constant range is shown
+as mid-grey. Each prompt records both endpoints in meters and warns that equal
+shades across cameras or observations do not imply equal distances.
+Quantization applies only to the preview; float32 NPY remains the metric source
+of truth. The 16×16 text grid supplements the image with meters.
 No world-coordinate query is included. Depth is the first visible surface's
 optical-axis Z distance, not an object center or a straight-line range.
+
+### Visualization references
+
+Linear clipped normalization follows the contract of
+[Matplotlib Normalize](https://matplotlib.org/stable/api/_as_gen/matplotlib.colors.Normalize.html).
+The sequential reversed grayscale palette (`gray_r`) keeps nearer surfaces
+brighter, following the guidance for ordered measurements in
+[Matplotlib's colormap guide](https://matplotlib.org/stable/users/explain/colors/colormaps.html).
+The percentile range is selected with
+[NumPy percentile](https://numpy.org/doc/stable/reference/generated/numpy.percentile.html),
+and the RGB preview is rendered using
+[Pillow ImageOps.colorize](https://pillow.readthedocs.io/en/stable/reference/ImageOps.html#PIL.ImageOps.colorize).
+Matplotlib is a design reference, not a runtime dependency. Preview generation
+uses the existing NumPy and Pillow dependencies and never changes raw depth.
+The choice of 2nd–98th percentiles is this project's contrast setting, not a
+robotics benchmark standard. Previously published preview videos retain their
+original display scale; this contract applies to newly generated previews.
 
 For Panda the camera order is agentview_left, agentview_right, eye_in_hand.
 For GR1 it is agentview_left, agentview_right, eye_in_right_hand,

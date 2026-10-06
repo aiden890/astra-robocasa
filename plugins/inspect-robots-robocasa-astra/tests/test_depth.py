@@ -9,7 +9,7 @@ import numpy as np
 import pytest
 from PIL import Image
 from robocasa_astra.bridge import SparkEmbodiment
-from robocasa_astra.depth import decode_depth, encode_depth, preview_depth
+from robocasa_astra.depth import decode_depth, depth_summary, encode_depth, preview_depth
 from robocasa_astra.policy import CodexPolicy
 
 from inspect_robots.spaces import Box
@@ -29,13 +29,35 @@ def raw_observation(depth):
 
 
 def test_lossless_float32_and_preview_scale():
-    """Preview saturation cannot quantize metric distances in transport."""
-    depth = np.array([[0.125, 1.5], [3, 100]], np.float32)
+    """Relative contrast exposes close depth differences without altering metric transport."""
+    depth = np.array([[0.4, 0.5], [0.6, 0.7]], np.float32)
+    original = depth.copy()
     np.testing.assert_array_equal(decode_depth(encode_depth(depth), (2, 2)), depth)
     image = preview_depth(depth)
     assert image.shape == (2, 2, 3)
-    assert image[1, 0, 0] == image[1, 1, 0] == 0
-    assert image[0, 1, 0] == 128
+    assert image[0, 0, 0] == 255 and image[1, 1, 0] == 0
+    assert image[0, 0, 0] > image[0, 1, 0] > image[1, 0, 0] > image[1, 1, 0]
+    np.testing.assert_array_equal(depth, original)
+    np.testing.assert_allclose(image, preview_depth(depth + 1), atol=1)
+    summary = depth_summary(depth)
+    near, far = np.percentile(depth, [2, 98])
+    assert summary["preview"]["near_white_m"] == near
+    assert summary["preview"]["far_black_m"] == far
+    assert summary["preview"]["colormap"] == "gray_r"
+    assert summary["preview"]["renderer"] == "Pillow.ImageOps.colorize"
+
+
+def test_constant_preview_and_dense_numeric_grid():
+    """Flat maps stay finite, while dense samples preserve exact source pixel alignment."""
+    assert np.all(preview_depth(np.full((4, 4), 1.25, np.float32)) == 128)
+    assert depth_summary(np.full((4, 4), 1.25))["preview"]["constant_depth"]
+    depth = np.arange(256 * 256, dtype=np.float32).reshape(256, 256) / 1000 + 0.1
+    summary = depth_summary(depth)
+    xs, ys = summary["sample_x_pixels"], summary["sample_y_pixels"]
+    assert len(xs) == len(ys) == 16
+    assert xs[0] == ys[0] == 0 and xs[-1] == ys[-1] == 255
+    np.testing.assert_allclose(summary["sample_depth_m"], depth[np.ix_(ys, xs)], atol=0.00005)
+    assert depth_summary(np.ones((2, 3)))["sample_x_pixels"] == [0, 1, 2]
 
 
 @pytest.mark.parametrize("value", [0, -1, float("nan"), float("inf")])
@@ -79,6 +101,8 @@ def test_bridge_and_model_receive_depth(tmp_path, monkeypatch):
     assert captured["command"].count("--image") == 2
     assert "camera__depth" in captured["prompt"] and "1.25" in captured["prompt"]
     assert "optical-axis depth" in captured["prompt"]
+    assert "relative_per_camera_per_observation" in captured["prompt"]
+    assert "near_white_m" in captured["prompt"] and "far_black_m" in captured["prompt"]
     assert (tmp_path / "calls/call-0000/camera__depth_m.npy").is_file()
     receipt = json.loads((tmp_path / "calls/call-0000/receipt.json").read_text())
     assert receipt["depth_cameras"] == ["camera"]

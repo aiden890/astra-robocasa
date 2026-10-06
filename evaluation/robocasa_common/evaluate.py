@@ -118,6 +118,8 @@ def evaluate_scene(folder, args):
         "--frozen-scene",
         args.mounted_root.rstrip("/") + "/scenes/" + Path(folder).name,
     ]
+    if getattr(args, "depth", False):
+        remote.append("--depth")
     command = remote if args.host == "local" else ["ssh", args.host, shlex.join(remote)]
     env = ObservedSparkEmbodiment(command, manifest["simulator_seed"], output / "worker")
     policy = None

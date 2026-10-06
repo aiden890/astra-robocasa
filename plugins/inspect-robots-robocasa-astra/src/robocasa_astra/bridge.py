@@ -3,6 +3,7 @@
 import base64
 import io
 import json
+import os
 import select
 import subprocess
 from pathlib import Path
@@ -104,24 +105,35 @@ class SparkEmbodiment:
         if payloads and (set(payloads) != set(images) or set(metadata) != set(images)):
             raise ValueError("Every RGB camera must have matching depth and calibration")
         depth_maps = {}
+        depth_arrays = {}
+        memory_only = os.environ.get("ASTRA_DEPTH_MEMORY_ONLY") == "1"
         if payloads:
             folder = self.output / "depth" / f"observation-{self.sensor_index:06d}"
-            folder.mkdir(parents=True, exist_ok=False)
+            if not memory_only:
+                folder.mkdir(parents=True, exist_ok=False)
             self.sensor_index += 1
             for camera, payload in payloads.items():
                 if metadata[camera].get("unit") != "m":
                     raise ValueError("Depth calibration must specify meters")
                 values = decode_depth(payload, images[camera].shape[:2])
                 path = folder / (camera + ".npy")
-                np.save(path, values, allow_pickle=False)
-                depth_maps[camera] = str(path.resolve())
+                depth_arrays[camera] = values
+                if not memory_only:
+                    np.save(path, values, allow_pickle=False)
+                    depth_maps[camera] = str(path.resolve())
                 images[camera + "__depth"] = preview_depth(values)
-            (folder / "metadata.json").write_text(json.dumps(metadata, indent=2))
+            if not memory_only:
+                (folder / "metadata.json").write_text(json.dumps(metadata, indent=2))
         return Observation(
             images=images,
             state={k: np.asarray(v, dtype=float) for k, v in raw["state"].items()},
             instruction=instruction,
-            extra={**raw["info"], "depth_maps": depth_maps, "depth_metadata": metadata},
+            extra={
+                **raw["info"],
+                "depth_maps": depth_maps,
+                "depth_metadata": metadata,
+                "_depth_arrays": depth_arrays,
+            },
         )
 
     def reset(self, scene, *, seed=None):

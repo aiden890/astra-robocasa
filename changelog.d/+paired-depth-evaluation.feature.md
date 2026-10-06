@@ -1,0 +1,1 @@
+Add paired RGB, depth-image, pixel-Z and grid-Z RoboCasa evaluations on the shared 50-scene snapshots. Record Astra medium CLI token usage, all-attempt latency, observation-bound camera-Z queries, native task results and verified 20 fps videos. Use isolated simulator slots, measured resource guards and a preflight gate before background dispatch.

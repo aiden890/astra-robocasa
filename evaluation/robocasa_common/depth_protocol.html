@@ -1,0 +1,12 @@
+<!doctype html><html lang="ko"><meta charset="utf-8"><meta name="viewport" content="width=device-width"><title>Astra RGB·depth 실험</title>
+<style>body{font-family:system-ui;max-width:1500px;margin:32px auto;padding:20px;color:#222}table{border-collapse:collapse;width:100%;font-size:13px}th,td{padding:8px;border-bottom:1px solid #ddd;text-align:left}pre{white-space:pre-wrap;background:#f6f6f6;padding:16px}a{color:#2356a4}.scroll{overflow:auto}</style>
+<a href="/videos.html">영상 게시판</a><h1>Astra RGB·depth 비교 · medium</h1>
+<p>4조건 × 5태스크 × 10개 고정 씬 = 200회. 조건별 단독 효과를 같은 물리 초기 상태에서 비교합니다.</p>
+<h2>입력과 출력</h2><p>공통 입력: 256×256 RGB 3개(agentview_left → agentview_right → eye_in_hand), robot0 고유감각 상태, 태스크 instruction, native controller, 최근 행동 8개. RGB는 JPEG quality85로 동일하게 입력합니다. object pose·성공 판정·세계 좌표는 모델에 제공하지 않습니다.</p>
+<ul><li>RGB only: RGB 3개만. depth·수치·카메라 calibration 미제공.</li><li>Depth image: RGB 3개 + 정렬된 depth PNG 3개. gray_r p2~p98 상대 스케일, 실제 meter 범례 포함.</li><li>Pixel query: RGB 3개 + 모델이 요청한 카메라 (u,v)의 실제 optical-axis Z(m) 및 반경 0~4의 분포.</li><li>Grid query: RGB 3개 + 16×16 격자 ID로 요청한 중심 Z(m) 및 셀 전체 분포. 셀 중심 한 점과 전체 분포를 구분.</li></ul>
+<p>출력: native 12D action, repeat 1~8, reason. Query 조건은 queries 배열 추가. Query는 로봇을 움직이지 않으며 같은 observation_id에만 유효합니다. gripper +1 닫기/-1 열기. 각 action repeat 중 native 전체 성공 즉시 종료합니다. PrepareCoffee의 컵 놓기는 전체 성공의 대체 기준이 아닙니다.</p>
+<h2>공정성·실행 설정</h2><p>PandaOmron, 20Hz, 동일 frozen snapshot/asset/camera 및 native horizon. gpt-6-astra, reasoning_effort=medium, 같은 구독 계정. 새로운 모델 호출마다 최근 행동 포함, 같은 관측의 조회 응답만 추가합니다. 슬롯 8개에서 시작, 2분 안정 창으로 RAM/CPU/호출 p95/용량 오류를 측정해 최대32개까지 높입니다. Spark RAM 16GiB, Lab RAM2GiB, Lab 디스크2GiB 여유를 지킵니다. 진행 중 trial은 병렬도 변경 때문에 중단하지 않습니다.</p>
+<p>모든 조건에 같은 상한: native steps, CLI 시도 3000회, wall6시간, action마다 조회4라운드. 상한/호출오류는 native 미성공과 분리합니다. 비교 성공률은 조건·태스크 10개 정상 결과가 모였을 때만 표시합니다.</p>
+<h2>시간과 토큰 측정</h2><p>CLI end-to-end는 monotonic clock으로 요청 시작부터 응답 종료까지 측정합니다(클라이언트·네트워크·모델 대기·생성 포함). turn.started→turn.completed 시간도 별도 저장합니다. 서버 내부 GPU 연산 시간은 제공되지 않습니다. 모든 재시도·오류와 조회 호출을 포함합니다.</p>
+<p>토큰은 codex exec --json의 turn.completed usage 원본입니다. input에는 cached input이 포함되므로 중복 합산하지 않습니다. output에는 reasoning이 포함될 수 있으나 별도 reasoning 토큰 수는 이 CLI에서 미제공입니다. 반환되지 않은 사용량은 미확인 횟수로 표시합니다. 구독 사용량을 API 달러 요금으로 환산하지 않습니다.</p>
+<p>입력·출력·캐시·전체 토큰, 호출 수, 조회 수, mean/median/p95, 전체 wall/steps, native 성공·실행 오류는 <a href="experiment.json">실시간 결과 JSON</a>과 <a href="plan.json">실험 설계 JSON</a>에 기록합니다. 표는 재시도 포함 보고된 토큰 합계이며 미확인 항목이 있는 행은 전체 사용량 확정값이 아닙니다.</p>

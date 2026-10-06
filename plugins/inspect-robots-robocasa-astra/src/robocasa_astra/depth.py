@@ -5,8 +5,10 @@ import io
 import zlib
 
 import numpy as np
+from PIL import Image, ImageOps
 
-PREVIEW_MAX_METERS = 3.0
+PREVIEW_PERCENTILES = (2, 98)
+DEPTH_SAMPLE_GRID_SIZE = 16
 
 
 def normalize_depth_buffer(buffer):
@@ -51,23 +53,53 @@ def decode_depth(payload, shape):
     return validate_depth(values, shape)
 
 
-def preview_depth(depth):
-    """Map 0..3 meters to white..black; saturation never changes saved metric data."""
+def preview_scale(depth):
+    """Describe per-camera, per-observation contrast without changing metric measurements."""
     values = validate_depth(depth)
-    grey = np.rint(255 * (1 - np.clip(values / PREVIEW_MAX_METERS, 0, 1))).astype(np.uint8)
-    return np.repeat(grey[..., None], 3, axis=2)
+    near, far = np.percentile(values, PREVIEW_PERCENTILES)
+    return {
+        "mode": "relative_per_camera_per_observation",
+        "colormap": "gray_r",
+        "normalization": "linear_clipped_percentile_range",
+        "renderer": "Pillow.ImageOps.colorize",
+        "percentiles": list(PREVIEW_PERCENTILES),
+        "near_white_m": float(near),
+        "far_black_m": float(far),
+        "constant_depth": bool(far == near),
+        "interpretation": "Compare meters, not shades, across cameras or observations; "
+        "values outside the display range saturate only in the preview. "
+        "A constant display range is shown as mid-grey.",
+    }
+
+
+def preview_depth(depth):
+    """Use relative percentile contrast; preserve the separate full-precision depth map."""
+    values = validate_depth(depth)
+    scale = preview_scale(values)
+    near, far = scale["near_white_m"], scale["far_black_m"]
+    if far == near:
+        normalized = np.full(values.shape, 127, dtype=np.uint8)
+    else:
+        normalized = np.rint(255 * np.clip((values - near) / (far - near), 0, 1)).astype(np.uint8)
+    # Linear clipped normalization follows Matplotlib Normalize's contract.
+    # Pillow applies the reversed sequential grayscale palette without pyplot or a GUI.
+    return np.asarray(ImageOps.colorize(Image.fromarray(normalized), black="white", white="black"))
 
 
 def depth_summary(depth):
     """Provide sampled metric distances with their exact pixel coordinates."""
     values = validate_depth(depth)
-    ys = np.linspace(0, values.shape[0] - 1, 8).astype(int)
-    xs = np.linspace(0, values.shape[1] - 1, 8).astype(int)
+    ys = np.linspace(0, values.shape[0] - 1, min(DEPTH_SAMPLE_GRID_SIZE, values.shape[0])).astype(
+        int
+    )
+    xs = np.linspace(0, values.shape[1] - 1, min(DEPTH_SAMPLE_GRID_SIZE, values.shape[1])).astype(
+        int
+    )
     return {
         "unit": "m",
         "quantity": "camera optical-axis depth, not Euclidean range",
         "pixel_origin": "top-left",
-        "preview": {"near_white_m": 0, "far_black_m": PREVIEW_MAX_METERS},
+        "preview": preview_scale(values),
         "min_m": float(values.min()),
         "max_m": float(values.max()),
         "sample_x_pixels": xs.tolist(),
