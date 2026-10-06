@@ -69,11 +69,13 @@ def build_run_command(job: RunSpec, container: str, output: Path) -> list[str]:
         "--container",
         container,
         "--worker-script",
-        "/tmp/multitask-worker-v1.py",
+        job.get("frozen_worker_path", "/tmp/multitask-worker-v1.py"),
         "--native-scene",
         "--output",
         str(output),
     ]
+    if job.get("frozen_scene"):
+        command += ["--frozen-scene", job["frozen_scene"]]
     if job["robot"] == "GR1FloatingBody":
         command.append("--face-workstation")
     return command
