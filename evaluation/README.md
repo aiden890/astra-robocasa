@@ -65,14 +65,14 @@ The scene identity is its manifest SHA256. Keep the archive separate from Git an
 
 ## Download the fixed scene set
 
-[Scene archive (2.09 GB)](http://100.86.183.64:8906/media/common-eval-panda-diverse-scenes-20261006.tar.gz)
+[Scene archive (3.97 GB)](http://100.86.183.64:8906/media/common-eval-panda-diverse-scenes-20261006.tar.gz)
 contains the fifty initial snapshots and their required asset/model blobs.
 [Archive checksum](http://100.86.183.64:8906/media/common-eval-panda-diverse-scenes-20261006.json)
 records its size and SHA256. These addresses require access to the lab network.
 
 ```bash
 curl -fLO http://100.86.183.64:8906/media/common-eval-panda-diverse-scenes-20261006.tar.gz
-# Verify the SHA256 against the downloaded archive checksum JSON before extraction.
+printf '%s  %s\n' 405502b8d3c52b375f2874cbba4173536b9b73e5106ef165c59aaed5aeafd8b4 common-eval-panda-diverse-scenes-20261006.tar.gz | sha256sum -c -
 tar -xzf common-eval-panda-diverse-scenes-20261006.tar.gz
 ```
 
@@ -107,3 +107,7 @@ python scripts/robocasa-astra/astra_ops/assets/build_frozen_scenes.py \
 ```
 
 Completed snapshots are immutable. Failed attempts remain separate from the shared archive.
+
+All 50 new snapshots passed independent physical restoration. Initial encoded camera images
+matched in 40 snapshots; the other 10 retain pixel disagreement as a diagnostic.
+See `verification.json` for task-level diversity counts and the archive checksum.
