@@ -5,8 +5,10 @@ import json
 import subprocess
 import time
 from pathlib import Path
+from typing import Any, TypedDict
 
 from publish_videos import publish
+from runtime_io import alive, write_json_atomic
 
 ROOT = Path(__file__).resolve().parents[2]
 RUNTIME = ROOT / ".runtime/multitask-20261006-v1"
@@ -18,22 +20,23 @@ CONTAINERS = [
 ]
 
 
-def alive(pid):
-    """Recognize live and non-zombie processes without sending signals."""
-    p = Path(f"/proc/{pid}/stat")
-    return p.exists() and p.read_text().split(") ", 1)[1][0] != "Z"
+class RunSpec(TypedDict):
+    """Native task settings required to construct a rollout command."""
+
+    task: str
+    robot: str
+    max_steps: int
+    seed: int
 
 
-def write_status(state):
+def write_status(state: dict[str, Any]) -> None:
     """Publish atomic progress without authentication or model prompts."""
     state["updated_at"] = time.time()
     for target in [RUNTIME / "status.json", ROOT / "status-page/media/task-queue.json"]:
-        tmp = target.with_suffix(".tmp")
-        tmp.write_text(json.dumps(state, ensure_ascii=False, indent=2))
-        tmp.replace(target)
+        write_json_atomic(target, state)
 
 
-def container_idle(name):
+def container_idle(name: str) -> bool:
     """Only lease an own container with no existing simulator process."""
     r = subprocess.run(
         ["ssh", "spark2", "docker", "top", name, "-eo", "pid,args"],
@@ -49,7 +52,33 @@ def container_idle(name):
     )
 
 
-def main():
+def build_run_command(job: RunSpec, container: str, output: Path) -> list[str]:
+    """Build native rollout arguments, preserving horizons and GR1 alignment."""
+    command = [
+        "bash",
+        "scripts/robocasa-astra/run.sh",
+        "--task",
+        job["task"],
+        "--robot",
+        job["robot"],
+        "--steps",
+        str(job["max_steps"]),
+        "--seed",
+        str(job["seed"]),
+        "--container",
+        container,
+        "--worker-script",
+        "/tmp/multitask-worker-v1.py",
+        "--native-scene",
+        "--output",
+        str(output),
+    ]
+    if job["robot"] == "GR1FloatingBody":
+        command.append("--face-workstation")
+    return command
+
+
+def main() -> None:
     """Start new immutable runs in idle slots and retain every terminal result."""
     RUNTIME.mkdir(parents=True, exist_ok=True)
     lock = (RUNTIME / "queue.lock").open("w")
@@ -131,27 +160,7 @@ def main():
             )
             if copy.returncode:
                 continue
-            command = [
-                "bash",
-                "scripts/robocasa-astra/run.sh",
-                "--task",
-                job["task"],
-                "--robot",
-                job["robot"],
-                "--steps",
-                str(job["max_steps"]),
-                "--seed",
-                str(job["seed"]),
-                "--container",
-                container,
-                "--worker-script",
-                "/tmp/multitask-worker-v1.py",
-                "--native-scene",
-                "--output",
-                str(output),
-            ]
-            if job["robot"] == "GR1FloatingBody":
-                command.append("--face-workstation")
+            command = build_run_command(job, container, output)
             with (RUNTIME / (job["id"] + ".log")).open("w") as log:
                 process = subprocess.Popen(
                     command,

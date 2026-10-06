@@ -7,12 +7,7 @@ import time
 from pathlib import Path
 
 from publish_videos import publish
-
-
-def alive(pid):
-    """Treat a reaped or zombie process as finished without sending signals."""
-    path = Path(f"/proc/{pid}/stat")
-    return path.exists() and path.read_text().split(") ", 1)[1][0] != "Z"
+from runtime_io import alive, write_json_atomic
 
 
 def snapshot(repo, runs, since):
@@ -86,17 +81,15 @@ def main():
             publish(repo)
             measure = snapshot(repo, runs, start)
             report["current"] = {"concurrency": stage, "pids": pids, **measure}
-            temporary = runtime / "parallel-report.tmp"
-            temporary.write_text(json.dumps(report, indent=2))
-            temporary.replace(runtime / "parallel-report.json")
+            write_json_atomic(runtime / "parallel-report.json", report)
             if any(not alive(pid) for pid in pids):
                 report["status"] = "worker_ended_during_scaling"
-                (runtime / "parallel-report.json").write_text(json.dumps(report, indent=2))
+                write_json_atomic(runtime / "parallel-report.json", report)
                 return
             time.sleep(15)
         report["stages"].append({"concurrency": stage, **snapshot(repo, runs, start)})
     report["status"] = "four_parallel_running"
-    (runtime / "parallel-report.json").write_text(json.dumps(report, indent=2))
+    write_json_atomic(runtime / "parallel-report.json", report)
     while any(alive(pid) for pid in pids):
         for child in children:
             child.poll()
@@ -104,7 +97,7 @@ def main():
         time.sleep(15)
     publish(repo)
     report["status"] = "complete"
-    (runtime / "parallel-report.json").write_text(json.dumps(report, indent=2))
+    write_json_atomic(runtime / "parallel-report.json", report)
 
 
 if __name__ == "__main__":

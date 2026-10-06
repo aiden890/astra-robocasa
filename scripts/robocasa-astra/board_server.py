@@ -68,14 +68,17 @@ class BoardHandler(SimpleHTTPRequestHandler):
         with self.state_lock:
             state = self.read_state()
             state["deleted"] = [
-                row for row in state["deleted"]
-                if (row["kind"], row["id"]) != (kind, identity)
+                row for row in state["deleted"] if (row["kind"], row["id"]) != (kind, identity)
             ]
             if self.path.endswith("/delete"):
-                state["deleted"].append({
-                    "kind": kind, "id": identity, "title": title,
-                    "deleted_at": datetime.now(timezone.utc).isoformat(),
-                })
+                state["deleted"].append(
+                    {
+                        "kind": kind,
+                        "id": identity,
+                        "title": title,
+                        "deleted_at": datetime.now(timezone.utc).isoformat(),
+                    }
+                )
             self.state_file.parent.mkdir(parents=True, exist_ok=True)
             temporary = self.state_file.with_suffix(".tmp")
             temporary.write_text(json.dumps(state, ensure_ascii=False, indent=2))

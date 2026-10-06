@@ -1,0 +1,27 @@
+{
+  "scope": "Astra supervisors and board formatting",
+  "behavior_preserved": [
+    "model/account/effort",
+    "native task horizons",
+    "GR1 workstation alignment",
+    "parallel limit",
+    "active processes"
+  ],
+  "changes": [
+    "shared process inspection with exit race handling",
+    "atomic JSON status writer with unique temporary files and failure cleanup",
+    "typed run specification and isolated command construction"
+  ],
+  "verification": {
+    "astra_tests_passed": 20,
+    "core_tests_passed": 2089,
+    "core_tests_skipped": 6,
+    "core_coverage_percent": 100,
+    "astra_ruff": "passed",
+    "shared_runtime_strict_mypy": "passed",
+    "full_ruff": "3 existing RUF036 errors outside Astra scope",
+    "full_format": "existing non-Astra formatting differences",
+    "full_mypy": "12 existing errors in 7 unchanged files with isolated dependency versions"
+  },
+  "deployment": "source only; running supervisors are not restarted"
+}
