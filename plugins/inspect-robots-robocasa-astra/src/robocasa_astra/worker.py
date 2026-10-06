@@ -55,11 +55,14 @@ class Simulator:
         horizon=1800,
         face_workstation=False,
         frozen_scene=None,
+        layout_id=None,
+        style_id=None,
     ):
         self.robot, self.task = robot, task
         self.fixture, self.placement = fixture, placement
         self.horizon, self.face_workstation = horizon, face_workstation
         self.frozen_scene = frozen_scene
+        self.layout_id, self.style_id = layout_id, style_id
         self.frozen_scene_receipt = None
         self.initial_alignment = None
         self.env = None
@@ -124,12 +127,22 @@ class Simulator:
             styles = [i for i in range(1, 11) if i not in task_class.EXCLUDE_STYLES]
             if not layouts or not styles:
                 raise ValueError("Task has no compatible target layout/style")
+            layout_id, style_id = self.layout_id, self.style_id
+            if self.frozen_scene:
+                from pathlib import Path
+
+                meta = json.loads((Path(self.frozen_scene) / "episode-meta.json").read_text())
+                layout_id, style_id = meta["layout_id"], meta["style_id"]
+            if layout_id is not None and layout_id not in layouts:
+                raise ValueError("Requested layout is incompatible with task")
+            if style_id is not None and style_id not in styles:
+                raise ValueError("Requested style is incompatible with task")
             self.env = create_env(
                 self.task,
                 robots=self.robot,
                 seed=seed,
-                layout_ids=layouts[:1],
-                style_ids=styles[:1],
+                layout_ids=[layout_id] if layout_id is not None else layouts[:1],
+                style_ids=[style_id] if style_id is not None else styles[:1],
                 camera_names=["robot0_agentview_left", "robot0_agentview_right"]
                 + (
                     ["robot0_eye_in_hand"]
