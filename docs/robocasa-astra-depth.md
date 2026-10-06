@@ -77,3 +77,31 @@ the successful test used a separately extracted OSMesa library without modifying
 the host installation. No model calls, GPU workloads, or native RoboCasa rollouts
 were launched by the validation. Full RoboCasa RGB-depth rollout and subscription
 model behavior remain unverified. Existing production episodes remain RGB-only.
+
+## Camera-only input contract
+
+The initial input uses each camera's RGB PNG followed by a named 8-bit RGB
+greyscale depth PNG at 256×256. The depth preview has a fixed scale: 0 m is
+white and 3 m or farther is black. Per-frame min/max normalization is avoided
+because the same shade must mean the same distance across observations and
+cameras. Quantization applies only to the preview; float32 NPY remains the
+metric source of truth. The 8×8 text grid supplements the image with meters.
+No world-coordinate query is included. Depth is the first visible surface's
+optical-axis Z distance, not an object center or a straight-line range.
+
+For Panda the camera order is agentview_left, agentview_right, eye_in_hand.
+For GR1 it is agentview_left, agentview_right, eye_in_right_hand,
+eye_in_left_hand. Preview names and image attachment order are spelled out in
+the prompt so each depth image can be matched with its RGB camera.
+
+An [eight-second video preview](http://100.86.183.64:8906/topic.html?topic=camera-depth-preview)
+is published in the video board. It contains 160 real CPU-rendered frames at
+20 fps, with RGB on the upper row and depth on the lower row. The moving
+geometric scene illustrates the sensor format; it is not a RoboCasa rollout
+or an Astra inference result. The isolated command is
+`python -m astra_ops.media.depth_preview --output NEW_DIRECTORY` with a
+compatible CPU MuJoCo renderer. It never overwrites an existing output directory.
+
+Supplemental diagnostic records are kept in `status-page/media/supplemental-catalog.json`,
+separate from the queue-generated catalog. The video board tolerates an absent
+supplemental file and honors the existing delete controls for these entries.

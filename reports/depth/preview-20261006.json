@@ -1,0 +1,31 @@
+{
+  "kind": "sensor_diagnostic",
+  "scene": "isolated moving MuJoCo geometry; not RoboCasa",
+  "model_calls": 0,
+  "native_rollouts": 0,
+  "fps": 20,
+  "frames": 160,
+  "duration_s": 8,
+  "resolution": [
+    768,
+    584
+  ],
+  "unit": "m",
+  "quantity": "camera optical-axis depth",
+  "preview_range_m": [
+    0,
+    3
+  ],
+  "video_sha256": "aa226bb3ecd3e473b59195b7b3c0a541aa515e788c2e6876343d724be3f5fb1d",
+  "decoded_frames": 160,
+  "decoded_fps": 20.0,
+  "decoded_size": [
+    768,
+    584
+  ],
+  "depth_variation_m": {
+    "robot0_agentview_left": 0.599953293800354,
+    "robot0_agentview_right": 0.599953293800354,
+    "robot0_eye_in_hand": 0.5999351739883423
+  }
+}

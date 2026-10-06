@@ -1,5 +1,25 @@
 [
   {
+    "id": "camera-depth-preview",
+    "title": "카메라 기준 깊이 · RGB / Depth 미리보기",
+    "category": "센서 시각화",
+    "description": "위쪽 RGB, 아래쪽 카메라 기준 깊이입니다. 흰색은 가까운 표면, 검은색은 3m 이상입니다. 물체가 움직일 때 깊이가 함께 변하는 실제 MuJoCo 렌더링이며, RoboCasa 태스크 수행 영상이나 모델 평가 결과는 아닙니다. 세계 좌표 변환 없이 카메라별 깊이만 표시합니다.",
+    "task": "CameraDepth",
+    "model": "모델 호출 없음",
+    "environment": "Lab-desktop · CPU 센서 렌더링",
+    "date": "2026-10-06",
+    "tags": [
+      "RGB+Depth",
+      "카메라 기준",
+      "미터",
+      "고정 0–3m",
+      "20fps"
+    ],
+    "run_ids": [
+      "camera-depth-diagnostic-20261006-v1"
+    ]
+  },
+  {
     "id": "coffee-full",
     "title": "커피 태스크 끝까지 수행하기",
     "category": "전체 태스크 실행",
