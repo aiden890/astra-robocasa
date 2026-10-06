@@ -15,5 +15,6 @@
   },
   "robot_actions": 0,
   "model_calls": 0,
-  "old_set_deleted": true
+  "old_set_deleted": true,
+  "unique_asset_compositions_total": 50
 }
