@@ -11,6 +11,7 @@ from PIL import Image
 
 from inspect_robots.policy import PolicyConfig, PolicyInfo
 from inspect_robots.types import Action, ActionChunk
+from robocasa_astra.depth import depth_summary
 
 
 class CodexPolicy:
@@ -76,6 +77,15 @@ class CodexPolicy:
             path = folder / (name + ".png")
             Image.fromarray(image).save(path)
             images.append(path)
+        depth_summaries = {}
+        for camera, source in observation.extra.get("depth_maps", {}).items():
+            values = np.load(source, allow_pickle=False)
+            np.save(folder / (camera + "__depth_m.npy"), values, allow_pickle=False)
+            depth_summaries[camera] = depth_summary(values)
+        if depth_summaries:
+            (folder / "depth-metadata.json").write_text(
+                json.dumps(observation.extra["depth_metadata"], indent=2)
+            )
         state = {k: np.asarray(v).tolist() for k, v in observation.state.items()}
         current_instruction = observation.extra.get("instruction", self.instruction)
         prompt = (
@@ -90,6 +100,10 @@ class CodexPolicy:
             + json.dumps(state)
             + "\nRecent actions: "
             + json.dumps(self.history[-8:])
+            + "\nImage attachments in order (depth suffix = metric-depth preview): "
+            + json.dumps(list(observation.images))
+            + "\nDepth samples and display scale: "
+            + json.dumps(depth_summaries)
         )
         (folder / "prompt.txt").write_text(prompt)
         start = time.monotonic()
@@ -185,6 +199,8 @@ class CodexPolicy:
                     "seconds": seconds,
                     "response": value,
                     "robot": observation.extra.get("robot"),
+                    "depth_cameras": list(depth_summaries),
+                    "depth_unit": "m" if depth_summaries else None,
                 },
                 indent=2,
             )

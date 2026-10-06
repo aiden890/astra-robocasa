@@ -1,0 +1,44 @@
+{
+  "robosuite": "1.5.2",
+  "mujoco": "3.3.1",
+  "validation": "isolated known-geometry renderer; not a full RoboCasa task",
+  "cameras": {
+    "robot0_agentview_left": {
+      "center_depth_m": 1.8000144958496094,
+      "floor_depth_m": 2.000001907348633,
+      "projected_surface_world_z_m": 0.19998550415039062,
+      "rgb_equal_to_rgb_only": true,
+      "saved_depth_exact": true
+    },
+    "robot0_agentview_right": {
+      "center_depth_m": 1.8000144958496094,
+      "floor_depth_m": 2.000001907348633,
+      "projected_surface_world_z_m": 0.19998550415039062,
+      "rgb_equal_to_rgb_only": true,
+      "saved_depth_exact": true
+    },
+    "robot0_eye_in_hand": {
+      "center_depth_m": 1.8000144958496094,
+      "floor_depth_m": 2.000001907348633,
+      "projected_surface_world_z_m": 0.19998550415039062,
+      "rgb_equal_to_rgb_only": true,
+      "saved_depth_exact": true
+    },
+    "robot0_eye_in_right_hand": {
+      "center_depth_m": 1.8000144958496094,
+      "floor_depth_m": 2.000001907348633,
+      "projected_surface_world_z_m": 0.19998550415039062,
+      "rgb_equal_to_rgb_only": true,
+      "saved_depth_exact": true
+    },
+    "robot0_eye_in_left_hand": {
+      "center_depth_m": 1.8000144958496094,
+      "floor_depth_m": 2.000001907348633,
+      "projected_surface_world_z_m": 0.19998550415039062,
+      "rgb_equal_to_rgb_only": true,
+      "saved_depth_exact": true
+    }
+  },
+  "model_calls": 0,
+  "native_rollouts": 0
+}

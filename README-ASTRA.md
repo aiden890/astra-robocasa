@@ -49,3 +49,11 @@ removed; their source remains in Git history. Generated recordings and evaluatio
 remain outside version control and are not removed during source cleanup.
 
 Run operational tests with `PYTHONPATH=scripts/robocasa-astra pytest scripts/robocasa-astra/tests`.
+
+## RGB and depth branch
+
+The `codex/rgb-depth` branch enables synchronized metric depth by default for
+new runner invocations. Use `--no-depth` for an RGB-only control. See
+[depth implementation and validation](docs/robocasa-astra-depth.md).
+The existing production RGB queue remains on its original branch; switching
+source in this checkout does not upgrade already running episodes.

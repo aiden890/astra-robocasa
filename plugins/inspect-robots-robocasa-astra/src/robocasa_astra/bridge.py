@@ -20,6 +20,7 @@ from inspect_robots.embodiment import (
 )
 from inspect_robots.spaces import ActionSemantics, Box, CameraSpec, ObservationSpace
 from inspect_robots.types import Observation, StepResult
+from robocasa_astra.depth import decode_depth, preview_depth
 
 
 class SparkEmbodiment:
@@ -28,6 +29,7 @@ class SparkEmbodiment:
     def __init__(self, command, seed, output):
         self.output = Path(output)
         self.output.mkdir(parents=True, exist_ok=True)
+        self.sensor_index = 0
         self.stderr = (self.output / "simulator.log").open("w")
         self.process = subprocess.Popen(
             command,
@@ -61,7 +63,10 @@ class SparkEmbodiment:
             observation_space=ObservationSpace(
                 cameras=tuple(
                     CameraSpec(name=k, height=256, width=256, channels=3)
-                    for k in self.latest["images"]
+                    for k in [
+                        *self.latest["images"],
+                        *(name + "__depth" for name in self.latest.get("depths", {})),
+                    ]
                 ),
                 state_keys=frozenset(self.latest["state"]),
             ),
@@ -90,14 +95,33 @@ class SparkEmbodiment:
 
     def observation(self, raw, instruction=None):
         """Decode actual rendered camera frames and retain numeric observations."""
+        images = {
+            k: np.asarray(Image.open(io.BytesIO(base64.b64decode(v))).convert("RGB"))
+            for k, v in raw["images"].items()
+        }
+        payloads = raw.get("depths", {})
+        metadata = raw.get("depth_metadata", {})
+        if payloads and (set(payloads) != set(images) or set(metadata) != set(images)):
+            raise ValueError("Every RGB camera must have matching depth and calibration")
+        depth_maps = {}
+        if payloads:
+            folder = self.output / "depth" / f"observation-{self.sensor_index:06d}"
+            folder.mkdir(parents=True, exist_ok=False)
+            self.sensor_index += 1
+            for camera, payload in payloads.items():
+                if metadata[camera].get("unit") != "m":
+                    raise ValueError("Depth calibration must specify meters")
+                values = decode_depth(payload, images[camera].shape[:2])
+                path = folder / (camera + ".npy")
+                np.save(path, values, allow_pickle=False)
+                depth_maps[camera] = str(path.resolve())
+                images[camera + "__depth"] = preview_depth(values)
+            (folder / "metadata.json").write_text(json.dumps(metadata, indent=2))
         return Observation(
-            images={
-                k: np.asarray(Image.open(io.BytesIO(base64.b64decode(v))).convert("RGB"))
-                for k, v in raw["images"].items()
-            },
+            images=images,
             state={k: np.asarray(v, dtype=float) for k, v in raw["state"].items()},
             instruction=instruction,
-            extra=raw["info"],
+            extra={**raw["info"], "depth_maps": depth_maps, "depth_metadata": metadata},
         )
 
     def reset(self, scene, *, seed=None):

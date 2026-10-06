@@ -13,6 +13,8 @@ import traceback
 
 import numpy as np
 
+from robocasa_astra.depth import encode_depth, normalize_depth_buffer, validate_depth
+
 
 def protect_assets():
     """Redirect generated object XML into private temporary directories."""
@@ -47,11 +49,19 @@ class Simulator:
     """Own one native environment; retain actual controller and success semantics."""
 
     def __init__(
-        self, robot, task, fixture=None, placement=False, horizon=1800, face_workstation=False
+        self,
+        robot,
+        task,
+        fixture=None,
+        placement=False,
+        horizon=1800,
+        face_workstation=False,
+        depth=False,
     ):
         self.robot, self.task = robot, task
         self.fixture, self.placement = fixture, placement
         self.horizon, self.face_workstation = horizon, face_workstation
+        self.depth = depth
         self.initial_alignment = None
         self.env = None
         self.steps = 0
@@ -217,7 +227,7 @@ class Simulator:
             for k, v in raw.items()
             if not k.endswith(("image", "depth")) and np.asarray(v).size < 100
         }
-        images = {}
+        images, depths, depth_metadata = {}, {}, {}
         names = set(env.sim.model.camera_names)
         for suffix in (
             "agentview_left",
@@ -231,7 +241,34 @@ class Simulator:
             camera = "robot0_" + suffix
             if camera not in names:
                 continue
-            image = env.sim.render(width=256, height=256, camera_name=camera)[::-1].copy()
+            if self.depth:
+                from robosuite.utils.camera_utils import (
+                    get_camera_extrinsic_matrix,
+                    get_camera_intrinsic_matrix,
+                    get_real_depth_map,
+                )
+
+                rgb, buffer = env.sim.render(width=256, height=256, camera_name=camera, depth=True)
+                image = rgb[::-1].copy()
+                metric = validate_depth(
+                    get_real_depth_map(env.sim, normalize_depth_buffer(buffer))[::-1], (256, 256)
+                )
+                depths[camera] = encode_depth(metric)
+                depth_metadata[camera] = {
+                    "unit": "m",
+                    "quantity": "camera optical-axis depth",
+                    "encoding": "npy-float32-zlib-base64",
+                    "shape": [256, 256],
+                    "pixel_origin": "top-left",
+                    "simulation_step": self.steps,
+                    "simulation_time_s": float(env.sim.data.time),
+                    "depth_near_m": float(env.sim.model.vis.map.znear * env.sim.model.stat.extent),
+                    "depth_far_m": float(env.sim.model.vis.map.zfar * env.sim.model.stat.extent),
+                    "intrinsics": get_camera_intrinsic_matrix(env.sim, camera, 256, 256).tolist(),
+                    "camera_to_world": get_camera_extrinsic_matrix(env.sim, camera).tolist(),
+                }
+            else:
+                image = env.sim.render(width=256, height=256, camera_name=camera)[::-1].copy()
             buf = io.BytesIO()
             Image.fromarray(image).save(buf, format="PNG")
             images[camera] = base64.b64encode(buf.getvalue()).decode()
@@ -263,7 +300,13 @@ class Simulator:
             "action_high": env.action_spec[1].tolist(),
             "controller": env.robots[0].composite_controller_config,
         }
-        return {"images": images, "state": state, "info": info}
+        return {
+            "images": images,
+            "depths": depths,
+            "depth_metadata": depth_metadata,
+            "state": state,
+            "info": info,
+        }
 
     def step(self, action):
         """Apply a finite bounded action using the native controller."""
@@ -285,10 +328,17 @@ def main():
     parser.add_argument("--horizon", type=int, default=1800)
     parser.add_argument("--face-workstation", action="store_true")
     parser.add_argument("--placement", action="store_true")
+    parser.add_argument("--depth", action="store_true")
     args = parser.parse_args()
     with contextlib.redirect_stdout(sys.stderr):
         sim = Simulator(
-            args.robot, args.task, args.fixture, args.placement, args.horizon, args.face_workstation
+            args.robot,
+            args.task,
+            args.fixture,
+            args.placement,
+            args.horizon,
+            args.face_workstation,
+            args.depth,
         )
     for line in sys.stdin:
         try:

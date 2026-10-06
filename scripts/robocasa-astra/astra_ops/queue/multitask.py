@@ -9,6 +9,7 @@ from typing import Any, TypedDict
 
 from astra_ops.common.paths import REPO_ROOT, RUNTIME_ROOT
 from astra_ops.common.runtime_io import alive, write_json_atomic
+from astra_ops.common.worker_transport import stage_worker
 from astra_ops.media.publish import publish
 
 ROOT = REPO_ROOT
@@ -69,7 +70,9 @@ def build_run_command(job: RunSpec, container: str, output: Path) -> list[str]:
         "--container",
         container,
         "--worker-script",
-        "/tmp/multitask-worker-v1.py",
+        "/tmp/astra-depth-{}/robocasa_astra/worker.py".format(job["seed"]),
+        "--worker-pythonpath",
+        "/tmp/astra-depth-{}".format(job["seed"]),
         "--native-scene",
         "--output",
         str(output),
@@ -147,19 +150,7 @@ def main() -> None:
             if output.exists():
                 job["status"] = "attention_existing_output"
                 continue
-            copy = subprocess.run(
-                [
-                    "ssh",
-                    "spark2",
-                    "docker",
-                    "cp",
-                    "/home/csi-agent-dgx_spark2/workspace/astra-robocasa-20261006/multitask-worker-v1.py",
-                    container + ":/tmp/multitask-worker-v1.py",
-                ],
-                capture_output=True,
-                timeout=30,
-            )
-            if copy.returncode:
+            if not stage_worker(container, job["seed"]):
                 continue
             command = build_run_command(job, container, output)
             with (RUNTIME / (job["id"] + ".log")).open("w") as log:

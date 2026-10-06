@@ -6,6 +6,7 @@ import time
 
 from astra_ops.common.paths import REPO_ROOT, RUNTIME_ROOT
 from astra_ops.common.runtime_io import write_json_atomic
+from astra_ops.common.worker_transport import stage_worker
 
 ROOT = REPO_ROOT
 R = RUNTIME_ROOT
@@ -59,9 +60,8 @@ def create(name, cpu, memory):
             "infinity",
         ]
     )
-    remote(
-        ["docker", "cp", BASE + "/multitask-worker-v1.py", name + ":/tmp/multitask-worker-v1.py"]
-    )
+    if not stage_worker(name, 0):
+        raise RuntimeError("Cannot stage branch-local worker package")
 
 
 def main():
@@ -109,7 +109,9 @@ def main():
                 "--container",
                 VALIDATOR,
                 "--worker-script",
-                "/tmp/multitask-worker-v1.py",
+                "/tmp/astra-depth-0/robocasa_astra/worker.py",
+                "--worker-pythonpath",
+                "/tmp/astra-depth-0",
                 "--native-scene",
                 "--face-workstation",
                 "--noop",
