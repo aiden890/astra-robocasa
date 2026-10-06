@@ -196,3 +196,12 @@ def test_ramp_uses_recent_calls_across_trials(tmp_path):
         file.write_text(json.dumps({"cli_end_to_end_seconds": seconds}))
         os.utime(file, (modified, modified))
     assert recent_call_seconds(tmp_path, now=1000) == [12]
+
+
+def test_memory_slots_include_shared_lab_host():
+    """Spare simulator RAM does not authorize clients that exhaust the Lab host."""
+    from robocasa_common.depth_study import safe_memory_slots
+
+    assert safe_memory_slots({"available_gib": 74, "lab_available_gib": 6.3}, 1) == 2
+    assert safe_memory_slots({"available_gib": 60, "lab_available_gib": 1.5}, 4) < 4
+    assert safe_memory_slots({"available_gib": 16, "lab_available_gib": 30}, 2) == 2

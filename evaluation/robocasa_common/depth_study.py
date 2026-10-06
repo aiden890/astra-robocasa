@@ -49,6 +49,15 @@ def recent_call_seconds(root, now, window=300):
     return [seconds for _, seconds in sorted(records)[-200:]]
 
 
+def safe_memory_slots(sample, active):
+    """Reserve headroom on both simulator and model-client hosts for new trials."""
+    spark_extra = int((sample["available_gib"] - 16) / 2.5)
+    # Observed trial RSS approached 1 GiB before CLI/image overhead. Reserve
+    # 1.5 GiB per additional Lab client and 4 GiB for the shared host.
+    lab_extra = int((sample["lab_available_gib"] - 4) / 1.5)
+    return max(1, active + min(spark_extra, lab_extra))
+
+
 class AdoptedProcess:
     """Observe an orphaned trial by exact argv identity without restarting it."""
 
@@ -261,8 +270,8 @@ def main():
                 recent_errors += "capacity" in file.read_text().lower()
         seconds = recent_call_seconds(root, time.time())
         # RAM guard is conservative until per-slot peak usage is measured.
-        memory_slots = max(1, len(active) + int((sample["available_gib"] - 16) / 2.5))
-        if sample["available_gib"] < 16 or sample["lab_available_gib"] < 2 or recent_errors:
+        memory_slots = safe_memory_slots(sample, len(active))
+        if sample["available_gib"] < 16 or sample["lab_available_gib"] < 4 or recent_errors:
             limit = max(1, min(limit - 4, memory_slots))
             last_ramp = time.monotonic()
         elif (
@@ -278,7 +287,7 @@ def main():
             if (
                 sample["lab_disk_free_gib"] < 2
                 or sample["available_gib"] < 16
-                or sample["lab_available_gib"] < 2
+                or sample["lab_available_gib"] < 4
             ):
                 break
             job = pending.pop(0)
