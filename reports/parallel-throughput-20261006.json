@@ -1,0 +1,90 @@
+{
+  "baseline": {
+    "window_seconds": 150,
+    "calls": 14,
+    "steps": 48,
+    "aggregate_steps_per_second": 0.32,
+    "median_inference_seconds": 9.803448008140549,
+    "measured_at": 1791269622.9622064
+  },
+  "stages": [
+    {
+      "concurrency": 2,
+      "wall_seconds": 150.22972679138184,
+      "calls": 28,
+      "steps": 104,
+      "aggregate_steps_per_second": 0.6922731087997034,
+      "median_inference_seconds": 9.452183219604194,
+      "per_run": {
+        "panda-coffee-1800-001": {
+          "calls": 15,
+          "steps": 54
+        },
+        "gr1-coffee-1800-003": {
+          "calls": 13,
+          "steps": 50
+        }
+      }
+    },
+    {
+      "concurrency": 4,
+      "wall_seconds": 150.2492163181305,
+      "calls": 50,
+      "steps": 211,
+      "aggregate_steps_per_second": 1.4043334479245384,
+      "median_inference_seconds": 9.978042760398239,
+      "per_run": {
+        "panda-coffee-1800-001": {
+          "calls": 15,
+          "steps": 53
+        },
+        "gr1-coffee-1800-003": {
+          "calls": 12,
+          "steps": 51
+        },
+        "panda-coffee-1800-002": {
+          "calls": 13,
+          "steps": 53
+        },
+        "gr1-coffee-1800-002": {
+          "calls": 10,
+          "steps": 54
+        }
+      }
+    }
+  ],
+  "max_configured": 4,
+  "current": {
+    "concurrency": 4,
+    "pids": [
+      427311,
+      447310,
+      451669,
+      451670
+    ],
+    "wall_seconds": 135.23779392242432,
+    "calls": 43,
+    "steps": 179,
+    "aggregate_steps_per_second": 1.3235944983151584,
+    "median_inference_seconds": 10.527763071004301,
+    "per_run": {
+      "panda-coffee-1800-001": {
+        "calls": 13,
+        "steps": 46
+      },
+      "gr1-coffee-1800-003": {
+        "calls": 10,
+        "steps": 41
+      },
+      "panda-coffee-1800-002": {
+        "calls": 11,
+        "steps": 43
+      },
+      "gr1-coffee-1800-002": {
+        "calls": 9,
+        "steps": 49
+      }
+    }
+  },
+  "status": "four_parallel_running"
+}

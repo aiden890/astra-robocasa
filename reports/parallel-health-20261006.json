@@ -1,0 +1,42 @@
+{
+  "time": 1791269847.418793,
+  "simultaneous_codex_exec_peak": 4,
+  "samples": [
+    4,
+    4,
+    4,
+    4,
+    4,
+    4,
+    4,
+    4,
+    4,
+    4
+  ],
+  "runs": [
+    {
+      "id": "panda-coffee-1800-001",
+      "completed_calls": 130,
+      "freshest_receipt_age": 1.826035976409912,
+      "rate_limit_error_calls": []
+    },
+    {
+      "id": "gr1-coffee-1800-003",
+      "completed_calls": 19,
+      "freshest_receipt_age": 9.263993501663208,
+      "rate_limit_error_calls": []
+    },
+    {
+      "id": "panda-coffee-1800-002",
+      "completed_calls": 6,
+      "freshest_receipt_age": 1.1293694972991943,
+      "rate_limit_error_calls": []
+    },
+    {
+      "id": "gr1-coffee-1800-002",
+      "completed_calls": 5,
+      "freshest_receipt_age": 3.217562437057495,
+      "rate_limit_error_calls": []
+    }
+  ]
+}
