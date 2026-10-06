@@ -4,6 +4,7 @@ import argparse
 import importlib
 import json
 import shlex
+import subprocess
 from pathlib import Path
 
 from robocasa_astra.bridge import SparkEmbodiment
@@ -16,7 +17,38 @@ from inspect_robots.scorer import success_at_end
 from inspect_robots.task import Task
 
 
-def load_scene(folder):
+class ObservedSparkEmbodiment(SparkEmbodiment):
+    """Notify policy history collectors after every actual environment observation."""
+
+    def __init__(self, *args):
+        self.observers = []
+        super().__init__(*args)
+
+    def reset(self, scene, *, seed=None):
+        """Include the initial observation in registered histories."""
+        observation = super().reset(scene, seed=seed)
+        for observer in self.observers:
+            observer(observation)
+        return observation
+
+    def step(self, action):
+        """Record intermediate steps even when a policy executes an action chunk."""
+        result = super().step(action)
+        for observer in self.observers:
+            observer(result.observation)
+        return result
+
+
+def scene_identifiers(tasks):
+    """Accept recorded seed metadata as well as the original integer seed lists."""
+    return [
+        f"{task}-{item['seed'] if isinstance(item, dict) else item}"
+        for task, values in tasks.items()
+        for item in values
+    ]
+
+
+def load_scene(folder, remote_proof=None):
     """Require a verified Panda snapshot before allocating a simulator or calling a model."""
     folder = Path(folder).resolve()
     manifest = json.loads((folder / "manifest.json").read_text())
@@ -27,9 +59,12 @@ def load_scene(folder):
         raise ValueError("Scene has not passed restoration verification")
     if verified["manifest_sha256"] != sha256(folder / "manifest.json"):
         raise ValueError("Scene manifest changed after verification")
+    if remote_proof is not None and remote_proof["manifest_sha256"] != verified["manifest_sha256"]:
+        raise ValueError("Remote scene manifest differs from local metadata")
     for name, digest in manifest["files"].items():
         target = (folder / name).resolve()
-        if folder.parents[1] not in target.parents or sha256(target) != digest:
+        actual = sha256(target) if remote_proof is None else remote_proof["files"].get(name)
+        if folder.parents[1] not in target.parents or actual != digest:
             raise ValueError("Scene content checksum or path mismatch")
     return manifest
 
@@ -44,7 +79,22 @@ def resolve_factory(reference):
 
 def evaluate_scene(folder, args):
     """Run each scene separately so official seed derivation always uses scene index zero."""
-    manifest = load_scene(folder)
+    remote_proof = None
+    if getattr(args, "remote_verification", False):
+        verify = [
+            "docker",
+            "exec",
+            "-e",
+            "PYTHONPATH=/eval-code/evaluation:/eval-code/src:/frozen-code",
+            args.container,
+            "python3",
+            "-m",
+            "robocasa_common.verify",
+            args.mounted_root.rstrip("/") + "/scenes/" + Path(folder).name,
+        ]
+        command = verify if args.host == "local" else ["ssh", args.host, shlex.join(verify)]
+        remote_proof = json.loads(subprocess.check_output(command, text=True, timeout=180))
+    manifest = load_scene(folder, remote_proof)
     if derive_seed(0, manifest["rollout_seed"], 0) != manifest["simulator_seed"]:
         raise ValueError("Scene seed derivation does not match the fixed protocol")
     output = Path(args.output).resolve() / Path(folder).name
@@ -69,7 +119,8 @@ def evaluate_scene(folder, args):
         args.mounted_root.rstrip("/") + "/scenes/" + Path(folder).name,
     ]
     command = remote if args.host == "local" else ["ssh", args.host, shlex.join(remote)]
-    env = SparkEmbodiment(command, manifest["simulator_seed"], output / "worker")
+    env = ObservedSparkEmbodiment(command, manifest["simulator_seed"], output / "worker")
+    policy = None
     try:
         receipt = json.loads(env.info.docs)["frozen_scene"]
         if receipt["manifest_sha256"] != sha256(Path(folder) / "manifest.json"):
@@ -77,6 +128,8 @@ def evaluate_scene(folder, args):
         if not receipt["state_exact"] or not receipt["world_geometry_exact"]:
             raise ValueError("Worker did not verify exact initial state and world/camera geometry")
         (output / "scene-receipt.json").write_text(json.dumps(receipt, indent=2))
+        if remote_proof is not None:
+            (output / "asset-proof.json").write_text(json.dumps(remote_proof, indent=2))
         policy = resolve_factory(args.policy)(env, output / "policy")
         task = Task(
             name=manifest["task"],
@@ -90,7 +143,13 @@ def evaluate_scene(folder, args):
             scorer=success_at_end(),
             max_steps=manifest["horizon"],
         )
-        log = eval(task, policy, env, log_dir=str(output / "eval"), store_frames=True)[0]
+        log = eval(
+            task,
+            policy,
+            env,
+            log_dir=str(output / "eval"),
+            store_frames=not getattr(args, "compact_video", False),
+        )[0]
         result = {
             "scene": Path(folder).name,
             "policy": args.policy,
@@ -103,7 +162,11 @@ def evaluate_scene(folder, args):
         (output / "result.json").write_text(json.dumps(result, indent=2))
         return result
     finally:
-        env.close()
+        try:
+            if policy is not None and hasattr(policy, "close"):
+                policy.close()
+        finally:
+            env.close()
 
 
 def main():
@@ -119,15 +182,26 @@ def main():
     parser.add_argument("--host", default="spark2")
     parser.add_argument("--container", required=True)
     parser.add_argument("--mounted-root", default="/scene-bundles")
+    parser.add_argument(
+        "--compact-video",
+        action="store_true",
+        help="Policy streams video instead of retaining frame sidecars",
+    )
+    parser.add_argument(
+        "--remote-verification",
+        action="store_true",
+        help="Hash scene assets on the simulation host; retain metadata locally",
+    )
     args = parser.parse_args()
     if args.all:
         seeds = json.loads(Path(args.seeds_file).read_text())["tasks"]
-        identifiers = [f"{task}-{seed}" for task, values in seeds.items() for seed in values]
+        identifiers = scene_identifiers(seeds)
     else:
         identifiers = [args.scene_id]
     folders = [Path(args.scene_root) / "scenes" / name for name in identifiers]
-    for folder in folders:
-        load_scene(folder)
+    if not args.remote_verification:
+        for folder in folders:
+            load_scene(folder)
     for folder in folders:
         print(json.dumps(evaluate_scene(folder, args)), flush=True)
 
