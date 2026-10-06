@@ -124,6 +124,8 @@ class SparkEmbodiment:
                 images[camera + "__depth"] = preview_depth(values)
             if not memory_only:
                 (folder / "metadata.json").write_text(json.dumps(metadata, indent=2))
+        self.current_depth_arrays = depth_arrays
+        self.current_depth_step = raw["info"].get("steps")
         return Observation(
             images=images,
             state={k: np.asarray(v, dtype=float) for k, v in raw["state"].items()},
@@ -132,7 +134,7 @@ class SparkEmbodiment:
                 **raw["info"],
                 "depth_maps": depth_maps,
                 "depth_metadata": metadata,
-                "_depth_arrays": depth_arrays,
+                "_depth_arrays": {} if memory_only else depth_arrays,
             },
         )
 

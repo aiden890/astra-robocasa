@@ -1,0 +1,1 @@
+Keep memory-only camera-Z arrays outside persistent trial observation extras and verify the current simulation step before queries or previews. Preserve exact queried regions while avoiding per-step whole-depth retention.

@@ -32,3 +32,9 @@ Every retry and distance-query round contributes to the measured call budget.
 `robocasa_common.depth_site` publishes the protocol, measured totals, native results,
 paired comparisons and verified 768×256/20 fps videos. Media is encoded on Lab directly
 without per-step frame files; Spark holds only read-only code and scene assets.
+
+Camera-Z arrays in memory-only mode are retained only for the current observation,
+outside persistent per-step extras. A matching simulation-step identity is required
+before a query or preview reads them. Exact queried float32 regions and their
+checksums are saved separately. This prevents whole-image depth arrays from
+accumulating in trial history; model inputs and query values are unchanged.

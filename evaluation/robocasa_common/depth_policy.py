@@ -42,6 +42,7 @@ class DepthPolicy:
     """Keep camera depth private unless the selected condition explicitly exposes it."""
 
     def __init__(self, embodiment, output):
+        self.embodiment = embodiment
         self.condition = os.environ["ASTRA_DEPTH_CONDITION"]
         if self.condition not in CONDITIONS:
             raise ValueError("Unknown ablation condition")
@@ -128,6 +129,7 @@ class DepthPolicy:
                     "max_wall_seconds": 21600,
                     "depth_quantity": "camera optical-axis Z meters",
                     "world_coordinates": False,
+                    "depth_retention": "current float32 camera arrays outside per-step logs",
                     "token_source": "codex exec --json turn.completed usage; unknown is null",
                     "timing": "local monotonic CLI end-to-end; server GPU compute time not exposed",
                     "state": "robot0 proprioception only; no object poses or privileged success",
@@ -292,6 +294,11 @@ class DepthPolicy:
     def act(self, observation):
         """Allow observation-bound distance requests with zero simulator actions."""
         cameras = [c for c in observation.images if not c.endswith("__depth")]
+        depths = observation.extra.get("_depth_arrays", {})
+        if not depths and self.condition != "rgb":
+            if self.embodiment.current_depth_step != observation.extra["steps"]:
+                raise ValueError("Camera depth no longer matches this observation")
+            depths = self.embodiment.current_depth_arrays
         observation_id = f"{self.scene}:step-{observation.extra['steps']}"
         state = {
             k: np.asarray(v).tolist()
@@ -345,7 +352,7 @@ class DepthPolicy:
                 images.append(path)
             if self.condition == "color":
                 for camera in cameras:
-                    depth = observation.extra["_depth_arrays"][camera]
+                    depth = depths[camera]
                     image = Image.fromarray(preview_depth(depth))
                     scale = preview_scale(depth)
                     draw = ImageDraw.Draw(image)
@@ -375,13 +382,13 @@ class DepthPolicy:
                 for request in queries:
                     try:
                         result = query_depth(
-                            observation.extra["_depth_arrays"],
+                            depths,
                             request,
                             observation_id,
                             CONDITIONS[self.condition],
                         )
                         x0, y0, x1, y1 = result["region_bounds_uv_half_open"]
-                        raw = observation.extra["_depth_arrays"][request["camera"]][y0:y1, x0:x1]
+                        raw = depths[request["camera"]][y0:y1, x0:x1]
                         np.savez_compressed(
                             folder / f"query-{self.query_count:05d}.npz", depth_m=raw
                         )

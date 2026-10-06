@@ -184,3 +184,25 @@ def test_worker_rgb_depth_share_render_and_orientation(monkeypatch):
         assert image[-1, 0, 0] == 200 and depth[-1, 0] == 2
         assert image[0, 0, 0] == 0 and depth[0, 0] == 5
         assert raw["depth_metadata"][camera]["simulation_step"] == 3
+
+
+def test_memory_only_depth_does_not_accumulate_in_trial_records(tmp_path, monkeypatch):
+    """Keep exact current depth outside persistent per-step observation extras."""
+    monkeypatch.setenv("ASTRA_DEPTH_MEMORY_ONLY", "1")
+    env = SparkEmbodiment.__new__(SparkEmbodiment)
+    env.output, env.sensor_index = tmp_path, 0
+    a = np.full((4, 4), 1.25, np.float32)
+    raw = raw_observation(a)
+    raw["info"]["steps"] = 1
+    first = env.observation(raw)
+    assert first.extra["_depth_arrays"] == {}
+    assert first.extra["depth_maps"] == {}
+    np.testing.assert_array_equal(env.current_depth_arrays["camera"], a)
+    assert env.current_depth_step == 1
+    raw = raw_observation(a + 1)
+    raw["info"]["steps"] = 2
+    second = env.observation(raw)
+    assert first.extra["_depth_arrays"] == second.extra["_depth_arrays"] == {}
+    np.testing.assert_array_equal(env.current_depth_arrays["camera"], a + 1)
+    assert env.current_depth_step == 2
+    assert not list(tmp_path.rglob("*.npy"))
