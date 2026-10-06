@@ -1,6 +1,7 @@
 """Protect exact usage accounting, camera conventions and the RGB-only control."""
 
 import json
+import os
 import subprocess
 import sys
 import time
@@ -182,3 +183,16 @@ def test_stream_timeout_preserves_received_usage():
         process.kill()
         process.wait()
         process.stdout.close()
+
+
+def test_ramp_uses_recent_calls_across_trials(tmp_path):
+    """An old slow trial must not suppress ramping after current calls recover."""
+    from robocasa_common.depth_study import recent_call_seconds
+
+    for name, modified, seconds in [("old", 100, 240), ("new", 999, 12)]:
+        folder = tmp_path / "results" / "rgb" / name / "policy" / "call-00000"
+        folder.mkdir(parents=True)
+        file = folder / "receipt.json"
+        file.write_text(json.dumps({"cli_end_to_end_seconds": seconds}))
+        os.utime(file, (modified, modified))
+    assert recent_call_seconds(tmp_path, now=1000) == [12]

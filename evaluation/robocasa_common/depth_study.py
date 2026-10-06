@@ -35,6 +35,20 @@ def resource_sample():
     return remote
 
 
+def recent_call_seconds(root, now, window=300):
+    """Measure recently finished calls across trials, independent of directory order."""
+    records = []
+    for file in (root / "results").glob("*/*/policy/call-*/receipt.json"):
+        modified = file.stat().st_mtime
+        if 0 <= now - modified <= window:
+            try:
+                record = json.loads(file.read_text())
+            except json.JSONDecodeError:
+                continue  # A receipt may still be being written by an active call.
+            records.append((modified, record["cli_end_to_end_seconds"]))
+    return [seconds for _, seconds in sorted(records)[-200:]]
+
+
 class AdoptedProcess:
     """Observe an orphaned trial by exact argv identity without restarting it."""
 
@@ -245,7 +259,7 @@ def main():
             file = folder / "events.jsonl"
             if file.exists() and time.time() - file.stat().st_mtime < 300:
                 recent_errors += "capacity" in file.read_text().lower()
-        seconds = [r["cli_end_to_end_seconds"] for r in receipts[-200:]]
+        seconds = recent_call_seconds(root, time.time())
         # RAM guard is conservative until per-slot peak usage is measured.
         memory_slots = max(1, len(active) + int((sample["available_gib"] - 16) / 2.5))
         if sample["available_gib"] < 16 or sample["lab_available_gib"] < 2 or recent_errors:
