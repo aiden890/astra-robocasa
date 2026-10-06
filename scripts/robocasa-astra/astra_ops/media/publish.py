@@ -4,11 +4,12 @@ import hashlib
 import json
 import re
 import subprocess
-from pathlib import Path
 
 import imageio_ffmpeg
 import numpy as np
 from PIL import Image
+
+from astra_ops.common.paths import REPO_ROOT
 
 
 def publish(repo):
@@ -155,4 +156,4 @@ def publish(repo):
 
 
 if __name__ == "__main__":
-    publish(Path(__file__).resolve().parents[2])
+    publish(REPO_ROOT)

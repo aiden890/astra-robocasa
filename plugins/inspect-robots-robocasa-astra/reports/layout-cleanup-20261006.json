@@ -1,0 +1,29 @@
+{
+  "layout": [
+    "astra_ops/common",
+    "astra_ops/queue",
+    "astra_ops/assets",
+    "astra_ops/media",
+    "config",
+    "tests"
+  ],
+  "removed_obsolete": [
+    "run_full_queue.py",
+    "run_parallel_queue.py",
+    "resume_panda.py",
+    "test_parallel_queue.py",
+    "PARALLEL.md"
+  ],
+  "entrypoints": "python -m astra_ops.<group>.<module>",
+  "tests_passed": 20,
+  "ruff": "passed",
+  "strict_mypy_common": "passed",
+  "deployment": "replace queue supervisor and board only; adopt existing rollout PIDs; no replay or simulator restart",
+  "preserved": [
+    "official framework source and license",
+    "user deletion state",
+    "all recordings and evaluation logs",
+    "private auth",
+    "native task settings"
+  ]
+}

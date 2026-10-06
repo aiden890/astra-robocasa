@@ -3,10 +3,12 @@
 import json
 import subprocess
 import time
-from pathlib import Path
 
-ROOT = Path(__file__).resolve().parents[2]
-R = ROOT / ".runtime/multitask-20261006-v1"
+from astra_ops.common.paths import REPO_ROOT, RUNTIME_ROOT
+from astra_ops.common.runtime_io import write_json_atomic
+
+ROOT = REPO_ROOT
+R = RUNTIME_ROOT
 ASSETS = "/home/csi-agent-dgx_spark2/workspace/astra-assets-complete-20261006"
 BASE = "/home/csi-agent-dgx_spark2/workspace/astra-robocasa-20261006"
 NAMES = [f"astra-multitask-complete-assets-{i:02d}-20261006" for i in range(1, 5)]
@@ -141,9 +143,7 @@ def main():
         "validations": proofs,
         "time": time.time(),
     }
-    tmp = R / "asset-setup.tmp"
-    tmp.write_text(json.dumps(final, indent=2))
-    tmp.replace(R / "asset-setup.json")
+    write_json_atomic(R / "asset-setup.json", final)
 
 
 if __name__ == "__main__":

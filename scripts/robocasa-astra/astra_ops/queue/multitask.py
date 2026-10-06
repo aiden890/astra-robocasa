@@ -7,11 +7,12 @@ import time
 from pathlib import Path
 from typing import Any, TypedDict
 
-from publish_videos import publish
-from runtime_io import alive, write_json_atomic
+from astra_ops.common.paths import REPO_ROOT, RUNTIME_ROOT
+from astra_ops.common.runtime_io import alive, write_json_atomic
+from astra_ops.media.publish import publish
 
-ROOT = Path(__file__).resolve().parents[2]
-RUNTIME = ROOT / ".runtime/multitask-20261006-v1"
+ROOT = REPO_ROOT
+RUNTIME = RUNTIME_ROOT
 CONTAINERS = [
     "astra-robocasa-20261006",
     "astra-robocasa-parallel-03-20261006",

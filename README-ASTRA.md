@@ -5,8 +5,8 @@ adapter and a Codex subscription policy. See LICENSE for the upstream license.
 
 - Task runner: `scripts/robocasa-astra/run.sh`
 - Robot and simulator adapter: `plugins/inspect-robots-robocasa-astra/`
-- Task queue: `scripts/robocasa-astra/run_multitask_queue.py`
-- Task manifest: `scripts/robocasa-astra/multitask_tasks.json`
+- Task queue: `astra_ops.queue.multitask`
+- Task manifest: `scripts/robocasa-astra/config/multitask_tasks.json`
 - Setup and queue details: `docs/robocasa-astra-multitask.md`
 - Video board: `status-page/`
 
@@ -30,3 +30,22 @@ running on another machine. Runtime logs, recordings, model login credentials,
 private configuration and datasets are intentionally excluded from Git.
 
 Upstream: https://github.com/robocurve/inspect-robots
+
+## Code layout
+
+- `plugins/inspect-robots-robocasa-astra/src/robocasa_astra/`: policy, simulator bridge and runner.
+- `scripts/robocasa-astra/astra_ops/queue/`: persistent scheduling.
+- `scripts/robocasa-astra/astra_ops/assets/`: isolated asset preparation and activation.
+- `scripts/robocasa-astra/astra_ops/media/`: recording publication and board server.
+- `scripts/robocasa-astra/astra_ops/common/`: repository paths and atomic status writes.
+- `scripts/robocasa-astra/config/`: task manifest.
+- `scripts/robocasa-astra/tests/`: operational regression tests.
+- `status-page/`: static user interface.
+- `docs/robocasa-astra-storage.md`: recording storage ownership.
+
+Operational modules run with `PYTHONPATH=scripts/robocasa-astra python -m
+astra_ops.<group>.<module>`. Completed one-off recovery and scaling scripts were
+removed; their source remains in Git history. Generated recordings and evaluation receipts
+remain outside version control and are not removed during source cleanup.
+
+Run operational tests with `PYTHONPATH=scripts/robocasa-astra pytest scripts/robocasa-astra/tests`.

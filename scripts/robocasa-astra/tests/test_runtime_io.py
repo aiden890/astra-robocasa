@@ -5,8 +5,8 @@ import os
 from pathlib import Path
 
 import pytest
-import runtime_io
-from run_multitask_queue import build_run_command
+from astra_ops.common import runtime_io
+from astra_ops.queue.multitask import build_run_command
 
 
 def test_atomic_failure_preserves_previous_snapshot(tmp_path, monkeypatch):

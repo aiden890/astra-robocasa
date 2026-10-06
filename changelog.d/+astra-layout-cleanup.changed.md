@@ -1,0 +1,1 @@
+Group Astra operational code by queue, assets, media and shared utilities. Separate tests and task configuration; remove obsolete one-off scripts and replace flat command files with module entry points.

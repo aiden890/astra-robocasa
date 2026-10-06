@@ -5,15 +5,15 @@ tab stays empty. The video board supports robot/task/outcome filters, search,
 ten-row pagination, and a separate video player. Refreshing the catalog does
 not reload the player.
 
-`publish_videos.py` exports every synchronized post-action camera frame from
+`astra_ops.media.publish` exports every synchronized post-action camera frame from
 Inspect Robots' NPY sidecars at 20fps. No interpolation or snapshot repetition
 is used. Native control is configured and checked at 20Hz. Video duration is
 simulation time, excluding model latency. Original sidecars, actions, logs, and
 previous snapshot previews remain preserved.
 
-`run_full_queue.py` runs PandaOmron then GR1FloatingBody with a maximum of 1800
-steps each and native success termination. Existing output directories cannot
-be reused. The catalog refreshes every 15 seconds; completed/error trials have
+The persistent multi-task queue runs PandaOmron and GR1FloatingBody with the
+manifest's native step budgets and success termination. Existing output
+directories cannot be reused. The catalog refreshes every 15 seconds; completed/error trials have
 validated synchronized recordings exported automatically.
 
 Install imageio-ffmpeg into the private Lab runtime to encode recordings. Media

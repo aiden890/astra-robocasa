@@ -1,6 +1,6 @@
 """Check new containers can resolve retained asset links without changing live mounts."""
 
-import activate_multitask_assets as assets
+from astra_ops.assets import activate as assets
 
 
 def test_new_container_keeps_source_asset_links_read_only(monkeypatch):

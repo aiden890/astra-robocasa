@@ -9,6 +9,8 @@ from functools import partial
 from http.server import SimpleHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
 
+from astra_ops.common.runtime_io import write_json_atomic
+
 
 class BoardHandler(SimpleHTTPRequestHandler):
     """Keep raw recordings intact; store only recoverable visibility tombstones."""
@@ -80,9 +82,7 @@ class BoardHandler(SimpleHTTPRequestHandler):
                     }
                 )
             self.state_file.parent.mkdir(parents=True, exist_ok=True)
-            temporary = self.state_file.with_suffix(".tmp")
-            temporary.write_text(json.dumps(state, ensure_ascii=False, indent=2))
-            temporary.replace(self.state_file)
+            write_json_atomic(self.state_file, state)
             self.respond(200, state)
 
 
