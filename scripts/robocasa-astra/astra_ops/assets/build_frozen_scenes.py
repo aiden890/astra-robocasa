@@ -97,6 +97,8 @@ def main():
             results.append(result)
             print(json.dumps(result), flush=True)
     if args.diverse:
+        if len({row["asset_fingerprint"] for row in results}) != len(results):
+            raise ValueError("Duplicate asset composition across collection")
         for task in data["tasks"]:
             rows = [row for row in results if row["task"] == task]
             if len({(row["layout_id"], row["style_id"]) for row in rows}) != len(rows):
