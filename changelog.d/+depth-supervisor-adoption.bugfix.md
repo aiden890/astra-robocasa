@@ -1,0 +1,1 @@
+Recover the depth-study supervisor by adopting live trials with exact runtime, scene and condition process identity. A failed resource query now blocks new dispatch and retries instead of terminating supervision. Preserve original trial processes and unknown orphan exit statuses.

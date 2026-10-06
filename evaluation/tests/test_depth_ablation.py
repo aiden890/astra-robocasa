@@ -100,9 +100,39 @@ def test_summary_keeps_missing_token_fields_unknown():
     """A partial usage object cannot silently become a complete zero-token report."""
     from robocasa_common.depth_site import summarize_calls
 
-    summary = summarize_calls(
-        [{"cli_end_to_end_seconds": 2, "usage": {"input_tokens": 100}}]
-    )
+    summary = summarize_calls([{"cli_end_to_end_seconds": 2, "usage": {"input_tokens": 100}}])
     assert summary["reported_tokens"]["input_tokens"] == 100
     assert summary["reported_tokens"]["output_tokens"] is None
     assert summary["token_accounting_complete"] is False
+
+
+def test_adoption_checks_exact_runtime_scene_and_condition(tmp_path):
+    """A matching orphan is observed; unrelated or reused PIDs are never adopted."""
+    from robocasa_common.depth_study import AdoptedProcess
+
+    proc = tmp_path / "proc" / "123"
+    proc.mkdir(parents=True)
+    job = {"scene": "scene-one", "condition": "pixel"}
+    args = [
+        "python",
+        "-m",
+        "robocasa_common.depth_trial",
+        "--runtime",
+        str(tmp_path),
+        "--scene",
+        "scene-one",
+        "--condition",
+        "pixel",
+    ]
+    (proc / "cmdline").write_bytes("\0".join(args).encode())
+    (proc / "stat").write_text("123 (python) S 1")
+    adopted = AdoptedProcess(123, tmp_path, job, tmp_path / "proc")
+    assert adopted.poll() is None
+    assert adopted.returncode is None
+    args[-1] = "rgb"
+    (proc / "cmdline").write_bytes("\0".join(args).encode())
+    assert adopted.poll() is not None
+    args[-1] = "pixel"
+    (proc / "cmdline").write_bytes("\0".join(args).encode())
+    (proc / "stat").write_text("123 (python) Z 1")
+    assert adopted.poll() is not None

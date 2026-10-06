@@ -38,3 +38,8 @@ outside persistent per-step extras. A matching simulation-step identity is requi
 before a query or preview reads them. Exact queried float32 regions and their
 checksums are saved separately. This prevents whole-image depth arrays from
 accumulating in trial history; model inputs and query values are unchanged.
+
+A supervisor restart adopts live orphaned trials only when their process arguments
+match the exact runtime, scene and condition, and the PID is not a zombie. It never
+restarts those trials or assumes an unavailable original exit status. Failed resource
+queries enter a telemetry guard, block dispatch, publish the guarded state and retry.

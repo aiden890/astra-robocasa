@@ -35,6 +35,35 @@ def resource_sample():
     return remote
 
 
+class AdoptedProcess:
+    """Observe an orphaned trial by exact argv identity without restarting it."""
+
+    def __init__(self, pid, root, job, proc_root=Path("/proc")):
+        self.pid = pid
+        self.root = str(root)
+        self.job = job
+        self.proc_root = proc_root
+        self.returncode = None  # An orphan's original exit status is not available.
+
+    def poll(self):
+        """Treat PID reuse or a zombie as ended; never signal the process."""
+        try:
+            args = (self.proc_root / str(self.pid) / "cmdline").read_bytes().decode().split("\0")
+            if "robocasa_common.depth_trial" not in args:
+                return 1
+            for flag, value in (
+                ("--runtime", self.root),
+                ("--scene", self.job["scene"]),
+                ("--condition", self.job["condition"]),
+            ):
+                if flag not in args or args[args.index(flag) + 1] != value:
+                    return 1
+            stat = (self.proc_root / str(self.pid) / "stat").read_text()
+            return 1 if stat.rsplit(") ", 1)[1].startswith("Z") else None
+        except (OSError, ValueError, IndexError):
+            return 1
+
+
 def main():
     """Adopt only terminal receipts; preserve partial output rather than rerolling it."""
     parser = argparse.ArgumentParser()
@@ -49,6 +78,10 @@ def main():
     proof = json.loads((root / "preflight.json").read_text())
     if not proof.get("passed"):
         raise RuntimeError("Native depth and actual model-call preflight has not passed")
+    previous = (
+        json.loads((root / "status.json").read_text()) if (root / "status.json").exists() else {}
+    )
+    prior_active = {item["id"]: item for item in previous.get("active", [])}
     jobs = plan["jobs"]
     active, finished, logs = {}, {}, {}
     # Do not overlap the Xiaomi learner GPU server; the first pass plus repair is the gate.
@@ -81,23 +114,33 @@ def main():
         )
         time.sleep(20)
     # Completed, project-owned baseline containers only; results and model files remain.
-    subprocess.run(
-        [
-            "ssh",
-            "spark2",
-            "docker",
-            "stop",
-            "xiaomi-common-scenes-model-20261007",
-            "xiaomi-common-scenes-sim-20261007",
-        ],
-        check=True,
-    )
+    if not prior_active:
+        subprocess.run(
+            [
+                "ssh",
+                "spark2",
+                "docker",
+                "stop",
+                "xiaomi-common-scenes-model-20261007",
+                "xiaomi-common-scenes-sim-20261007",
+            ],
+            check=True,
+        )
     slots = [f"astra-depth-medium-{i:02d}-20261007" for i in range(1, 33)]
     free = slots.copy()
     for job in jobs:
         folder = root / "results" / job["condition"] / job["scene"]
         result = folder / "result.json"
-        if result.exists():
+        old = prior_active.get(job["id"])
+        adopted = AdoptedProcess(old["pid"], root, job) if old else None
+        if adopted is not None and adopted.poll() is None:
+            slot = old["container"]
+            if slot not in free:
+                raise ValueError("Previously active trials share an invalid slot")
+            free.remove(slot)
+            active[job["id"]] = (adopted, slot, job)
+            logs[job["id"]] = (root / "logs" / (job["id"] + ".log")).open("a")
+        elif result.exists():
             finished[job["id"]] = json.loads(result.read_text())
         elif folder.exists():
             finished[job["id"]] = {
@@ -105,8 +148,20 @@ def main():
                 "task_success": None,
                 "error": "Partial trial retained; no automatic reroll",
             }
-    pending = [j for j in jobs if j["id"] not in finished]
-    limit, last_ramp, started = 8, time.monotonic(), time.time()
+    pending = [j for j in jobs if j["id"] not in finished and j["id"] not in active]
+    limit = max(1, previous.get("parallel_limit", 8)) if prior_active else 8
+    last_ramp, started = time.monotonic(), previous.get("started_at", time.time())
+    atomic_json(
+        root / "adoption-receipt.json",
+        {
+            "time": time.time(),
+            "adopted": [
+                {"id": identity, "pid": item[0].pid, "container": item[1]}
+                for identity, item in active.items()
+            ],
+            "restarted_trials": 0,
+        },
+    )
     while pending or active:
         for identity, (process, slot, job) in list(active.items()):
             if process.poll() is None:
@@ -128,7 +183,46 @@ def main():
             logs.pop(identity).close()
             active.pop(identity)
             free.append(slot)
-        sample = resource_sample()
+        try:
+            sample = resource_sample()
+        except (subprocess.SubprocessError, OSError, ValueError) as error:
+            limit = 1
+            atomic_json(
+                root / "telemetry-error.json",
+                {"time": time.time(), "error": str(error), "dispatch_blocked": True},
+            )
+            atomic_json(
+                root / "status.json",
+                {
+                    "phase": "telemetry_guard",
+                    "expected": len(jobs),
+                    "finished": len(finished),
+                    "results": finished,
+                    "active": [
+                        {"id": i, "pid": v[0].pid, "container": v[1]} for i, v in active.items()
+                    ],
+                    "parallel_limit": limit,
+                    "pending": len(pending),
+                    "started_at": started,
+                    "model": "gpt-6-astra",
+                    "effort": "medium",
+                },
+            )
+            subprocess.run(
+                [
+                    sys.executable,
+                    "-m",
+                    "robocasa_common.depth_site",
+                    "--runtime",
+                    str(root),
+                    "--site-root",
+                    args.site_root,
+                ],
+                check=False,
+            )
+            time.sleep(20)
+            continue
+
         sample.update(
             time=time.time(),
             active=len(active),
