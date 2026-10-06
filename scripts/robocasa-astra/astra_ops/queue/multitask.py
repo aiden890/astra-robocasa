@@ -71,13 +71,17 @@ def build_run_command(job: RunSpec, container: str, output: Path) -> list[str]:
         "--container",
         container,
         "--worker-script",
-        "/tmp/astra-depth-{}/robocasa_astra/worker.py".format(job["seed"]),
+        job.get(
+            "frozen_worker_path", "/tmp/astra-depth-{}/robocasa_astra/worker.py".format(job["seed"])
+        ),
         "--worker-pythonpath",
-        "/tmp/astra-depth-{}".format(job["seed"]),
+        job.get("frozen_worker_pythonpath", "/tmp/astra-depth-{}".format(job["seed"])),
         "--native-scene",
         "--output",
         str(output),
     ]
+    if job.get("frozen_scene"):
+        command += ["--frozen-scene", job["frozen_scene"]]
     if job["robot"] == "GR1FloatingBody":
         command.append("--face-workstation")
     return command

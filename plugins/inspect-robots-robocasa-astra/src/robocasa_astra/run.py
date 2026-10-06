@@ -25,6 +25,7 @@ def main():
     parser.add_argument(
         "--worker-pythonpath", default="/astra/src:/astra/plugins/inspect-robots-robocasa-astra/src"
     )
+    parser.add_argument("--frozen-scene", help="Scene directory mounted inside the simulator")
     parser.add_argument("--steps", type=int, default=1800)
     parser.add_argument("--seed", type=int, default=771001)
     parser.add_argument("--output", required=True)
@@ -65,6 +66,10 @@ def main():
     command += ["--horizon", str(args.steps)]
     if args.depth:
         command.append("--depth")
+    if args.frozen_scene:
+        location = command.index("PYTHONPATH=" + args.worker_pythonpath)
+        command[location] = "PYTHONPATH=/frozen-code:" + args.worker_pythonpath
+        command += ["--frozen-scene", args.frozen_scene]
     if args.face_workstation:
         command += ["--face-workstation"]
     if args.robot == "PandaOmron" and args.task == "PrepareCoffee" and not args.native_scene:

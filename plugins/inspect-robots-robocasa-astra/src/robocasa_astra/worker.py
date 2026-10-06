@@ -57,11 +57,14 @@ class Simulator:
         horizon=1800,
         face_workstation=False,
         depth=False,
+        frozen_scene=None,
     ):
         self.robot, self.task = robot, task
         self.fixture, self.placement = fixture, placement
         self.horizon, self.face_workstation = horizon, face_workstation
         self.depth = depth
+        self.frozen_scene = frozen_scene
+        self.frozen_scene_receipt = None
         self.initial_alignment = None
         self.env = None
         self.steps = 0
@@ -144,6 +147,11 @@ class Simulator:
                 horizon=self.horizon,
             )
             self.env.reset()
+        frozen_manifest = None
+        if self.frozen_scene:
+            from robocasa_astra.frozen_scene import restore_scene
+
+            frozen_manifest = restore_scene(self, self.frozen_scene, seed)
         if self.face_workstation and self.robot == "GR1FloatingBody":
             self.align_workstation()
         if self.env.control_freq != 20:
@@ -151,7 +159,14 @@ class Simulator:
         self.steps, self.streak = 0, 0
         robot = self.env.robots[0]
         self.parts = {key: list(value) for key, value in robot._action_split_indexes.items()}
-        return self.observe()
+        observation = self.observe()
+        if frozen_manifest:
+            from robocasa_astra.frozen_scene import image_hashes
+
+            self.frozen_scene_receipt["initial_images_exact"] = (
+                image_hashes(observation) == frozen_manifest["initial_images"]
+            )
+        return observation
 
     def align_workstation(self):
         """Face the native task fixture and preserve collision-free starting clearance."""
@@ -285,6 +300,7 @@ class Simulator:
             "instruction": env.get_ep_meta().get("lang", self.task),
             "horizon": self.horizon,
             "initial_alignment": self.initial_alignment,
+            "frozen_scene": self.frozen_scene_receipt,
             "native_task_success": success,
             "placement_success": placement_success,
             "success": placement_success if self.placement else success,
@@ -325,6 +341,7 @@ def main():
     parser.add_argument("--robot", default="PandaOmron")
     parser.add_argument("--task", default="PrepareCoffee")
     parser.add_argument("--fixture")
+    parser.add_argument("--frozen-scene")
     parser.add_argument("--horizon", type=int, default=1800)
     parser.add_argument("--face-workstation", action="store_true")
     parser.add_argument("--placement", action="store_true")
@@ -339,6 +356,7 @@ def main():
             args.horizon,
             args.face_workstation,
             args.depth,
+            args.frozen_scene,
         )
     for line in sys.stdin:
         try:

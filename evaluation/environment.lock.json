@@ -1,0 +1,20 @@
+{
+  "platform": "aarch64",
+  "python": "3.12.3",
+  "packages": {
+    "numpy": "2.2.5",
+    "mujoco": "3.3.1",
+    "robosuite": "1.5.2",
+    "robocasa": "1.0.1",
+    "Pillow": "11.3.0"
+  },
+  "source_files": {
+    "/opt/robocasa/robocasa/utils/env_utils.py": "2543d593897008b104c0fa7bb83c987675b4e583ae519b324de98f99c71a5fcd",
+    "/opt/robosuite/robosuite/utils/binding_utils.py": "a3d2526fb2e60875e2c3a87b8828b8e3b512781708c80d0c96ee6024980896c8"
+  },
+  "renderer": "EGL",
+  "control_hz": 20,
+  "robot": "PandaOmron",
+  "image_id": "sha256:3a0ee2351215ead902ce920e1600e8b97a63fb2435987e033be413280dae3dd3",
+  "image_tag": "rlinf-mibot:spark-a4ee4562"
+}

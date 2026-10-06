@@ -38,3 +38,22 @@ def test_branch_worker_process_blocks_container_lease(monkeypatch):
         ),
     )
     assert not multitask.container_idle("test-container")
+
+
+def test_frozen_scene_keeps_worker_and_pythonpath_overrides(tmp_path):
+    """A frozen scene can use the mounted worker while retaining branch-local transport."""
+    from astra_ops.queue.multitask import build_run_command
+
+    job = {
+        "task": "PrepareCoffee",
+        "robot": "PandaOmron",
+        "seed": 8806552,
+        "max_steps": 1800,
+        "frozen_scene": "/scene-bundles/scenes/PrepareCoffee-8806552",
+        "frozen_worker_path": "/frozen-code/robocasa_astra/worker.py",
+        "frozen_worker_pythonpath": "/frozen-code:/astra/src",
+    }
+    command = build_run_command(job, "test-container", tmp_path)
+    assert command[command.index("--worker-script") + 1] == job["frozen_worker_path"]
+    assert command[command.index("--worker-pythonpath") + 1] == job["frozen_worker_pythonpath"]
+    assert command[command.index("--frozen-scene") + 1] == job["frozen_scene"]
