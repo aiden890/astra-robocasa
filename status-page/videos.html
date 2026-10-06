@@ -17,7 +17,7 @@
   </nav>
 </header>
 <main id="content" class="wrap" aria-label="롤아웃 영상 게시판">
-<h1>영상 주제</h1>
+<div class="board-heading"><div><span class="section-kicker">RESEARCH LOG</span><h1>영상 게시판</h1></div><button id="open-trash" class="secondary-button">휴지통</button></div>
 <p class="dim">주제별로 실험 목적과 관련 영상을 모았습니다. 주제를 선택하면 여러 로봇과 실행의 영상을 한 페이지에서 볼 수 있습니다.</p>
 <div class="card filters">
 <label for="category">분류 <select id="category"><option value="">전체</option></select></label>
@@ -28,9 +28,12 @@
 <label class="search">검색 <input id="search" type="search" placeholder="주제, 설명, 태그, 로봇, 실행 이름 검색"></label>
 </div>
 <p id="count" class="dim" aria-live="polite">목록을 불러오는 중입니다.</p>
-<div class="card board"><table><thead><tr><th>번호</th><th>주제 / 설명</th><th>분류 · 태스크</th><th>로봇</th><th>결과</th><th>영상 / 실행</th><th>등록일</th></tr></thead><tbody id="rows"></tbody></table></div>
+<div class="card board"><table><thead><tr><th>번호</th><th>제목</th><th>분류 · 태스크</th><th>로봇</th><th>결과</th><th>영상 / 실행</th><th>등록일</th><th>관리</th></tr></thead><tbody id="rows"></tbody></table></div>
 <div class="pagination"><button id="prev">이전</button><span id="page"></span><button id="next">다음</button></div>
 
+<p id="notice" class="board-notice" role="status"></p>
+<dialog id="trash"><div class="board-heading"><h2>휴지통</h2><button id="close-trash" class="secondary-button">닫기</button></div><p class="dim">삭제한 게시글과 영상은 여기서 복원할 수 있습니다.</p><div id="trash-list"></div></dialog>
+<script src="assets/board.js"></script>
 <script src="assets/topics.js"></script>
 <script src="assets/videos.js"></script>
 </main>

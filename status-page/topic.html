@@ -17,7 +17,8 @@
   </nav>
 </header>
 <main id="content" class="wrap" aria-label="주제별 영상 페이지">
-<a class="back-link" href="videos.html">← 영상 주제 목록</a>
+<div class="board-heading"><a class="back-link" href="videos.html">← 게시판 목록</a><button id="delete-topic" class="delete-button">게시글 삭제</button></div>
+<span class="section-kicker">RESEARCH NOTE</span>
 <h1 id="topic-title">주제를 불러오는 중입니다.</h1>
 <p id="topic-description"></p>
 <div id="topic-meta" class="topic-meta"></div>
@@ -26,6 +27,8 @@
 <div class="card filters"><label>로봇 <select id="detail-robot"><option value="">전체</option></select></label><label>결과 <select id="detail-status"><option value="">전체</option><option>진행 중</option><option>성공</option><option>미성공</option><option>오류</option></select></label></div>
 <p id="detail-count" class="dim" aria-live="polite"></p>
 <div id="video-list" class="topic-videos"></div>
+<p id="notice" class="board-notice" role="status"></p>
+<script src="assets/board.js"></script>
 <script src="assets/topics.js"></script>
 <script src="assets/topic.js"></script>
 </main>
