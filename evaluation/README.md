@@ -65,6 +65,24 @@ The scene identity is its manifest SHA256. Keep the archive separate from Git an
 
 ## Download the fixed scene set
 
+[GitHub release: common scenes v2](https://github.com/aiden890/astra-robocasa/releases/tag/common-scenes-diverse-v2-20261006)
+provides eight archive parts and `common-scenes-manifest.json` without requiring lab network access.
+Download all `.part-01` through `.part-08` files into one directory from the release Assets,
+or use GitHub CLI:
+
+```bash
+gh release download common-scenes-diverse-v2-20261006 \
+  --repo aiden890/astra-robocasa --pattern '*.part-*' --pattern 'common-scenes-manifest.json'
+cat common-eval-panda-diverse-scenes-20261006.tar.gz.part-* > common-eval-panda-diverse-scenes-20261006.tar.gz
+```
+
+Check the assembled archive against the SHA256 below before extracting it. macOS users can
+use `shasum -a 256` in place of `sha256sum`. The manifest also records a checksum for each part.
+Reserve space for both downloaded parts and the assembled archive before extraction.
+Scene data is stored as release assets, separate from Git source history.
+
+The following single-file mirror is available on the lab network:
+
 [Scene archive (3.97 GB)](http://100.86.183.64:8906/media/common-eval-panda-diverse-scenes-20261006.tar.gz)
 contains the fifty initial snapshots and their required asset/model blobs.
 [Archive checksum](http://100.86.183.64:8906/media/common-eval-panda-diverse-scenes-20261006.json)
@@ -111,3 +129,38 @@ Completed snapshots are immutable. Failed attempts remain separate from the shar
 All 50 new snapshots passed independent physical restoration. Initial encoded camera images
 matched in 40 snapshots; the other 10 retain pixel disagreement as a diagnostic.
 See `verification.json` for task-level diversity counts and the archive checksum.
+
+## Google Drive download
+
+[Google Drive scene folder](https://drive.google.com/drive/folders/1FCVou9qSQvClCIEWYoZ6Nn8w0dDgzHRj)
+contains the same archive as 60 parts, plus `README.txt` and `drive-manifest.json`.
+Request folder access if needed, or use the public GitHub release above.
+Download all parts into one directory and follow `README.txt`:
+
+```bash
+cat common-scenes.tar.gz.part-* > common-scenes.tar.gz
+shasum -a 256 common-scenes.tar.gz
+tar -xzf common-scenes.tar.gz
+```
+
+The complete archive checksum is
+`405502b8d3c52b375f2874cbba4173536b9b73e5106ef165c59aaed5aeafd8b4`.
+Do not mix the 60 Drive parts with the 8 GitHub release parts.
+Only evaluation code needs Git; scene files can be shared through Drive.
+
+## Xiaomi baseline
+
+`robocasa_common.xiaomi:create_policy` uses the official
+`XiaomiRobotics/Xiaomi-Robotics-1-RoboCasa365` checkpoint and inference client.
+It matches the official 14D robot state, three cameras, four observations spaced
+two actual steps apart, 0.95 crop, and first 16 actions per inference at 20 Hz.
+The simulator remains responsible for native full-task success.
+
+`xiaomi_queue.py` runs each immutable scene once, preserves error receipts, and
+keeps execution errors separate from normally completed unsuccessful tasks.
+The client applies the native controller input saturation to continuous axes only.
+Original model commands and saturation counts remain in every response receipt.
+Gripper and hybrid mode retain the official 0.5 thresholds. Early attempts using
+the previous strict bounds profile remain separate, unscored execution errors.
+`xiaomi_publish.py` verifies actual 20 fps video dimensions and HTTP availability
+before adding completed evaluation videos to the board.
