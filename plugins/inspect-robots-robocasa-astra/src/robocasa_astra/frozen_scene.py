@@ -61,6 +61,13 @@ def save_model_arrays(arrays, folder, checksums, filename="model-arrays.json"):
 
 def export_scene(simulator, root, seed, rollout_seed):
     """Save one immutable initial state and deduplicate all referenced XML assets."""
+    # Synchronize derived kinematics after the task's native reset and before saving.
+    # Controller initialization can otherwise reveal stale fixture/camera transforms.
+    for controller in simulator.env.robots[0].part_controllers.values():
+        controller.update(force=True)
+        controller.reset_goal()
+    simulator.env.sim.forward()
+    observation = simulator.observe()
     root = Path(root)
     folder = root / "scenes" / f"{simulator.task}-{rollout_seed}"
     folder.mkdir(parents=True, exist_ok=False)
@@ -160,7 +167,6 @@ def export_scene(simulator, root, seed, rollout_seed):
         "episode-meta.json",
     ):
         checksums[name] = sha256(folder / name)
-    observation = simulator.observe()
     manifest = {
         "schema": 1,
         "task": simulator.task,
