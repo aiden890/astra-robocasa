@@ -1,0 +1,22 @@
+{
+  "episodes": 50,
+  "robot": "PandaOmron",
+  "initial_state_exact": 50,
+  "compiled_model_exact": 50,
+  "world_geometry_exact": 50,
+  "initial_images_exact": 29,
+  "pixel_disagreement": 21,
+  "native_worker_smoke_tasks": [
+    "PrepareCoffee",
+    "PanTransfer"
+  ],
+  "native_smoke_steps_per_task": 2,
+  "model_calls_in_smoke": 0,
+  "scoped_tests_passed": 24,
+  "core_tests_passed": 2089,
+  "core_tests_skipped": 6,
+  "core_coverage_percent": 100,
+  "whole_repo_checks": "Pre-existing Ruff/mypy failures retained",
+  "archive_bytes": 2093233887,
+  "archive_sha256": "17c228bd779d448c2090dcff56a424899e08a2c6c8e5b5a636ed349dc147a220"
+}
