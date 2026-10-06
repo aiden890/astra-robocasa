@@ -80,7 +80,6 @@ class Simulator:
                 seed=seed,
                 control_freq=20,
                 horizon=1800,
-                ignore_done=True,
             )
             self.env = robosuite.make(**kwargs)
             xml = ET.fromstring(gzip.decompress((folder / "model.xml.gz").read_bytes()).decode())
@@ -122,7 +121,6 @@ class Simulator:
                 generative_textures=None,
                 control_freq=20,
                 horizon=1800,
-                ignore_done=True,
             )
             self.env.reset()
         if self.env.control_freq != 20:

@@ -21,6 +21,7 @@ def main():
     parser.add_argument("--steps", type=int, default=1800)
     parser.add_argument("--seed", type=int, default=771001)
     parser.add_argument("--output", required=True)
+    parser.add_argument("--container", default="astra-robocasa-20261006")
     parser.add_argument("--codex", required=True)
     parser.add_argument("--codex-home", required=True)
     parser.add_argument("--model", default="gpt-6-astra")
@@ -41,7 +42,7 @@ def main():
         "-i",
         "-e",
         "PYTHONPATH=/astra/src:/astra/plugins/inspect-robots-robocasa-astra/src",
-        "astra-robocasa-20261006",
+        args.container,
         "python3",
         "-m",
         "robocasa_astra.worker",
