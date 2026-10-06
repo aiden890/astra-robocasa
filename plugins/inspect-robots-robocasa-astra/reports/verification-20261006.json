@@ -1,0 +1,85 @@
+{
+  "date": "2026-10-06",
+  "framework": "Inspect Robots",
+  "upstream_commit": "d08442a9d1f43af4658c8d71e02d461e780286e1",
+  "model": "gpt-6-astra",
+  "authentication": "ChatGPT subscription",
+  "training_started": false,
+  "lab_repository": "/home/aiden/Desktop/lab/robot/astra-robocasa",
+  "spark_container": "astra-robocasa-20261006",
+  "runs": [
+    {
+      "name": "panda-astra-smoke-001",
+      "framework_status": "success",
+      "metrics": {
+        "success_at_end": 0.0
+      },
+      "actual_steps": 8,
+      "duration_s": 27.190901088993996,
+      "mean_inference_latency_s": 10.428626412991434,
+      "model_calls": 2,
+      "path": "/home/aiden/Desktop/lab/robot/astra-robocasa/runs/panda-astra-smoke-001",
+      "robot": "PandaOmron"
+    },
+    {
+      "name": "panda-full-astra-smoke-001",
+      "framework_status": "success",
+      "metrics": {
+        "success_at_end": 0.0
+      },
+      "actual_steps": 4,
+      "duration_s": 14.615369082894176,
+      "mean_inference_latency_s": 8.47554726479575,
+      "model_calls": 1,
+      "path": "/home/aiden/Desktop/lab/robot/astra-robocasa/runs/panda-full-astra-smoke-001",
+      "robot": "PandaOmron"
+    },
+    {
+      "name": "gr1-astra-smoke-001",
+      "framework_status": "success",
+      "metrics": {
+        "success_at_end": 0.0
+      },
+      "actual_steps": 4,
+      "duration_s": 12.434701682068408,
+      "mean_inference_latency_s": 8.875991125125438,
+      "model_calls": 1,
+      "path": "/home/aiden/Desktop/lab/robot/astra-robocasa/runs/gr1-astra-smoke-001",
+      "robot": "GR1FloatingBody"
+    },
+    {
+      "name": "panda-coffee-64-001",
+      "framework_status": "success",
+      "metrics": {
+        "success_at_end": 0.0
+      },
+      "actual_steps": 64,
+      "duration_s": 197.46466798102483,
+      "mean_inference_latency_s": 10.308574147108528,
+      "model_calls": 18,
+      "path": "/home/aiden/Desktop/lab/robot/astra-robocasa/runs/panda-coffee-64-001",
+      "robot": "PandaOmron"
+    },
+    {
+      "name": "gr1-coffee-64-001",
+      "framework_status": "success",
+      "metrics": {
+        "success_at_end": 0.0
+      },
+      "actual_steps": 64,
+      "duration_s": 133.53020029421896,
+      "mean_inference_latency_s": 9.384313837231065,
+      "model_calls": 13,
+      "path": "/home/aiden/Desktop/lab/robot/astra-robocasa/runs/gr1-coffee-64-001",
+      "robot": "GR1FloatingBody"
+    }
+  ],
+  "upstream_core_unchanged": true,
+  "plugin_source_sha256": {
+    "plugins/inspect-robots-robocasa-astra/src/robocasa_astra/__init__.py": "f10eb1f137fa1e3345742a9feeb659706dd4e3eafd4da9f8146c0593533117af",
+    "plugins/inspect-robots-robocasa-astra/src/robocasa_astra/worker.py": "8e7b8331fa2558614b6641f1b0eed11d6d257a86a74e348bf773e69db7cdbba0",
+    "plugins/inspect-robots-robocasa-astra/src/robocasa_astra/run.py": "5072af587d3d55f7abbdaab07332d8e25d50bb4b33a9c3f6c0d96865fe3f5244",
+    "plugins/inspect-robots-robocasa-astra/src/robocasa_astra/bridge.py": "fe1a699e119988f5f48d0329bbe58ea08602d136cf997aca1895229d4f0e6830",
+    "plugins/inspect-robots-robocasa-astra/src/robocasa_astra/policy.py": "4c0596aaac8540df0f370038c255f475033720542b5b4fef0236054391f54762"
+  }
+}

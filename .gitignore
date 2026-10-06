@@ -227,3 +227,7 @@ __marimo__/
 # control; share them as release assets or external storage instead.
 logs/
 *.rrd
+
+# Local RoboCasa Astra experiment credentials and generated artifacts
+.runtime/
+runs/
