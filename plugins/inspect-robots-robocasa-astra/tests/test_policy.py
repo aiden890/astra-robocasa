@@ -72,6 +72,7 @@ def test_codex_uses_subscription_and_tool_isolation(tmp_path, monkeypatch):
     assert "OPENAI_API_KEY" not in captured["env"]
     assert "CODEX_API_KEY" not in captured["env"]
     assert captured["command"][captured["command"].index("-m") + 1] == "gpt-6-astra"
+    assert "model_reasoning_effort=\"low\"" in captured["command"]
     assert "features.shell_tool=false" in captured["command"]
     assert "features.plugins=false" in captured["command"]
     assert "project_doc_max_bytes=0" in captured["command"]
