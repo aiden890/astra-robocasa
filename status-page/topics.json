@@ -1,10 +1,10 @@
 [
   {
-    "id": "common-initial-preparecoffee",
-    "title": "PrepareCoffee · 다양한 공통 평가 씬 초기 이미지 10개",
+    "id": "common-initial-scenes",
+    "title": "공통 평가 씬 · 5개 태스크 초기 이미지 50개",
     "category": "평가 환경 · 초기 이미지",
     "description": "같은 PandaOmron 로봇으로 평가할 고정 씬입니다. 태스크별 레이아웃 1~10 및 스타일 1~10을 다르게 지정했고 실제 에셋 구성 해시도 모두 다릅니다. 왼쪽 → 오른쪽 → 손목 카메라 순서이며 행동 실행 전의 초기 관측입니다. 각 이미지에 평가용 시드와 씬 ID를 표시했습니다. 초기 물체·카메라 좌표는 고정되지만 렌더링 픽셀의 완전한 일치는 보장하지 않습니다.",
-    "task": "PrepareCoffee",
+    "task": "5개 태스크",
     "model": "모델 호출 없음",
     "environment": "Spark2 · RoboCasa · PandaOmron",
     "date": "2026-10-06",
@@ -12,7 +12,8 @@
       "공통 평가",
       "초기 이미지",
       "고정 씬",
-      "10개 시드"
+      "5개 태스크",
+      "50개 시드"
     ],
     "run_ids": [
       "diverse-initial-PrepareCoffee-8806552",
@@ -24,25 +25,7 @@
       "diverse-initial-PrepareCoffee-8114271",
       "diverse-initial-PrepareCoffee-8009960",
       "diverse-initial-PrepareCoffee-8246297",
-      "diverse-initial-PrepareCoffee-8530539"
-    ]
-  },
-  {
-    "id": "common-initial-pantransfer",
-    "title": "PanTransfer · 다양한 공통 평가 씬 초기 이미지 10개",
-    "category": "평가 환경 · 초기 이미지",
-    "description": "같은 PandaOmron 로봇으로 평가할 고정 씬입니다. 태스크별 레이아웃 1~10 및 스타일 1~10을 다르게 지정했고 실제 에셋 구성 해시도 모두 다릅니다. 왼쪽 → 오른쪽 → 손목 카메라 순서이며 행동 실행 전의 초기 관측입니다. 각 이미지에 평가용 시드와 씬 ID를 표시했습니다. 초기 물체·카메라 좌표는 고정되지만 렌더링 픽셀의 완전한 일치는 보장하지 않습니다.",
-    "task": "PanTransfer",
-    "model": "모델 호출 없음",
-    "environment": "Spark2 · RoboCasa · PandaOmron",
-    "date": "2026-10-06",
-    "tags": [
-      "공통 평가",
-      "초기 이미지",
-      "고정 씬",
-      "10개 시드"
-    ],
-    "run_ids": [
+      "diverse-initial-PrepareCoffee-8530539",
       "diverse-initial-PanTransfer-8991090",
       "diverse-initial-PanTransfer-8964791",
       "diverse-initial-PanTransfer-8845002",
@@ -52,25 +35,7 @@
       "diverse-initial-PanTransfer-8666558",
       "diverse-initial-PanTransfer-8483621",
       "diverse-initial-PanTransfer-8938970",
-      "diverse-initial-PanTransfer-8527274"
-    ]
-  },
-  {
-    "id": "common-initial-opencabinet",
-    "title": "OpenCabinet · 다양한 공통 평가 씬 초기 이미지 10개",
-    "category": "평가 환경 · 초기 이미지",
-    "description": "같은 PandaOmron 로봇으로 평가할 고정 씬입니다. 태스크별 레이아웃 1~10 및 스타일 1~10을 다르게 지정했고 실제 에셋 구성 해시도 모두 다릅니다. 왼쪽 → 오른쪽 → 손목 카메라 순서이며 행동 실행 전의 초기 관측입니다. 각 이미지에 평가용 시드와 씬 ID를 표시했습니다. 초기 물체·카메라 좌표는 고정되지만 렌더링 픽셀의 완전한 일치는 보장하지 않습니다.",
-    "task": "OpenCabinet",
-    "model": "모델 호출 없음",
-    "environment": "Spark2 · RoboCasa · PandaOmron",
-    "date": "2026-10-06",
-    "tags": [
-      "공통 평가",
-      "초기 이미지",
-      "고정 씬",
-      "10개 시드"
-    ],
-    "run_ids": [
+      "diverse-initial-PanTransfer-8527274",
       "diverse-initial-OpenCabinet-8106356",
       "diverse-initial-OpenCabinet-8205459",
       "diverse-initial-OpenCabinet-8542224",
@@ -80,25 +45,7 @@
       "diverse-initial-OpenCabinet-8727872",
       "diverse-initial-OpenCabinet-8065184",
       "diverse-initial-OpenCabinet-8358361",
-      "diverse-initial-OpenCabinet-8367873"
-    ]
-  },
-  {
-    "id": "common-initial-pickplacesinktocounter",
-    "title": "PickPlaceSinkToCounter · 다양한 공통 평가 씬 초기 이미지 10개",
-    "category": "평가 환경 · 초기 이미지",
-    "description": "같은 PandaOmron 로봇으로 평가할 고정 씬입니다. 태스크별 레이아웃 1~10 및 스타일 1~10을 다르게 지정했고 실제 에셋 구성 해시도 모두 다릅니다. 왼쪽 → 오른쪽 → 손목 카메라 순서이며 행동 실행 전의 초기 관측입니다. 각 이미지에 평가용 시드와 씬 ID를 표시했습니다. 초기 물체·카메라 좌표는 고정되지만 렌더링 픽셀의 완전한 일치는 보장하지 않습니다.",
-    "task": "PickPlaceSinkToCounter",
-    "model": "모델 호출 없음",
-    "environment": "Spark2 · RoboCasa · PandaOmron",
-    "date": "2026-10-06",
-    "tags": [
-      "공통 평가",
-      "초기 이미지",
-      "고정 씬",
-      "10개 시드"
-    ],
-    "run_ids": [
+      "diverse-initial-OpenCabinet-8367873",
       "diverse-initial-PickPlaceSinkToCounter-8410431",
       "diverse-initial-PickPlaceSinkToCounter-8360874",
       "diverse-initial-PickPlaceSinkToCounter-8853038",
@@ -108,25 +55,7 @@
       "diverse-initial-PickPlaceSinkToCounter-8147758",
       "diverse-initial-PickPlaceSinkToCounter-8880498",
       "diverse-initial-PickPlaceSinkToCounter-8020512",
-      "diverse-initial-PickPlaceSinkToCounter-8740893"
-    ]
-  },
-  {
-    "id": "common-initial-stirvegetables",
-    "title": "StirVegetables · 다양한 공통 평가 씬 초기 이미지 10개",
-    "category": "평가 환경 · 초기 이미지",
-    "description": "같은 PandaOmron 로봇으로 평가할 고정 씬입니다. 태스크별 레이아웃 1~10 및 스타일 1~10을 다르게 지정했고 실제 에셋 구성 해시도 모두 다릅니다. 왼쪽 → 오른쪽 → 손목 카메라 순서이며 행동 실행 전의 초기 관측입니다. 각 이미지에 평가용 시드와 씬 ID를 표시했습니다. 초기 물체·카메라 좌표는 고정되지만 렌더링 픽셀의 완전한 일치는 보장하지 않습니다.",
-    "task": "StirVegetables",
-    "model": "모델 호출 없음",
-    "environment": "Spark2 · RoboCasa · PandaOmron",
-    "date": "2026-10-06",
-    "tags": [
-      "공통 평가",
-      "초기 이미지",
-      "고정 씬",
-      "10개 시드"
-    ],
-    "run_ids": [
+      "diverse-initial-PickPlaceSinkToCounter-8740893",
       "diverse-initial-StirVegetables-8135354",
       "diverse-initial-StirVegetables-8115047",
       "diverse-initial-StirVegetables-8739883",
@@ -137,6 +66,13 @@
       "diverse-initial-StirVegetables-8219143",
       "diverse-initial-StirVegetables-8126237",
       "diverse-initial-StirVegetables-8719656"
+    ],
+    "aliases": [
+      "common-initial-preparecoffee",
+      "common-initial-pantransfer",
+      "common-initial-opencabinet",
+      "common-initial-pickplacesinktocounter",
+      "common-initial-stirvegetables"
     ]
   },
   {
