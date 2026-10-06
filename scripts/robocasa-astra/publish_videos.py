@@ -16,7 +16,12 @@ def publish(repo):
     media = repo / "status-page/media"
     media.mkdir(exist_ok=True)
     records = []
-    for run in sorted((repo / "runs").glob("*-coffee-*-*")):
+    plan_path = repo / ".runtime/multitask-20261006-v1/plan.json"
+    planned = json.loads(plan_path.read_text())["jobs"] if plan_path.exists() else []
+    requests = {row["id"]: row for row in planned}
+    for run in sorted((repo / "runs").iterdir()):
+        if not run.is_dir():
+            continue
         logs = list((run / "eval").glob("*.json"))
         frame_files = sorted((run / "eval/frames").glob("*/*.npy"))
         frames = {}
@@ -28,7 +33,16 @@ def publish(repo):
         status = "진행 중"
         steps = max(frames, default=0)
         max_steps = 1800 if "1800" in run.name else 64
-        task = "PrepareCoffee"
+        request = requests.get(run.name, {})
+        task = request.get("task", "PrepareCoffee")
+        max_steps = request.get("max_steps", max_steps)
+        environment = run / "environment.json"
+        alignment = None
+        if environment.exists():
+            docs = json.loads(json.loads(environment.read_text())["docs"])
+            task = docs.get("task", task)
+            max_steps = docs.get("horizon", max_steps)
+            alignment = docs.get("initial_alignment")
         if logs:
             log = json.loads(logs[0].read_text())
             max_steps = log["eval"]["max_steps"]
@@ -111,9 +125,29 @@ def publish(repo):
                 "video": url,
                 "poster": "media/" + run.name + "-20fps.jpg" if url else None,
                 "type": "매 스텝 연속 기록",
+                "initial_alignment": alignment,
                 "cameras": cameras,
             }
         )
+    recorded = {row["id"] for row in records}
+    for row in planned:
+        if row["id"] not in recorded:
+            records.append(
+                {
+                    "id": row["id"],
+                    "robot": row["robot"],
+                    "task": row["task"],
+                    "status": "대기",
+                    "steps": 0,
+                    "max_steps": row["max_steps"],
+                    "fps": 20,
+                    "duration": 0.0,
+                    "video": None,
+                    "poster": None,
+                    "type": "매 스텝 연속 기록",
+                    "cameras": [],
+                }
+            )
     temporary = media / "catalog.tmp.json"
     temporary.write_text(json.dumps(records, ensure_ascii=False, indent=2))
     temporary.replace(media / "catalog.json")

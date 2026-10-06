@@ -38,5 +38,628 @@
       "task": "PrepareCoffee",
       "max_steps": 64
     }
+  },
+  {
+    "id": "task-pantransfer",
+    "title": "PanTransfer · Astra 데모",
+    "category": "다중 태스크 데모",
+    "description": "기본 PandaOmron 및 양팔 GR1FloatingBody의 공식 태스크 지시문 기반 실행. 최대 1,800스텝, 20Hz. 양팔 초기 자세는 해당 태스크 시작 작업대를 향하도록 정렬하고 충돌 여부를 확인합니다. 표의 기존 성공률은 이번 Astra 실험 결과가 아닙니다.",
+    "task": "PanTransfer",
+    "model": "gpt-6-astra",
+    "environment": "Spark2 · RoboCasa",
+    "date": "2026-10-06",
+    "tags": [
+      "공식 태스크",
+      "단일 팔",
+      "양팔",
+      "1800스텝"
+    ],
+    "run_ids": [
+      "panda-pantransfer-1800-781101",
+      "gr1-pantransfer-1800-781102",
+      "gr1-pantransfer-1800-781102-retry-002"
+    ]
+  },
+  {
+    "id": "task-turnonmicrowave",
+    "title": "TurnOnMicrowave · Astra 데모",
+    "category": "다중 태스크 데모",
+    "description": "기본 PandaOmron 및 양팔 GR1FloatingBody의 공식 태스크 지시문 기반 실행. 최대 450스텝, 20Hz. 양팔 초기 자세는 해당 태스크 시작 작업대를 향하도록 정렬하고 충돌 여부를 확인합니다. 표의 기존 성공률은 이번 Astra 실험 결과가 아닙니다.",
+    "task": "TurnOnMicrowave",
+    "model": "gpt-6-astra",
+    "environment": "Spark2 · RoboCasa",
+    "date": "2026-10-06",
+    "tags": [
+      "공식 태스크",
+      "단일 팔",
+      "양팔",
+      "450스텝"
+    ],
+    "run_ids": [
+      "panda-turnonmicrowave-450-781103",
+      "gr1-turnonmicrowave-450-781104",
+      "gr1-turnonmicrowave-450-781104-retry-002"
+    ]
+  },
+  {
+    "id": "task-coffeesetupmug",
+    "title": "CoffeeSetupMug · Astra 데모",
+    "category": "다중 태스크 데모",
+    "description": "기본 PandaOmron 및 양팔 GR1FloatingBody의 공식 태스크 지시문 기반 실행. 최대 600스텝, 20Hz. 양팔 초기 자세는 해당 태스크 시작 작업대를 향하도록 정렬하고 충돌 여부를 확인합니다. 표의 기존 성공률은 이번 Astra 실험 결과가 아닙니다.",
+    "task": "CoffeeSetupMug",
+    "model": "gpt-6-astra",
+    "environment": "Spark2 · RoboCasa",
+    "date": "2026-10-06",
+    "tags": [
+      "공식 태스크",
+      "단일 팔",
+      "양팔",
+      "600스텝"
+    ],
+    "run_ids": [
+      "panda-coffeesetupmug-600-781105",
+      "gr1-coffeesetupmug-600-781106",
+      "gr1-coffeesetupmug-600-781106-retry-002"
+    ]
+  },
+  {
+    "id": "task-turnoffstove",
+    "title": "TurnOffStove · Astra 데모",
+    "category": "다중 태스크 데모",
+    "description": "기본 PandaOmron 및 양팔 GR1FloatingBody의 공식 태스크 지시문 기반 실행. 최대 750스텝, 20Hz. 양팔 초기 자세는 해당 태스크 시작 작업대를 향하도록 정렬하고 충돌 여부를 확인합니다. 표의 기존 성공률은 이번 Astra 실험 결과가 아닙니다.",
+    "task": "TurnOffStove",
+    "model": "gpt-6-astra",
+    "environment": "Spark2 · RoboCasa",
+    "date": "2026-10-06",
+    "tags": [
+      "공식 태스크",
+      "단일 팔",
+      "양팔",
+      "750스텝"
+    ],
+    "run_ids": [
+      "panda-turnoffstove-750-781107",
+      "gr1-turnoffstove-750-781108"
+    ]
+  },
+  {
+    "id": "task-closeblenderlid",
+    "title": "CloseBlenderLid · Astra 데모",
+    "category": "다중 태스크 데모",
+    "description": "기본 PandaOmron 및 양팔 GR1FloatingBody의 공식 태스크 지시문 기반 실행. 최대 900스텝, 20Hz. 양팔 초기 자세는 해당 태스크 시작 작업대를 향하도록 정렬하고 충돌 여부를 확인합니다. 표의 기존 성공률은 이번 Astra 실험 결과가 아닙니다.",
+    "task": "CloseBlenderLid",
+    "model": "gpt-6-astra",
+    "environment": "Spark2 · RoboCasa",
+    "date": "2026-10-06",
+    "tags": [
+      "공식 태스크",
+      "단일 팔",
+      "양팔",
+      "900스텝"
+    ],
+    "run_ids": [
+      "panda-closeblenderlid-900-781109",
+      "gr1-closeblenderlid-900-781110"
+    ]
+  },
+  {
+    "id": "task-loaddishwasher",
+    "title": "LoadDishwasher · Astra 데모",
+    "category": "다중 태스크 데모",
+    "description": "기본 PandaOmron 및 양팔 GR1FloatingBody의 공식 태스크 지시문 기반 실행. 최대 1,800스텝, 20Hz. 양팔 초기 자세는 해당 태스크 시작 작업대를 향하도록 정렬하고 충돌 여부를 확인합니다. 표의 기존 성공률은 이번 Astra 실험 결과가 아닙니다.",
+    "task": "LoadDishwasher",
+    "model": "gpt-6-astra",
+    "environment": "Spark2 · RoboCasa",
+    "date": "2026-10-06",
+    "tags": [
+      "공식 태스크",
+      "단일 팔",
+      "양팔",
+      "1800스텝"
+    ],
+    "run_ids": [
+      "panda-loaddishwasher-1800-781111",
+      "gr1-loaddishwasher-1800-781112"
+    ]
+  },
+  {
+    "id": "task-setupcuttingstation",
+    "title": "SetUpCuttingStation · Astra 데모",
+    "category": "다중 태스크 데모",
+    "description": "기본 PandaOmron 및 양팔 GR1FloatingBody의 공식 태스크 지시문 기반 실행. 최대 2,400스텝, 20Hz. 양팔 초기 자세는 해당 태스크 시작 작업대를 향하도록 정렬하고 충돌 여부를 확인합니다. 표의 기존 성공률은 이번 Astra 실험 결과가 아닙니다.",
+    "task": "SetUpCuttingStation",
+    "model": "gpt-6-astra",
+    "environment": "Spark2 · RoboCasa",
+    "date": "2026-10-06",
+    "tags": [
+      "공식 태스크",
+      "단일 팔",
+      "양팔",
+      "2400스텝"
+    ],
+    "run_ids": [
+      "panda-setupcuttingstation-2400-781113",
+      "gr1-setupcuttingstation-2400-781114"
+    ]
+  },
+  {
+    "id": "task-stackbowlscabinet",
+    "title": "StackBowlsCabinet · Astra 데모",
+    "category": "다중 태스크 데모",
+    "description": "기본 PandaOmron 및 양팔 GR1FloatingBody의 공식 태스크 지시문 기반 실행. 최대 2,100스텝, 20Hz. 양팔 초기 자세는 해당 태스크 시작 작업대를 향하도록 정렬하고 충돌 여부를 확인합니다. 표의 기존 성공률은 이번 Astra 실험 결과가 아닙니다.",
+    "task": "StackBowlsCabinet",
+    "model": "gpt-6-astra",
+    "environment": "Spark2 · RoboCasa",
+    "date": "2026-10-06",
+    "tags": [
+      "공식 태스크",
+      "단일 팔",
+      "양팔",
+      "2100스텝"
+    ],
+    "run_ids": [
+      "panda-stackbowlscabinet-2100-781115",
+      "gr1-stackbowlscabinet-2100-781116"
+    ]
+  },
+  {
+    "id": "task-steaminmicrowave",
+    "title": "SteamInMicrowave · Astra 데모",
+    "category": "다중 태스크 데모",
+    "description": "기본 PandaOmron 및 양팔 GR1FloatingBody의 공식 태스크 지시문 기반 실행. 최대 2,100스텝, 20Hz. 양팔 초기 자세는 해당 태스크 시작 작업대를 향하도록 정렬하고 충돌 여부를 확인합니다. 표의 기존 성공률은 이번 Astra 실험 결과가 아닙니다.",
+    "task": "SteamInMicrowave",
+    "model": "gpt-6-astra",
+    "environment": "Spark2 · RoboCasa",
+    "date": "2026-10-06",
+    "tags": [
+      "공식 태스크",
+      "단일 팔",
+      "양팔",
+      "2100스텝"
+    ],
+    "run_ids": [
+      "panda-steaminmicrowave-2100-781117",
+      "gr1-steaminmicrowave-2100-781118"
+    ]
+  },
+  {
+    "id": "task-arrangebreadbasket",
+    "title": "ArrangeBreadBasket · Astra 데모",
+    "category": "다중 태스크 데모",
+    "description": "기본 PandaOmron 및 양팔 GR1FloatingBody의 공식 태스크 지시문 기반 실행. 최대 4,350스텝, 20Hz. 양팔 초기 자세는 해당 태스크 시작 작업대를 향하도록 정렬하고 충돌 여부를 확인합니다. 표의 기존 성공률은 이번 Astra 실험 결과가 아닙니다.",
+    "task": "ArrangeBreadBasket",
+    "model": "gpt-6-astra",
+    "environment": "Spark2 · RoboCasa",
+    "date": "2026-10-06",
+    "tags": [
+      "공식 태스크",
+      "단일 팔",
+      "양팔",
+      "4350스텝"
+    ],
+    "run_ids": [
+      "panda-arrangebreadbasket-4350-781119",
+      "gr1-arrangebreadbasket-4350-781120"
+    ]
+  },
+  {
+    "id": "task-rinsesinkbasin",
+    "title": "RinseSinkBasin · Astra 데모",
+    "category": "다중 태스크 데모",
+    "description": "기본 PandaOmron 및 양팔 GR1FloatingBody의 공식 태스크 지시문 기반 실행. 최대 1,350스텝, 20Hz. 양팔 초기 자세는 해당 태스크 시작 작업대를 향하도록 정렬하고 충돌 여부를 확인합니다. 표의 기존 성공률은 이번 Astra 실험 결과가 아닙니다.",
+    "task": "RinseSinkBasin",
+    "model": "gpt-6-astra",
+    "environment": "Spark2 · RoboCasa",
+    "date": "2026-10-06",
+    "tags": [
+      "공식 태스크",
+      "단일 팔",
+      "양팔",
+      "1350스텝"
+    ],
+    "run_ids": [
+      "panda-rinsesinkbasin-1350-781121",
+      "gr1-rinsesinkbasin-1350-781122"
+    ]
+  },
+  {
+    "id": "task-garnishpancake",
+    "title": "GarnishPancake · Astra 데모",
+    "category": "다중 태스크 데모",
+    "description": "기본 PandaOmron 및 양팔 GR1FloatingBody의 공식 태스크 지시문 기반 실행. 최대 2,700스텝, 20Hz. 양팔 초기 자세는 해당 태스크 시작 작업대를 향하도록 정렬하고 충돌 여부를 확인합니다. 표의 기존 성공률은 이번 Astra 실험 결과가 아닙니다.",
+    "task": "GarnishPancake",
+    "model": "gpt-6-astra",
+    "environment": "Spark2 · RoboCasa",
+    "date": "2026-10-06",
+    "tags": [
+      "공식 태스크",
+      "단일 팔",
+      "양팔",
+      "2700스텝"
+    ],
+    "run_ids": [
+      "panda-garnishpancake-2700-781123",
+      "gr1-garnishpancake-2700-781124"
+    ]
+  },
+  {
+    "id": "task-washfruitcolander",
+    "title": "WashFruitColander · Astra 데모",
+    "category": "다중 태스크 데모",
+    "description": "기본 PandaOmron 및 양팔 GR1FloatingBody의 공식 태스크 지시문 기반 실행. 최대 3,150스텝, 20Hz. 양팔 초기 자세는 해당 태스크 시작 작업대를 향하도록 정렬하고 충돌 여부를 확인합니다. 표의 기존 성공률은 이번 Astra 실험 결과가 아닙니다.",
+    "task": "WashFruitColander",
+    "model": "gpt-6-astra",
+    "environment": "Spark2 · RoboCasa",
+    "date": "2026-10-06",
+    "tags": [
+      "공식 태스크",
+      "단일 팔",
+      "양팔",
+      "3150스텝"
+    ],
+    "run_ids": [
+      "panda-washfruitcolander-3150-781125",
+      "gr1-washfruitcolander-3150-781126"
+    ]
+  },
+  {
+    "id": "task-arrangetea",
+    "title": "ArrangeTea · Astra 데모",
+    "category": "다중 태스크 데모",
+    "description": "기본 PandaOmron 및 양팔 GR1FloatingBody의 공식 태스크 지시문 기반 실행. 최대 2,250스텝, 20Hz. 양팔 초기 자세는 해당 태스크 시작 작업대를 향하도록 정렬하고 충돌 여부를 확인합니다. 표의 기존 성공률은 이번 Astra 실험 결과가 아닙니다.",
+    "task": "ArrangeTea",
+    "model": "gpt-6-astra",
+    "environment": "Spark2 · RoboCasa",
+    "date": "2026-10-06",
+    "tags": [
+      "공식 태스크",
+      "단일 팔",
+      "양팔",
+      "2250스텝"
+    ],
+    "run_ids": [
+      "panda-arrangetea-2250-781127",
+      "gr1-arrangetea-2250-781128"
+    ]
+  },
+  {
+    "id": "task-deliverstraw",
+    "title": "DeliverStraw · Astra 데모",
+    "category": "다중 태스크 데모",
+    "description": "기본 PandaOmron 및 양팔 GR1FloatingBody의 공식 태스크 지시문 기반 실행. 최대 2,550스텝, 20Hz. 양팔 초기 자세는 해당 태스크 시작 작업대를 향하도록 정렬하고 충돌 여부를 확인합니다. 표의 기존 성공률은 이번 Astra 실험 결과가 아닙니다.",
+    "task": "DeliverStraw",
+    "model": "gpt-6-astra",
+    "environment": "Spark2 · RoboCasa",
+    "date": "2026-10-06",
+    "tags": [
+      "공식 태스크",
+      "단일 팔",
+      "양팔",
+      "2550스텝"
+    ],
+    "run_ids": [
+      "panda-deliverstraw-2550-781129",
+      "gr1-deliverstraw-2550-781130"
+    ]
+  },
+  {
+    "id": "task-wafflereheat",
+    "title": "WaffleReheat · Astra 데모",
+    "category": "다중 태스크 데모",
+    "description": "기본 PandaOmron 및 양팔 GR1FloatingBody의 공식 태스크 지시문 기반 실행. 최대 4,050스텝, 20Hz. 양팔 초기 자세는 해당 태스크 시작 작업대를 향하도록 정렬하고 충돌 여부를 확인합니다. 표의 기존 성공률은 이번 Astra 실험 결과가 아닙니다.",
+    "task": "WaffleReheat",
+    "model": "gpt-6-astra",
+    "environment": "Spark2 · RoboCasa",
+    "date": "2026-10-06",
+    "tags": [
+      "공식 태스크",
+      "단일 팔",
+      "양팔",
+      "4050스텝"
+    ],
+    "run_ids": [
+      "panda-wafflereheat-4050-781131",
+      "gr1-wafflereheat-4050-781132"
+    ]
+  },
+  {
+    "id": "task-makeicelemonade",
+    "title": "MakeIceLemonade · Astra 데모",
+    "category": "다중 태스크 데모",
+    "description": "기본 PandaOmron 및 양팔 GR1FloatingBody의 공식 태스크 지시문 기반 실행. 최대 3,000스텝, 20Hz. 양팔 초기 자세는 해당 태스크 시작 작업대를 향하도록 정렬하고 충돌 여부를 확인합니다. 표의 기존 성공률은 이번 Astra 실험 결과가 아닙니다.",
+    "task": "MakeIceLemonade",
+    "model": "gpt-6-astra",
+    "environment": "Spark2 · RoboCasa",
+    "date": "2026-10-06",
+    "tags": [
+      "공식 태스크",
+      "단일 팔",
+      "양팔",
+      "3000스텝"
+    ],
+    "run_ids": [
+      "panda-makeicelemonade-3000-781133",
+      "gr1-makeicelemonade-3000-781134"
+    ]
+  },
+  {
+    "id": "task-stirvegetables",
+    "title": "StirVegetables · Astra 데모",
+    "category": "다중 태스크 데모",
+    "description": "기본 PandaOmron 및 양팔 GR1FloatingBody의 공식 태스크 지시문 기반 실행. 최대 2,400스텝, 20Hz. 양팔 초기 자세는 해당 태스크 시작 작업대를 향하도록 정렬하고 충돌 여부를 확인합니다. 표의 기존 성공률은 이번 Astra 실험 결과가 아닙니다.",
+    "task": "StirVegetables",
+    "model": "gpt-6-astra",
+    "environment": "Spark2 · RoboCasa",
+    "date": "2026-10-06",
+    "tags": [
+      "공식 태스크",
+      "단일 팔",
+      "양팔",
+      "2400스텝"
+    ],
+    "run_ids": [
+      "panda-stirvegetables-2400-781135",
+      "gr1-stirvegetables-2400-781136"
+    ]
+  },
+  {
+    "id": "task-gettoastedbread",
+    "title": "GetToastedBread · Astra 데모",
+    "category": "다중 태스크 데모",
+    "description": "기본 PandaOmron 및 양팔 GR1FloatingBody의 공식 태스크 지시문 기반 실행. 최대 3,000스텝, 20Hz. 양팔 초기 자세는 해당 태스크 시작 작업대를 향하도록 정렬하고 충돌 여부를 확인합니다. 표의 기존 성공률은 이번 Astra 실험 결과가 아닙니다.",
+    "task": "GetToastedBread",
+    "model": "gpt-6-astra",
+    "environment": "Spark2 · RoboCasa",
+    "date": "2026-10-06",
+    "tags": [
+      "공식 태스크",
+      "단일 팔",
+      "양팔",
+      "3000스텝"
+    ],
+    "run_ids": [
+      "panda-gettoastedbread-3000-781137",
+      "gr1-gettoastedbread-3000-781138"
+    ]
+  },
+  {
+    "id": "task-cuttingtoolselection",
+    "title": "CuttingToolSelection · Astra 데모",
+    "category": "다중 태스크 데모",
+    "description": "기본 PandaOmron 및 양팔 GR1FloatingBody의 공식 태스크 지시문 기반 실행. 최대 1,200스텝, 20Hz. 양팔 초기 자세는 해당 태스크 시작 작업대를 향하도록 정렬하고 충돌 여부를 확인합니다. 표의 기존 성공률은 이번 Astra 실험 결과가 아닙니다.",
+    "task": "CuttingToolSelection",
+    "model": "gpt-6-astra",
+    "environment": "Spark2 · RoboCasa",
+    "date": "2026-10-06",
+    "tags": [
+      "공식 태스크",
+      "단일 팔",
+      "양팔",
+      "1200스텝"
+    ],
+    "run_ids": [
+      "panda-cuttingtoolselection-1200-781139",
+      "gr1-cuttingtoolselection-1200-781140"
+    ]
+  },
+  {
+    "id": "task-recyclebottlesbytype",
+    "title": "RecycleBottlesByType · Astra 데모",
+    "category": "다중 태스크 데모",
+    "description": "기본 PandaOmron 및 양팔 GR1FloatingBody의 공식 태스크 지시문 기반 실행. 최대 2,850스텝, 20Hz. 양팔 초기 자세는 해당 태스크 시작 작업대를 향하도록 정렬하고 충돌 여부를 확인합니다. 표의 기존 성공률은 이번 Astra 실험 결과가 아닙니다.",
+    "task": "RecycleBottlesByType",
+    "model": "gpt-6-astra",
+    "environment": "Spark2 · RoboCasa",
+    "date": "2026-10-06",
+    "tags": [
+      "공식 태스크",
+      "단일 팔",
+      "양팔",
+      "2850스텝"
+    ],
+    "run_ids": [
+      "panda-recyclebottlesbytype-2850-781141",
+      "gr1-recyclebottlesbytype-2850-781142"
+    ]
+  },
+  {
+    "id": "task-breadselection",
+    "title": "BreadSelection · Astra 데모",
+    "category": "다중 태스크 데모",
+    "description": "기본 PandaOmron 및 양팔 GR1FloatingBody의 공식 태스크 지시문 기반 실행. 최대 1,950스텝, 20Hz. 양팔 초기 자세는 해당 태스크 시작 작업대를 향하도록 정렬하고 충돌 여부를 확인합니다. 표의 기존 성공률은 이번 Astra 실험 결과가 아닙니다.",
+    "task": "BreadSelection",
+    "model": "gpt-6-astra",
+    "environment": "Spark2 · RoboCasa",
+    "date": "2026-10-06",
+    "tags": [
+      "공식 태스크",
+      "단일 팔",
+      "양팔",
+      "1950스텝"
+    ],
+    "run_ids": [
+      "panda-breadselection-1950-781143",
+      "gr1-breadselection-1950-781144"
+    ]
+  },
+  {
+    "id": "task-packidenticallunches",
+    "title": "PackIdenticalLunches · Astra 데모",
+    "category": "다중 태스크 데모",
+    "description": "기본 PandaOmron 및 양팔 GR1FloatingBody의 공식 태스크 지시문 기반 실행. 최대 3,900스텝, 20Hz. 양팔 초기 자세는 해당 태스크 시작 작업대를 향하도록 정렬하고 충돌 여부를 확인합니다. 표의 기존 성공률은 이번 Astra 실험 결과가 아닙니다.",
+    "task": "PackIdenticalLunches",
+    "model": "gpt-6-astra",
+    "environment": "Spark2 · RoboCasa",
+    "date": "2026-10-06",
+    "tags": [
+      "공식 태스크",
+      "단일 팔",
+      "양팔",
+      "3900스텝"
+    ],
+    "run_ids": [
+      "panda-packidenticallunches-3900-781145",
+      "gr1-packidenticallunches-3900-781146"
+    ]
+  },
+  {
+    "id": "task-weighingredients",
+    "title": "WeighIngredients · Astra 데모",
+    "category": "다중 태스크 데모",
+    "description": "기본 PandaOmron 및 양팔 GR1FloatingBody의 공식 태스크 지시문 기반 실행. 최대 3,000스텝, 20Hz. 양팔 초기 자세는 해당 태스크 시작 작업대를 향하도록 정렬하고 충돌 여부를 확인합니다. 표의 기존 성공률은 이번 Astra 실험 결과가 아닙니다.",
+    "task": "WeighIngredients",
+    "model": "gpt-6-astra",
+    "environment": "Spark2 · RoboCasa",
+    "date": "2026-10-06",
+    "tags": [
+      "공식 태스크",
+      "단일 팔",
+      "양팔",
+      "3000스텝"
+    ],
+    "run_ids": [
+      "panda-weighingredients-3000-781147",
+      "gr1-weighingredients-3000-781148"
+    ]
+  },
+  {
+    "id": "task-searingmeat",
+    "title": "SearingMeat · Astra 데모",
+    "category": "다중 태스크 데모",
+    "description": "기본 PandaOmron 및 양팔 GR1FloatingBody의 공식 태스크 지시문 기반 실행. 최대 4,350스텝, 20Hz. 양팔 초기 자세는 해당 태스크 시작 작업대를 향하도록 정렬하고 충돌 여부를 확인합니다. 표의 기존 성공률은 이번 Astra 실험 결과가 아닙니다.",
+    "task": "SearingMeat",
+    "model": "gpt-6-astra",
+    "environment": "Spark2 · RoboCasa",
+    "date": "2026-10-06",
+    "tags": [
+      "공식 태스크",
+      "단일 팔",
+      "양팔",
+      "4350스텝"
+    ],
+    "run_ids": [
+      "panda-searingmeat-4350-781149",
+      "gr1-searingmeat-4350-781150"
+    ]
+  },
+  {
+    "id": "task-portionhotdogs",
+    "title": "PortionHotDogs · Astra 데모",
+    "category": "다중 태스크 데모",
+    "description": "기본 PandaOmron 및 양팔 GR1FloatingBody의 공식 태스크 지시문 기반 실행. 최대 2,250스텝, 20Hz. 양팔 초기 자세는 해당 태스크 시작 작업대를 향하도록 정렬하고 충돌 여부를 확인합니다. 표의 기존 성공률은 이번 Astra 실험 결과가 아닙니다.",
+    "task": "PortionHotDogs",
+    "model": "gpt-6-astra",
+    "environment": "Spark2 · RoboCasa",
+    "date": "2026-10-06",
+    "tags": [
+      "공식 태스크",
+      "단일 팔",
+      "양팔",
+      "2250스텝"
+    ],
+    "run_ids": [
+      "panda-portionhotdogs-2250-781151",
+      "gr1-portionhotdogs-2250-781152"
+    ]
+  },
+  {
+    "id": "task-preparecoffee",
+    "title": "PrepareCoffee · Astra 데모",
+    "category": "다중 태스크 데모",
+    "description": "기본 PandaOmron 및 양팔 GR1FloatingBody의 공식 태스크 지시문 기반 실행. 최대 1,800스텝, 20Hz. 양팔 초기 자세는 해당 태스크 시작 작업대를 향하도록 정렬하고 충돌 여부를 확인합니다. 표의 기존 성공률은 이번 Astra 실험 결과가 아닙니다.",
+    "task": "PrepareCoffee",
+    "model": "gpt-6-astra",
+    "environment": "Spark2 · RoboCasa",
+    "date": "2026-10-06",
+    "tags": [
+      "공식 태스크",
+      "단일 팔",
+      "양팔",
+      "1800스텝"
+    ],
+    "run_ids": [
+      "panda-preparecoffee-1800-781153",
+      "gr1-preparecoffee-1800-781154"
+    ]
+  },
+  {
+    "id": "task-categorizecondiments",
+    "title": "CategorizeCondiments · Astra 데모",
+    "category": "다중 태스크 데모",
+    "description": "기본 PandaOmron 및 양팔 GR1FloatingBody의 공식 태스크 지시문 기반 실행. 최대 1,650스텝, 20Hz. 양팔 초기 자세는 해당 태스크 시작 작업대를 향하도록 정렬하고 충돌 여부를 확인합니다. 표의 기존 성공률은 이번 Astra 실험 결과가 아닙니다.",
+    "task": "CategorizeCondiments",
+    "model": "gpt-6-astra",
+    "environment": "Spark2 · RoboCasa",
+    "date": "2026-10-06",
+    "tags": [
+      "공식 태스크",
+      "단일 팔",
+      "양팔",
+      "1650스텝"
+    ],
+    "run_ids": [
+      "panda-categorizecondiments-1650-781155",
+      "gr1-categorizecondiments-1650-781156"
+    ]
+  },
+  {
+    "id": "task-separatefreezerrack",
+    "title": "SeparateFreezerRack · Astra 데모",
+    "category": "다중 태스크 데모",
+    "description": "기본 PandaOmron 및 양팔 GR1FloatingBody의 공식 태스크 지시문 기반 실행. 최대 2,400스텝, 20Hz. 양팔 초기 자세는 해당 태스크 시작 작업대를 향하도록 정렬하고 충돌 여부를 확인합니다. 표의 기존 성공률은 이번 Astra 실험 결과가 아닙니다.",
+    "task": "SeparateFreezerRack",
+    "model": "gpt-6-astra",
+    "environment": "Spark2 · RoboCasa",
+    "date": "2026-10-06",
+    "tags": [
+      "공식 태스크",
+      "단일 팔",
+      "양팔",
+      "2400스텝"
+    ],
+    "run_ids": [
+      "panda-separatefreezerrack-2400-781157",
+      "gr1-separatefreezerrack-2400-781158"
+    ]
+  },
+  {
+    "id": "task-gathertableware",
+    "title": "GatherTableware · Astra 데모",
+    "category": "다중 태스크 데모",
+    "description": "기본 PandaOmron 및 양팔 GR1FloatingBody의 공식 태스크 지시문 기반 실행. 최대 2,250스텝, 20Hz. 양팔 초기 자세는 해당 태스크 시작 작업대를 향하도록 정렬하고 충돌 여부를 확인합니다. 표의 기존 성공률은 이번 Astra 실험 결과가 아닙니다.",
+    "task": "GatherTableware",
+    "model": "gpt-6-astra",
+    "environment": "Spark2 · RoboCasa",
+    "date": "2026-10-06",
+    "tags": [
+      "공식 태스크",
+      "단일 팔",
+      "양팔",
+      "2250스텝"
+    ],
+    "run_ids": [
+      "panda-gathertableware-2250-781159",
+      "gr1-gathertableware-2250-781160"
+    ]
+  },
+  {
+    "id": "task-heatkebabsandwich",
+    "title": "HeatKebabSandwich · Astra 데모",
+    "category": "다중 태스크 데모",
+    "description": "기본 PandaOmron 및 양팔 GR1FloatingBody의 공식 태스크 지시문 기반 실행. 최대 2,700스텝, 20Hz. 양팔 초기 자세는 해당 태스크 시작 작업대를 향하도록 정렬하고 충돌 여부를 확인합니다. 표의 기존 성공률은 이번 Astra 실험 결과가 아닙니다.",
+    "task": "HeatKebabSandwich",
+    "model": "gpt-6-astra",
+    "environment": "Spark2 · RoboCasa",
+    "date": "2026-10-06",
+    "tags": [
+      "공식 태스크",
+      "단일 팔",
+      "양팔",
+      "2700스텝"
+    ],
+    "run_ids": [
+      "panda-heatkebabsandwich-2700-781161",
+      "gr1-heatkebabsandwich-2700-781162"
+    ]
   }
 ]

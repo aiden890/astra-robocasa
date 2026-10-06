@@ -46,9 +46,13 @@ def protect_assets():
 class Simulator:
     """Own one native environment; retain actual controller and success semantics."""
 
-    def __init__(self, robot, task, fixture=None, placement=False):
+    def __init__(
+        self, robot, task, fixture=None, placement=False, horizon=1800, face_workstation=False
+    ):
         self.robot, self.task = robot, task
         self.fixture, self.placement = fixture, placement
+        self.horizon, self.face_workstation = horizon, face_workstation
+        self.initial_alignment = None
         self.env = None
         self.steps = 0
         self.streak = 0
@@ -79,7 +83,7 @@ class Simulator:
                 use_camera_obs=False,
                 seed=seed,
                 control_freq=20,
-                horizon=1800,
+                horizon=self.horizon,
             )
             self.env = robosuite.make(**kwargs)
             xml = ET.fromstring(gzip.decompress((folder / "model.xml.gz").read_bytes()).decode())
@@ -104,31 +108,103 @@ class Simulator:
                 },
             )
         else:
+            from robosuite.environments.base import REGISTERED_ENVS
+
+            task_class = REGISTERED_ENVS[self.task]
+            layouts = [i for i in range(1, 11) if i not in task_class.EXCLUDE_LAYOUTS]
+            styles = [i for i in range(1, 11) if i not in task_class.EXCLUDE_STYLES]
+            if not layouts or not styles:
+                raise ValueError("Task has no compatible target layout/style")
             self.env = create_env(
                 self.task,
                 robots=self.robot,
                 seed=seed,
-                layout_ids=[1],
-                style_ids=[1],
-                camera_names=[
-                    "robot0_agentview_left",
-                    "robot0_agentview_right",
-                    "robot0_eye_in_right_hand",
-                    "robot0_eye_in_left_hand",
-                ],
+                layout_ids=layouts[:1],
+                style_ids=styles[:1],
+                camera_names=["robot0_agentview_left", "robot0_agentview_right"]
+                + (
+                    ["robot0_eye_in_hand"]
+                    if self.robot == "PandaOmron"
+                    else ["robot0_eye_in_right_hand", "robot0_eye_in_left_hand"]
+                ),
                 camera_widths=256,
                 camera_heights=256,
                 generative_textures=None,
                 control_freq=20,
-                horizon=1800,
+                horizon=self.horizon,
             )
             self.env.reset()
+        if self.face_workstation and self.robot == "GR1FloatingBody":
+            self.align_workstation()
         if self.env.control_freq != 20:
             raise ValueError("Native control frequency must be 20 Hz")
         self.steps, self.streak = 0, 0
         robot = self.env.robots[0]
         self.parts = {key: list(value) for key, value in robot._action_split_indexes.items()}
         return self.observe()
+
+    def align_workstation(self):
+        """Face the native task fixture and preserve collision-free starting clearance."""
+        from robocasa.utils import env_utils as EU
+        from robosuite.utils import transform_utils as T
+
+        env = self.env
+        if env.init_robot_base_ref is None:
+            raise ValueError("Task has no explicit starting workstation reference")
+        fixture = env.get_fixture(env.init_robot_base_ref)
+        raw = env._get_observations(force_update=True)
+        position = np.asarray(raw["robot0_base_pos"])
+        target = np.asarray(fixture.pos)
+        direction = target[:2] - position[:2]
+        if np.linalg.norm(direction) < 0.1:
+            raise ValueError("Starting fixture direction is ambiguous")
+        unit = direction / np.linalg.norm(direction)
+        address = env.sim.model.get_joint_qpos_addr("mobilebase0_joint_mobile_yaw")
+        total_delta = 0.0
+        collision = True
+        for attempt in range(7):
+            backoff = attempt * 0.1
+            if attempt:
+                safe_position = position.copy()
+                safe_position[:2] -= unit * backoff
+                EU.set_robot_to_position(env, safe_position)
+            for _ in range(5):
+                raw = env._get_observations(force_update=True)
+                delta_xy = target[:2] - np.asarray(raw["robot0_base_pos"])[:2]
+                desired = np.arctan2(delta_xy[1], delta_xy[0])
+                forward = T.quat2mat(np.asarray(raw["robot0_base_quat"]))[:2, 0]
+                heading = np.arctan2(forward[1], forward[0])
+                delta = float((desired - heading + np.pi) % (2 * np.pi) - np.pi)
+                env.sim.data.qpos[address] += delta
+                total_delta += delta
+                env.sim.forward()
+            collision = bool(EU.detect_robot_collision(env))
+            if not collision:
+                break
+        for controller in env.robots[0].part_controllers.values():
+            controller.update(force=True)
+            controller.reset_goal()
+        final_raw = env._get_observations(force_update=True)
+        final_direction = target[:2] - np.asarray(final_raw["robot0_base_pos"])[:2]
+        desired = np.arctan2(final_direction[1], final_direction[0])
+        forward = T.quat2mat(np.asarray(final_raw["robot0_base_quat"]))[:2, 0]
+        heading = np.arctan2(forward[1], forward[0])
+        error = float(abs((desired - heading + np.pi) % (2 * np.pi) - np.pi))
+        self.initial_alignment = {
+            "fixture": fixture.name,
+            "base_position": position.tolist(),
+            "fixture_position": target.tolist(),
+            "yaw_delta_rad": total_delta,
+            "heading_error_rad": error,
+            "robot_collision": collision,
+            "method": "native_task_fixture_direction",
+            "collision_clearance_backoff_m": backoff,
+            "final_base_position": final_raw["robot0_base_pos"].tolist(),
+        }
+        if error > np.deg2rad(5) or collision:
+            raise ValueError(
+                "Workstation-facing initialization failed: " + json.dumps(self.initial_alignment)
+            )
 
     def observe(self):
         """Render real cameras and report separate native and placement outcomes."""
@@ -169,6 +245,9 @@ class Simulator:
             self.streak = self.streak + 1 if placed and released else 0
             placement_success = self.streak >= 5
         info = {
+            "instruction": env.get_ep_meta().get("lang", self.task),
+            "horizon": self.horizon,
+            "initial_alignment": self.initial_alignment,
             "native_task_success": success,
             "placement_success": placement_success,
             "success": placement_success if self.placement else success,
@@ -203,10 +282,14 @@ def main():
     parser.add_argument("--robot", default="PandaOmron")
     parser.add_argument("--task", default="PrepareCoffee")
     parser.add_argument("--fixture")
+    parser.add_argument("--horizon", type=int, default=1800)
+    parser.add_argument("--face-workstation", action="store_true")
     parser.add_argument("--placement", action="store_true")
     args = parser.parse_args()
     with contextlib.redirect_stdout(sys.stderr):
-        sim = Simulator(args.robot, args.task, args.fixture, args.placement)
+        sim = Simulator(
+            args.robot, args.task, args.fixture, args.placement, args.horizon, args.face_workstation
+        )
     for line in sys.stdin:
         try:
             request = json.loads(line)

@@ -5,6 +5,7 @@ import json
 from pathlib import Path
 
 from inspect_robots import eval
+from inspect_robots.rollout import derive_seed
 from inspect_robots.scene import Scene
 from inspect_robots.scorer import success_at_end
 from inspect_robots.task import Task
@@ -16,8 +17,11 @@ def main():
     """Select default PandaOmron or native bimanual GR1 and record a complete trial."""
     parser = argparse.ArgumentParser()
     parser.add_argument("--robot", choices=["PandaOmron", "GR1FloatingBody"], default="PandaOmron")
-    parser.add_argument("--task", choices=["PrepareCoffee"], default="PrepareCoffee")
+    parser.add_argument("--task", default="PrepareCoffee")
     parser.add_argument("--placement", action="store_true")
+    parser.add_argument("--native-scene", action="store_true")
+    parser.add_argument("--face-workstation", action="store_true")
+    parser.add_argument("--worker-script")
     parser.add_argument("--steps", type=int, default=1800)
     parser.add_argument("--seed", type=int, default=771001)
     parser.add_argument("--output", required=True)
@@ -30,7 +34,7 @@ def main():
     args = parser.parse_args()
     if args.steps < 1:
         parser.error("--steps must be positive")
-    if args.placement and args.robot != "PandaOmron":
+    if args.placement and (args.robot != "PandaOmron" or args.task != "PrepareCoffee"):
         parser.error("Held-mug fixtures are verified only for PandaOmron; use full GR1 task")
     output = Path(args.output).resolve()
     output.mkdir(parents=True, exist_ok=False)
@@ -51,13 +55,22 @@ def main():
         "--task",
         args.task,
     ]
-    if args.robot == "PandaOmron":
+    if args.worker_script:
+        marker = command.index("-m")
+        command[marker : marker + 2] = [args.worker_script]
+    command += ["--horizon", str(args.steps)]
+    if args.face_workstation:
+        command += ["--face-workstation"]
+    if args.robot == "PandaOmron" and args.task == "PrepareCoffee" and not args.native_scene:
         command += ["--fixture", "/fixtures/episode-005"]
     if args.placement:
         command += ["--placement"]
     env = None
     try:
-        env = SparkEmbodiment(command, args.seed, output / "worker")
+        initial_seed = (
+            derive_seed(0, args.seed, 0) if args.native_scene and not args.probe else args.seed
+        )
+        env = SparkEmbodiment(command, initial_seed, output / "worker")
         (output / "environment.json").write_text(
             json.dumps({"name": env.info.name, "docs": env.info.docs}, indent=2)
         )
@@ -91,8 +104,7 @@ def main():
         instruction = (
             "Place the held mug under the dispenser and release. Do not press the button."
             if args.placement
-            else "Pick the mug from the cabinet, place it under the dispenser, "
-            "release it, and press the coffee start button."
+            else json.loads(env.info.docs)["instruction"]
         )
         task = Task(
             name=args.task + ("-placement" if args.placement else ""),

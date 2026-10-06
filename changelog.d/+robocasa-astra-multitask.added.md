@@ -1,0 +1,1 @@
+Added a persistent four-slot RoboCasa Astra task queue, full task horizons, task video topics, and collision-checked GR1 workstation-facing initialization. Missing official object packs are prepared separately and gated by native boot checks.

@@ -77,12 +77,13 @@ class CodexPolicy:
             Image.fromarray(image).save(path)
             images.append(path)
         state = {k: np.asarray(v).tolist() for k, v in observation.state.items()}
+        current_instruction = observation.extra.get("instruction", self.instruction)
         prompt = (
             "Control a simulated RoboCasa robot. Return action JSON only. No tools. "
             "Use the native controller. Parallel jaws: +1 closes, -1 opens. "
             "Inspect images/state each turn and use short chunks. "
             "Task goal: "
-            + self.instruction
+            + current_instruction
             + "\nController and action-part indices: "
             + self.docs
             + "\nCurrent state: "

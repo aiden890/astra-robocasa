@@ -8,13 +8,13 @@ function render(){
   let card=cards.get(row.id);
   if(!card){
    card=TopicLibrary.node("article",undefined,"card video-entry");const heading=TopicLibrary.node("div",undefined,"board-heading");heading.append(TopicLibrary.node("h2",(index+1)+". "+row.robot),Board.deleteButton("video",row.id,row.robot+" · "+row.id));card.append(heading);card.append(TopicLibrary.node("p",row.id,"run-id"));
-   card.append(TopicLibrary.node("p",row.robot==="PandaOmron"?"기본 단일 팔 로봇으로 컵 집기부터 커피 시작까지 수행합니다.":"양팔 로봇으로 동일한 커피 태스크를 수행합니다. 기본 로봇과 다른 장면 초기화를 사용하므로 직접적인 성능 비교로 해석할 수 없습니다.","entry-description"));
+   card.append(TopicLibrary.node("p",row.task+" · "+(row.robot==="PandaOmron"?"기본 단일 팔 로봇":"양팔 로봇")+" · 공식 환경 지시문과 native 성공 판정으로 실행합니다.","entry-description"));
    card.append(TopicLibrary.node("p",undefined,"entry-progress"));card.append(TopicLibrary.node("div",undefined,"media-slot"));card.append(TopicLibrary.node("p",row.cameras.map(c=>c.replace("robot0_","")).join(" → "),"vsub"));cards.set(row.id,card);element("video-list").append(card);
   }
   card.hidden=!visible.includes(row);card.querySelector(".entry-progress").textContent=row.status+" · "+row.steps+" / "+row.max_steps+"스텝 · "+row.fps+"fps · 기록 "+row.duration.toFixed(2)+"초";
   const slot=card.querySelector(".media-slot");
   if(row.video&&!slot.querySelector("video")){slot.replaceChildren();const video=document.createElement("video");video.controls=true;video.playsInline=true;video.preload="metadata";video.src=row.video;video.poster=row.poster;video.setAttribute("aria-label",row.robot+" "+row.id+" 영상");const link=TopicLibrary.node("a","원본 MP4 열기","download-link");link.href=row.video;slot.append(video,link);}
-  else if(!row.video&&!slot.firstChild)slot.append(TopicLibrary.node("div",row.status==="오류"?"실행 오류로 게시할 영상이 없습니다.":"실행 중입니다. 완료 후 영상이 자동으로 추가됩니다.","media-pending"));
+  else if(!row.video&&!slot.firstChild)slot.append(TopicLibrary.node("div",row.status==="오류"?"실행 오류로 게시할 영상이 없습니다.":row.status==="대기"?"실행 대기 중입니다. 빈 슬롯이 생기면 자동으로 시작합니다.":"실행 중입니다. 완료 후 영상이 자동으로 추가됩니다.","media-pending"));
  });
  element("detail-count").textContent="관련 실행 "+visible.length+"개 · 재생 가능 영상 "+visible.filter(r=>r.video).length+"개";
 }
