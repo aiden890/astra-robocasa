@@ -1,0 +1,42 @@
+{
+  "kind": "sensor_diagnostic",
+  "environment": "RoboCasa",
+  "task": "PrepareCoffee",
+  "robot": "PandaOmron",
+  "seed": 786602,
+  "fps": 20,
+  "frames": 160,
+  "steps": 159,
+  "duration_s": 8.0,
+  "cameras": [
+    "robot0_agentview_left",
+    "robot0_agentview_right",
+    "robot0_eye_in_hand"
+  ],
+  "unit": "m",
+  "preview_range_m": [
+    0,
+    3
+  ],
+  "model_calls": 0,
+  "task_score": null,
+  "action": "scripted lift, lateral shift, return",
+  "motion": true,
+  "max_eef_displacement_m": null,
+  "video_sha256": "14175f3f7a6cc7d5696d814be46af3be0b59edb4f37567372c0e0b22c92510eb",
+  "decoded_frames": 160,
+  "decoded_fps": 20.0,
+  "decoded_size": [
+    768,
+    584
+  ],
+  "server": "Spark2",
+  "page": "http://100.86.183.64:8906/topic.html?topic=robocasa-depth-motion",
+  "invalid_original_eef_metric_reason": "mixed state coordinate fields; excluded from publication verification",
+  "max_wrist_camera_displacement_m": 0.025337072628592205,
+  "depth_change_mean_m": {
+    "robot0_agentview_left": 0.011230465024709702,
+    "robot0_agentview_right": 0.01853286288678646,
+    "robot0_eye_in_hand": 0.032464828342199326
+  }
+}

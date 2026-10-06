@@ -1,5 +1,25 @@
 [
   {
+    "id": "robocasa-depth-motion",
+    "title": "로봇 이동 중 · RoboCasa RGB / Depth",
+    "category": "센서 시각화",
+    "description": "실제 PrepareCoffee 환경에서 PandaOmron의 팔을 들어 올리고 옆으로 이동한 뒤 되돌리는 8초 영상입니다. 위 RGB, 아래 카메라 기준 깊이이며 흰색은 가까운 표면, 검은색은 3m 이상입니다. 손목 카메라는 팔과 함께 움직입니다. 정해진 이동 명령으로 만든 센서 확인 영상이며 Astra 태스크 성공 평가가 아닙니다.",
+    "task": "PrepareCoffee",
+    "model": "모델 호출 없음",
+    "environment": "Spark2 · RoboCasa",
+    "date": "2026-10-06",
+    "tags": [
+      "로봇 이동",
+      "RGB+Depth",
+      "손목 카메라",
+      "실제 RoboCasa",
+      "20fps"
+    ],
+    "run_ids": [
+      "robocasa-depth-motion-20261006-v1"
+    ]
+  },
+  {
     "id": "robocasa-depth-preview",
     "title": "RoboCasa 커피 환경 · RGB / Depth",
     "category": "센서 시각화",

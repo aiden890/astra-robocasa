@@ -128,3 +128,20 @@ The user requested Spark2 only. The earlier AMP CPU preparation was cancelled,
 its owned temporary container and incomplete asset copies were removed, and its
 failed initialization logs were retained on Lab. No existing AMP workloads were
 changed. Future previews for this project use Spark2.
+
+### Moving robot preview
+
+`--motion` renders 160 frames at 20 fps while applying a bounded scripted arm
+lift, lateral movement and return in the native PrepareCoffee environment. The
+clip is [published separately](http://100.86.183.64:8906/topic.html?topic=robocasa-depth-motion).
+The three synchronized depth streams changed and the calibrated wrist-camera
+position moved up to 0.025337 m. The initial EEF-displacement calculation mixed
+relative and absolute state fields; that metric is explicitly invalidated in
+the publication report. Motion was verified independently from the saved
+per-frame camera transforms. Future recordings select one stable named EEF
+field. The original report is preserved in runtime.
+
+To keep four active Spark2 simulators, one owned existing rollout was temporarily
+paused in place along with dispatch. Its simulator state and process IDs were
+preserved and resumed after the preview. The preview's separate temporary
+container was removed. No Astra calls, task scoring or policy changes were made.
