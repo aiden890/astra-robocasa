@@ -10,7 +10,8 @@ R = ROOT / ".runtime/multitask-20261006-v1"
 ASSETS = "/home/csi-agent-dgx_spark2/workspace/astra-assets-complete-20261006"
 BASE = "/home/csi-agent-dgx_spark2/workspace/astra-robocasa-20261006"
 NAMES = [f"astra-multitask-complete-assets-{i:02d}-20261006" for i in range(1, 5)]
-VALIDATOR = "astra-multitask-assets-validation-20261006"
+VALIDATOR = "astra-multitask-assets-validation-v2-20261006"
+OLD_ASSETS = "/home/csi-agent-dgx_spark2/workspace/rlinf-mibot-first-attempt-440a72b/assets"
 
 
 def remote(args):
@@ -45,6 +46,8 @@ def create(name, cpu, memory):
             "OPENBLAS_NUM_THREADS=1",
             "-v",
             ASSETS + "/assets:/opt/robocasa/robocasa/models/assets:ro",
+            "-v",
+            OLD_ASSETS + ":" + OLD_ASSETS + ":ro",
             "-v",
             BASE + "/parallel/code:/astra:ro",
             "-v",
@@ -89,7 +92,7 @@ def main():
             ("TurnOnMicrowave", 781104),
             ("CoffeeSetupMug", 781106),
         ]:
-            output = R / ("assets-validation-" + task)
+            output = R / ("assets-validation-v2-" + task)
             cmd = [
                 "bash",
                 "scripts/robocasa-astra/run.sh",
@@ -111,7 +114,7 @@ def main():
                 "--output",
                 str(output),
             ]
-            with (R / ("assets-validation-" + task + ".log")).open("w") as log:
+            with (R / ("assets-validation-v2-" + task + ".log")).open("w") as log:
                 subprocess.run(cmd, cwd=ROOT, stdout=log, stderr=log, timeout=900, check=True)
             logs = list((output / "eval").glob("*.json"))
             assert len(logs) == 1
