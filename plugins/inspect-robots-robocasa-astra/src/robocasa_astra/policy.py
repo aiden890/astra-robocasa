@@ -129,18 +129,39 @@ class CodexPolicy:
                 env.pop(key, None)
             cwd = Path(self.home).parent / "inference-empty"
             cwd.mkdir(exist_ok=True)
-            with (folder / "cli.log").open("w") as log:
-                subprocess.run(
-                    command,
-                    input=prompt,
-                    text=True,
-                    cwd=cwd,
-                    env=env,
-                    stdout=log,
-                    stderr=subprocess.STDOUT,
-                    timeout=180,
-                    check=True,
+            for attempt in range(20):
+                log_path = folder / ("cli.log" if attempt == 0 else f"cli-retry-{attempt:02d}.log")
+                with log_path.open("w") as log:
+                    result = subprocess.run(
+                        command,
+                        input=prompt,
+                        text=True,
+                        cwd=cwd,
+                        env=env,
+                        stdout=log,
+                        stderr=subprocess.STDOUT,
+                        timeout=180,
+                        check=False,
+                    )
+                if result.returncode == 0:
+                    break
+                if "Selected model is at capacity" not in log_path.read_text():
+                    raise subprocess.CalledProcessError(result.returncode, command)
+                (folder / "retry-status.json").write_text(
+                    json.dumps(
+                        {
+                            "attempt": attempt + 1,
+                            "reason": "model_at_capacity",
+                            "environment_held": True,
+                            "retry_delay_seconds": min(120, 15 * (attempt + 1)),
+                        }
+                    )
                 )
+                if attempt == 19:
+                    raise RuntimeError(
+                        "Model remained at capacity after 20 attempts; no action applied"
+                    )
+                time.sleep(min(120, 15 * (attempt + 1)))
             value = json.loads((folder / "response.json").read_text())
         action, repeat = self.validate(value)
         self.history.append(value)

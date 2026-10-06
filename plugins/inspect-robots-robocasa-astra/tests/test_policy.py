@@ -63,6 +63,7 @@ def test_codex_uses_subscription_and_tool_isolation(tmp_path, monkeypatch):
         captured.update(command=command, **kwargs)
         output = Path(command[command.index("-o") + 1])
         output.write_text(json.dumps({"action": [0, 0, 0], "repeat": 2, "reason": "fixture"}))
+        return SimpleNamespace(returncode=0)
 
     monkeypatch.setattr("robocasa_astra.policy.subprocess.run", execute)
     p.reset(SimpleNamespace(instruction="test"))
@@ -76,3 +77,33 @@ def test_codex_uses_subscription_and_tool_isolation(tmp_path, monkeypatch):
     assert "project_doc_max_bytes=0" in captured["command"]
     assert "--output-schema" in captured["command"]
     assert captured["cwd"].name == "inference-empty"
+
+
+def test_capacity_retry_keeps_observation(tmp_path, monkeypatch):
+    """Retry provider capacity without producing an action or changing the prompt."""
+    import json
+
+    p = policy(tmp_path / "calls")
+    p.noop = False
+    p.home = str(tmp_path / "auth")
+    prompts = []
+    sleeps = []
+
+    def execute(command, **kwargs):
+        prompts.append(kwargs["input"])
+        if len(prompts) == 1:
+            kwargs["stdout"].write("ERROR: Selected model is at capacity")
+            return SimpleNamespace(returncode=1)
+        Path(command[command.index("-o") + 1]).write_text(
+            json.dumps({"action": [0, 0, 0], "repeat": 2, "reason": "recovered"})
+        )
+        return SimpleNamespace(returncode=0)
+
+    monkeypatch.setattr("robocasa_astra.policy.subprocess.run", execute)
+    monkeypatch.setattr("robocasa_astra.policy.time.sleep", sleeps.append)
+    p.reset(SimpleNamespace(instruction="test"))
+    chunk = p.act(Observation())
+    assert len(chunk) == 2
+    assert len(prompts) == 2 and prompts[0] == prompts[1]
+    assert sleeps == [15]
+    assert len(p.history) == 1

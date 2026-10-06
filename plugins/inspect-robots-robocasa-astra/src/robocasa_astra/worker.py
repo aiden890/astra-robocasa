@@ -215,6 +215,20 @@ def main():
                     result = sim.reset(request["seed"])
                 elif request["op"] == "step":
                     result = sim.step(request["action"])
+                elif request["op"] == "replay":
+                    for action in request["actions"]:
+                        a = np.asarray(action, dtype=float)
+                        low, high = sim.env.action_spec
+                        if (
+                            a.shape != low.shape
+                            or not np.isfinite(a).all()
+                            or np.any(a < low)
+                            or np.any(a > high)
+                        ):
+                            raise ValueError("Invalid replay action")
+                        sim.env.step(a)
+                        sim.steps += 1
+                    result = sim.observe()
                 elif request["op"] == "close":
                     if sim.env:
                         sim.env.close()
