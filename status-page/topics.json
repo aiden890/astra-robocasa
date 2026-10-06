@@ -78,7 +78,8 @@
     "run_ids": [
       "panda-turnonmicrowave-450-781103",
       "gr1-turnonmicrowave-450-781104",
-      "gr1-turnonmicrowave-450-781104-retry-002"
+      "gr1-turnonmicrowave-450-781104-retry-002",
+      "gr1-turnonmicrowave-450-781104-retry-003"
     ]
   },
   {
@@ -99,7 +100,8 @@
     "run_ids": [
       "panda-coffeesetupmug-600-781105",
       "gr1-coffeesetupmug-600-781106",
-      "gr1-coffeesetupmug-600-781106-retry-002"
+      "gr1-coffeesetupmug-600-781106-retry-002",
+      "gr1-coffeesetupmug-600-781106-retry-003"
     ]
   },
   {

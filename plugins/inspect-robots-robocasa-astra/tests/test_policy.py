@@ -79,7 +79,8 @@ def test_codex_uses_subscription_and_tool_isolation(tmp_path, monkeypatch):
     assert captured["cwd"].name == "inference-empty"
 
 
-def test_capacity_retry_keeps_observation(tmp_path, monkeypatch):
+@pytest.mark.parametrize("failure", ["capacity", "timeout"])
+def test_capacity_retry_keeps_observation(tmp_path, monkeypatch, failure):
     """Retry provider capacity without producing an action or changing the prompt."""
     import json
 
@@ -92,6 +93,10 @@ def test_capacity_retry_keeps_observation(tmp_path, monkeypatch):
     def execute(command, **kwargs):
         prompts.append(kwargs["input"])
         if len(prompts) == 1:
+            if failure == "timeout":
+                import subprocess
+
+                raise subprocess.TimeoutExpired(command, 180)
             kwargs["stdout"].write("ERROR: Selected model is at capacity")
             return SimpleNamespace(returncode=1)
         Path(command[command.index("-o") + 1]).write_text(
