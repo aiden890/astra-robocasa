@@ -74,7 +74,13 @@ class Simulator:
                 "env_kwargs"
             ]
             kwargs.update(
-                has_renderer=False, has_offscreen_renderer=True, use_camera_obs=False, seed=seed
+                has_renderer=False,
+                has_offscreen_renderer=True,
+                use_camera_obs=False,
+                seed=seed,
+                control_freq=20,
+                horizon=1800,
+                ignore_done=True,
             )
             self.env = robosuite.make(**kwargs)
             xml = ET.fromstring(gzip.decompress((folder / "model.xml.gz").read_bytes()).decode())
@@ -114,8 +120,13 @@ class Simulator:
                 camera_widths=256,
                 camera_heights=256,
                 generative_textures=None,
+                control_freq=20,
+                horizon=1800,
+                ignore_done=True,
             )
             self.env.reset()
+        if self.env.control_freq != 20:
+            raise ValueError("Native control frequency must be 20 Hz")
         self.steps, self.streak = 0, 0
         robot = self.env.robots[0]
         self.parts = {key: list(value) for key, value in robot._action_split_indexes.items()}
@@ -164,6 +175,7 @@ class Simulator:
             "placement_success": placement_success,
             "success": placement_success if self.placement else success,
             "steps": self.steps,
+            "control_hz": self.env.control_freq,
             "robot": self.robot,
             "task": self.task,
             "action_parts": self.parts,

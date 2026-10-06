@@ -110,3 +110,15 @@ camera-sidecar recording. Native resets/renders/steps and actual subscription
 calls are checked separately on the two machines.
 
 Spark code and fixture snapshots can be refreshed with `bash scripts/robocasa-astra/prepare_spark.sh`. This starts only the experiment container and does not restart it if already running.
+
+## Full-horizon runs and video board
+
+Default trial horizon is now 1800 steps. Both native robot environments use
+20Hz control and ignore their internal time limit, allowing Inspect Robots to
+stop at native success or the explicit step budget. This extends task time;
+it does not establish task success or 20Hz model inference.
+
+Saved per-step NPY sidecars can be encoded by
+`scripts/robocasa-astra/publish_videos.py`. Use the private runtime's
+`imageio-ffmpeg` package. The full queue supervisor publishes live step counts
+and final 20fps videos on the standalone video board.

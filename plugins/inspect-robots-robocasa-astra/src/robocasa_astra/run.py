@@ -18,7 +18,7 @@ def main():
     parser.add_argument("--robot", choices=["PandaOmron", "GR1FloatingBody"], default="PandaOmron")
     parser.add_argument("--task", choices=["PrepareCoffee"], default="PrepareCoffee")
     parser.add_argument("--placement", action="store_true")
-    parser.add_argument("--steps", type=int, default=160)
+    parser.add_argument("--steps", type=int, default=1800)
     parser.add_argument("--seed", type=int, default=771001)
     parser.add_argument("--output", required=True)
     parser.add_argument("--codex", required=True)

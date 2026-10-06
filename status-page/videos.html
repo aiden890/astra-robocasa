@@ -16,26 +16,20 @@
     <div class="nav-tabs" aria-label="페이지 탭"><a href="index.html">메인</a><a href="videos.html" class="active" aria-current="page">영상</a></div>
   </nav>
 </header>
-<main id="content" class="wrap" aria-label="롤아웃 영상">
-  <section class="tab active" aria-labelledby="videos-title">
-<h1 id="videos-title">롤아웃 검토 영상</h1>
-<p class="dim">2026-10-06 · Spark2 · gpt-6-astra 구독 호출 · PrepareCoffee</p>
-<div class="card"><p style="margin:0">모델 호출마다 저장된 관측 이미지를 순서대로 재생합니다. 연속 녹화가 아니며, 관측 한 장당 1초로 표시합니다. 실제 실행 시간이나 시뮬레이션 속도와 다릅니다. 두 실행 모두 64스텝 테스트이며 커피 태스크 성공에 도달하지 못했습니다.</p></div>
-<article class="card">
-<h2>1. PandaOmron · 기본 로봇</h2>
-<video controls playsinline preload="metadata" poster="media/panda-coffee-64-001.jpg" aria-label="PandaOmron 롤아웃 관측 기록"><source src="media/panda-coffee-64-001.mp4" type="video/mp4"></video>
-<p class="vcap">64스텝 · 관측 18장 · 실제 실행 약 197초 · 태스크 미성공</p>
-<p class="vsub">왼쪽 카메라 → 오른쪽 카메라 → 손목 카메라</p>
-<a href="media/panda-coffee-64-001.mp4">영상 파일 열기</a>
-</article>
-<article class="card">
-<h2>2. GR1FloatingBody · 양팔 로봇</h2>
-<video controls playsinline preload="metadata" poster="media/gr1-coffee-64-001.jpg" aria-label="GR1 양팔 롤아웃 관측 기록"><source src="media/gr1-coffee-64-001.mp4" type="video/mp4"></video>
-<p class="vcap">64스텝 · 관측 13장 · 실제 실행 약 134초 · 태스크 미성공</p>
-<p class="vsub">왼쪽 카메라 → 오른쪽 카메라 → 오른손 카메라 → 왼손 카메라</p>
-<a href="media/gr1-coffee-64-001.mp4">영상 파일 열기</a>
-</article>
-</section>
+<main id="content" class="wrap" aria-label="롤아웃 영상 게시판">
+<h1>롤아웃 영상</h1>
+<p class="dim">매 제어 스텝을 저장한 20fps 영상입니다. 재생 시간은 시뮬레이션 시간이며 모델 응답 대기는 포함하지 않습니다.</p>
+<div class="card filters">
+<label>로봇 <select id="robot"><option value="">전체</option><option>PandaOmron</option><option>GR1FloatingBody</option></select></label>
+<label>태스크 <select id="task"><option value="">전체</option><option>PrepareCoffee</option></select></label>
+<label>결과 <select id="status"><option value="">전체</option><option>진행 중</option><option>성공</option><option>미성공</option><option>오류</option></select></label>
+<label class="search">검색 <input id="search" type="search" placeholder="실행 이름 검색"></label>
+</div>
+<p id="count" class="dim" aria-live="polite">목록을 불러오는 중입니다.</p>
+<div class="card board"><table><thead><tr><th>번호</th><th>실행 / 로봇</th><th>태스크</th><th>결과</th><th>스텝</th><th>영상 길이</th><th>영상</th></tr></thead><tbody id="rows"></tbody></table></div>
+<div class="pagination"><button id="prev">이전</button><span id="page"></span><button id="next">다음</button></div>
+<dialog id="player"><div class="player-head"><h2 id="player-title"></h2><button id="close-player" aria-label="영상 닫기">닫기</button></div><video id="video" controls playsinline preload="metadata"></video><p id="detail" class="dim"></p></dialog>
+<script src="assets/videos.js"></script>
 </main>
 </body>
 </html>
