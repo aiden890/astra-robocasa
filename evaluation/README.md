@@ -91,7 +91,7 @@ checksums. Never mix its results with the retired set.
 Each task uses layouts 1 through 10 and styles 1 through 10, one pair per seed in seed-list
 order. Generation verifies the actual episode metadata rather than relying on the constructor
 arguments. SHA256 fingerprints of the complete referenced mesh/texture asset sets must be
-unique within each task. Shared robot assets may be reused across scenes. Different kitchen
+unique across the complete collection and within each task. Shared robot assets may be reused across scenes. Different kitchen
 asset composition does not mean every individual object model is unique.
 
 The builder independently restores every snapshot and checks the exact simulator state,

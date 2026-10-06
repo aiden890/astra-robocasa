@@ -48,5 +48,6 @@
   "old_set_deleted": true,
   "native_rollout_results_preserved": true,
   "model_calls_for_generation": 0,
-  "robot_actions_for_generation": 0
+  "robot_actions_for_generation": 0,
+  "unique_asset_compositions_total": 50
 }
