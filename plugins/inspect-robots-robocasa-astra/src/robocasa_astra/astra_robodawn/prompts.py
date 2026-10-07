@@ -1,15 +1,23 @@
 """Prompt construction (adapted from RoboDawn ``harness/agent/prompts.py`` and ``demos.py``).
 
-Everything that is identical across the turns of an episode goes into the system prompt file
-(``model_instructions_file``: role, command grammar, robot profile, primer and task demonstration
-text, reply rules) so that it forms a stable, cacheable prefix. Demonstration images are attached
-first, then the current views, then the per-turn text.
+The system prompt holds what is identical for every model (role, robot profile, command grammar,
+success condition, reply rules). Each request's user input is, in order (as in RoboDawn's
+``demo_messages``): the demonstration block, where every demonstration turn's image is immediately
+followed by its own text (state, scene, plan, commands, net effect, failed commands), closed by an
+END sentence; then the current camera views; then the per-turn text. The demonstration block is the
+same in every request of an episode, so it forms a stable, cacheable prefix.
+
+Input parts are ``{"type": "text", "text": str}`` or ``{"type": "image", "path": str}``.
 
 Demonstration format (``assets/demos/<name>/demo.json``)::
 
     {"kind": "primer" | "task", "task": str, "instruction": str, "source": {...}, "note": str,
      "frames": [{"label": str, "image": "frames/x.png" | null, "state": str, "scene": str,
-                 "plan": str, "commands": [str], "effect": str}]}
+                 "plan": str, "commands": [str], "failed": [str], "effect": str}]}
+
+``commands`` are the commands that worked; ``failed`` the ones that did not (with the reason), shown
+apart as in RoboDawn. ``effect`` is the net effect of the turn, relative to the task objects where the
+builder could measure them.
 """
 
 from __future__ import annotations
@@ -81,13 +89,8 @@ SUCCESS_CONDITIONS = {
         "both vegetables in the pot on the lit burner, spatula grasped, stir so both vegetables move for >= 5 steps"),
 }
 
-DEMO_NOTE = (
-    "DEMONSTRATIONS are shown below: first a PRIMER showing what each command does, then (if present) one "
-    "successful episode of the same kind of task recorded by an expert in a DIFFERENT kitchen (other layout, "
-    "object positions and heights). Copy the strategy (order of sub-goals, gripper orientation, how it aligned, "
-    "approach and retreat, when it checked the wrist camera), NOT its numbers: read positions for YOUR scene from "
-    "your own images and state. Demonstration images are attached first, labelled D1, D2, ..."
-)
+END_OF_DEMOS = ("--- END OF THE DEMONSTRATIONS. Your own episode starts with the next images; its kitchen, object "
+                "positions and heights differ, so measure everything again from your own images and state.")
 
 
 @dataclass
@@ -123,33 +126,86 @@ def _profile_text(profile: dict) -> str:
             f"CAMERAS: {p['cameras']}\n\nGRIPPER: {p['gripper']}\n\nTIPS:\n{tips}")
 
 
-def render_demos(demos: list[Demo]) -> tuple[str, list[Path]]:
-    """Demonstration text for the system prompt and the image files it refers to (D1, D2, ...)."""
-    blocks, images = [], []
+def text_part(text: str) -> dict:
+    return {"type": "text", "text": text}
+
+
+def image_part(path: Path | str) -> dict:
+    return {"type": "image", "path": str(path)}
+
+
+def _primer_parts(demo: Demo) -> list[dict]:
+    d = demo.data
+    n_img = sum(1 for f in d["frames"] if f.get("image"))
+    parts = [text_part(f"COMMAND PRIMER ({len(d['frames'])} steps, {n_img} images; not a task): what each command does, "
+                       "shown in a kitchen that is not yours. For every step you see the image BEFORE the commands, then "
+                       "the state, an explanation, the commands and their measured effect; the next image shows the "
+                       "result. Read it once: the task demonstration follows.")]
+    for frame in d["frames"]:
+        if frame.get("image"):
+            parts.append(image_part(demo.folder / frame["image"]))
+        lines = [f"--- PRIMER {frame['label']}"]
+        if frame.get("state"):
+            lines.append(f"state: {frame['state']}")
+        if frame.get("plan"):
+            lines.append(f"explanation: {frame['plan']}")
+        if frame.get("commands"):
+            lines.append("commands: " + json.dumps(frame["commands"]))
+        if frame.get("effect"):
+            lines.append("effect: " + frame["effect"])
+        parts.append(text_part("\n".join(lines)))
+    return parts
+
+
+def _task_parts(demo: Demo) -> list[dict]:
+    d = demo.data
+    n_img = sum(1 for f in d["frames"] if f.get("image"))
+    header = (f"DEMONSTRATION (a successful episode of the same kind of task in a DIFFERENT kitchen; {len(d['frames'])} "
+              f"turns, {n_img} images). Its instruction was: \"{d['instruction']}\".\n"
+              "For each turn you see the image the controller received (left overview camera, when shown), then its "
+              "state, the scene as read off that image, its plan and the commands it sent; the next turn starts after "
+              "they were executed. Copy the strategy (order of sub-goals, gripper orientation, how it aligned, approach "
+              "and retreat), NOT its numbers: positions and heights in your kitchen differ.")
+    if any(f.get("effect") for f in d["frames"]):
+        header += ("\nEach turn also states its NET EFFECT, relative to the task objects where it was measured (how far "
+                   "the fingertips ended up from the handle/object, how far a door opened). Reproduce these "
+                   "object-relative effects in your scene; the command numbers belong to the demonstration's positions.")
+    if d.get("note"):
+        header += "\nNote: " + d["note"]
+    parts = [text_part(header)]
+    for frame in d["frames"]:
+        if frame.get("image"):
+            parts.append(image_part(demo.folder / frame["image"]))
+        lines = [f"--- DEMO {frame['label']}"]
+        for key in ("state", "scene", "plan"):
+            if frame.get(key):
+                lines.append(f"{key}: {frame[key]}")
+        if frame.get("commands"):
+            lines.append("commands: " + json.dumps(frame["commands"]))
+        if frame.get("effect"):
+            lines.append("net effect: " + frame["effect"])
+        if frame.get("failed"):
+            lines.append("(FAILED: " + "; ".join(frame["failed"]) + ")")
+        parts.append(text_part("\n".join(lines)))
+    return parts
+
+
+def demo_parts(demos: list[Demo]) -> list[dict]:
+    """The demonstration block placed at the start of every request: image, then its text, per turn; END."""
+    if not demos:
+        return []
+    parts = []
     for demo in demos:
-        d = demo.data
-        title = "PRIMER (what each command does)" if d["kind"] == "primer" else f"DEMONSTRATION of task {d['task']}"
-        lines = [f"=== {title} ===", f"Instruction: {d['instruction']}"]
-        if d.get("note"):
-            lines.append(f"Note: {d['note']}")
-        for frame in d["frames"]:
-            tag = ""
-            if frame.get("image"):
-                images.append(demo.folder / frame["image"])
-                tag = f" [image D{len(images)}]"
-            lines.append(f"-- {frame['label']}{tag}")
-            for key in ("state", "scene", "plan"):
-                if frame.get(key):
-                    lines.append(f"   {key}: {frame[key]}")
-            if frame.get("commands"):
-                lines.append(f"   commands: {json.dumps(frame['commands'])}")
-            if frame.get("effect"):
-                lines.append(f"   effect: {frame['effect']}")
-        blocks.append("\n".join(lines))
-    return "\n\n".join(blocks), images
+        parts += _primer_parts(demo) if demo.data["kind"] == "primer" else _task_parts(demo)
+    return parts + [text_part(END_OF_DEMOS)]
 
 
-def system_prompt(profile: dict, demo_text: str, task: str | None = None) -> str:
+def parts_text(parts: list[dict]) -> str:
+    """Readable rendering of input parts for review files: texts verbatim, images as ``[image: path]``."""
+    return "\n\n".join(p["text"] if p["type"] == "text" else f"[image: {p['path']}]" for p in parts)
+
+
+def system_prompt(profile: dict, task: str | None = None, shown_demos: bool = False) -> str:
     """Static instructions for the whole episode (written to the model instructions file)."""
     success = SUCCESS_CONDITIONS.get(task)
     parts = [
@@ -162,8 +218,10 @@ def system_prompt(profile: dict, demo_text: str, task: str | None = None) -> str
     if success:
         parts.append("TASK SUCCESS CONDITION (checked after every simulation step; the episode ends successfully the "
                      "moment ALL of these hold at the same time, and only then):\n" + success[0])
-    if demo_text:
-        parts += [DEMO_NOTE, demo_text]
+    if shown_demos:
+        parts.append("DEMONSTRATIONS: every request starts with a demonstration block (a command primer, then possibly one "
+                     "successful episode of the same kind of task in another kitchen), each image followed by its text, "
+                     "and closed by an END line. After it come your own current images and the turn text.")
     parts.append(
         "RESPONSE FORMAT: reply with ONE JSON object with these fields, in this order:\n"
         '  "scene": one or two sentences: where the relevant objects, handles and the fingertips are (in cm, robot frame)\n'
@@ -192,7 +250,7 @@ def state_text(state: dict) -> str:
 
 
 def turn_text(turn: int, max_turns: int, instruction: str, state: dict, last_results: list[dict], memory_text: str,
-              captions: list[str], n_demo_images: int, task: str | None = None) -> str:
+              captions: list[str], task: str | None = None) -> str:
     parts = [f"TASK: {instruction}"]
     if task in SUCCESS_CONDITIONS:
         parts.append("SUCCESS WHEN (all at once): " + SUCCESS_CONDITIONS[task][1])
@@ -203,10 +261,7 @@ def turn_text(turn: int, max_turns: int, instruction: str, state: dict, last_res
         parts.append("RESULT OF YOUR LAST COMMANDS:\n" + "\n".join(lines))
     parts.append("CURRENT STATE:\n" + state_text(state))
     parts.append(memory_text)
-    images = []
-    if n_demo_images:
-        images.append(f"D1..D{n_demo_images} = demonstration images (see the system instructions)")
-    images += [f"C{i + 1} = {c}" for i, c in enumerate(captions)]
-    parts.append("IMAGES ATTACHED (in order): " + "; ".join(images))
+    images = [f"C{i + 1} = {c}" for i, c in enumerate(captions)]
+    parts.append("YOUR CURRENT IMAGES (the last images before this text, in order): " + "; ".join(images))
     parts.append("Reply with the JSON object.")
     return "\n\n".join(parts)

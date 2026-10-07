@@ -124,7 +124,9 @@
     "point down",
     "move forward 19"
    ],
-   "effect": "point down: ok (reached); fingertips moved forward -0, left +0, up -1 cm | move forward 19: ok (reached); fingertips moved forward +18, left -0, up -0 cm"
+   "failed": [],
+   "effect": "onion forward +1, left +1, up -54 cm from the fingertips (54 cm away); onion centre 51 cm horizontally from the plate centre; fingertips moved forward +18, left +0, up -1 cm",
+   "command_results": "point down: ok (reached); fingertips moved forward -0, left +0, up -1 cm | move forward 19: ok (reached); fingertips moved forward +18, left -0, up -0 cm"
   },
   {
    "label": "turn 2",
@@ -137,7 +139,9 @@
     "move down 20",
     "move down 16"
    ],
-   "effect": "move down 20: ok (reached); fingertips moved forward -0, left +0, up -19 cm | move down 20: ok (reached); fingertips moved forward -0, left +0, up -19 cm | move down 16: ok (reached); fingertips moved forward -0, left +0, up -15 cm"
+   "failed": [],
+   "effect": "onion forward +1, left +1, up -0 cm from the fingertips (2 cm away); onion centre 51 cm horizontally from the plate centre; fingertips moved forward -0, left +0, up -53 cm",
+   "command_results": "move down 20: ok (reached); fingertips moved forward -0, left +0, up -19 cm | move down 20: ok (reached); fingertips moved forward -0, left +0, up -19 cm | move down 16: ok (reached); fingertips moved forward -0, left +0, up -15 cm"
   },
   {
    "label": "turn 3 (image: left overview camera before the turn)",
@@ -148,7 +152,9 @@
    "commands": [
     "gripper close"
    ],
-   "effect": "gripper close: ok (fingers stopped at opening 0.86: something stops them - an object between the fingers (grasped) or a finger pressing on a surface; check the wrist camera)"
+   "failed": [],
+   "effect": "onion forward +1, left +1, up -1 cm from the fingertips (2 cm away); onion centre 51 cm horizontally from the plate centre; fingertips moved forward +0, left -0, up +0 cm",
+   "command_results": "gripper close: ok (fingers stopped at opening 0.86: something stops them - an object between the fingers (grasped) or a finger pressing on a surface; check the wrist camera)"
   },
   {
    "label": "turn 4",
@@ -160,7 +166,9 @@
     "move up 20",
     "move up 15"
    ],
-   "effect": "move up 20: ok (reached); fingertips moved forward -0, left -0, up +19 cm | move up 15: ok (reached); fingertips moved forward -0, left -0, up +14 cm"
+   "failed": [],
+   "effect": "onion forward +1, left +1, up -1 cm from the fingertips (2 cm away); onion centre 51 cm horizontally from the plate centre; fingertips moved forward -0, left +0, up +33 cm",
+   "command_results": "move up 20: ok (reached); fingertips moved forward -0, left -0, up +19 cm | move up 15: ok (reached); fingertips moved forward -0, left -0, up +14 cm"
   },
   {
    "label": "turn 5",
@@ -174,7 +182,9 @@
     "move left 10",
     "move left 10"
    ],
-   "effect": "move back 7: ok (reached); fingertips moved forward -6, left +0, up +0 cm | move left 10: ok (reached); fingertips moved forward -0, left +9, up -0 cm | move left 10: ok (reached); fingertips moved forward -0, left +9, up -0 cm | move left 10: ok (reached); fingertips moved forward -0, left +9, up -0 cm"
+   "failed": [],
+   "effect": "onion forward +1, left +1, up -1 cm from the fingertips (2 cm away); onion centre 23 cm horizontally from the plate centre; fingertips moved forward -6, left +28, up -0 cm",
+   "command_results": "move back 7: ok (reached); fingertips moved forward -6, left +0, up +0 cm | move left 10: ok (reached); fingertips moved forward -0, left +9, up -0 cm | move left 10: ok (reached); fingertips moved forward -0, left +9, up -0 cm | move left 10: ok (reached); fingertips moved forward -0, left +9, up -0 cm"
   },
   {
    "label": "turn 6",
@@ -187,7 +197,9 @@
     "move left 10",
     "move left 8"
    ],
-   "effect": "move back 6: ok (reached); fingertips moved forward -5, left +0, up +0 cm | move left 10: ok (reached); fingertips moved forward +0, left +9, up +0 cm | move left 8: ok (reached); fingertips moved forward -0, left +7, up -0 cm"
+   "failed": [],
+   "effect": "onion forward +1, left +1, up -1 cm from the fingertips (2 cm away); onion centre 5 cm horizontally from the plate centre; fingertips moved forward -5, left +17, up +0 cm",
+   "command_results": "move back 6: ok (reached); fingertips moved forward -5, left +0, up +0 cm | move left 10: ok (reached); fingertips moved forward +0, left +9, up +0 cm | move left 8: ok (reached); fingertips moved forward -0, left +7, up -0 cm"
   },
   {
    "label": "turn 7 (image: left overview camera before the turn)",
@@ -199,7 +211,9 @@
     "move down 12",
     "gripper open"
    ],
-   "effect": "move down 12: ok (reached); fingertips moved forward -0, left -0, up -12 cm | gripper open: ok (gripper opened to 0.86)"
+   "failed": [],
+   "effect": "onion forward +1, left +1, up -1 cm from the fingertips (2 cm away); onion centre 5 cm horizontally from the plate centre; fingertips moved forward -0, left -0, up -12 cm",
+   "command_results": "move down 12: ok (reached); fingertips moved forward -0, left -0, up -12 cm | gripper open: ok (gripper opened to 0.86)"
   },
   {
    "label": "turn 8",
@@ -209,16 +223,17 @@
    "plan": "Move the gripper well away (the check requires more than 25 cm between gripper and object): up and back.",
    "commands": [
     "move up 20",
-    "move up 10",
-    "move back 15"
+    "move up 10"
    ],
-   "effect": "move up 20: ok (reached); fingertips moved forward -0, left -0, up +19 cm | move up 10: FAILED (only part of the way: fingertips moved forward -0.0, left -0.1, up +5.0 cm and turned 0 deg; remaining error 5.0 cm / 0 deg; cause: probably contact with an object or fixture; stopped early: task success) | move back 15: FAILED (not executed: task success)"
+   "failed": [],
+   "effect": "onion forward +0, left +4, up -25 cm from the fingertips (25 cm away); onion centre 2 cm horizontally from the plate centre; fingertips moved forward +0, left -0, up +24 cm",
+   "command_results": "move up 20: ok (reached); fingertips moved forward -0, left -0, up +19 cm | move up 10: FAILED (only part of the way: fingertips moved forward -0.0, left -0.1, up +5.0 cm and turned 0 deg; remaining error 5.0 cm / 0 deg; cause: probably contact with an object or fixture; stopped early: task success) | move back 15: FAILED (not executed: task success)"
   },
   {
    "label": "final state (image)",
    "image": "frames/final.png",
    "state": "fingertips (forward 31, left 42, height 120) cm, approach (0.11, 0.01, -0.99), opening 0.99, work surface 92 cm",
-   "effect": "task checker: SUCCESS"
+   "effect": "onion forward +0, left +4, up -25 cm from the fingertips (25 cm away); onion centre 2 cm horizontally from the plate centre; task checker: SUCCESS"
   }
  ]
 }

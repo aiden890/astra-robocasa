@@ -1,4 +1,4 @@
-"""One model decision via the official ``codex exec`` with the saved ChatGPT subscription login.
+"""One model decision via the official ``codex exec`` (runs P4-P9; new runs use ``appserver.py``) with the saved ChatGPT subscription login.
 
 Every call writes, under its own folder: the exact command line, the user prompt, the attached image
 list, the raw JSONL event stream, stderr, the final message, and a ``call.json`` with usage, reasoning
@@ -66,6 +66,14 @@ def parse_events(lines: list[str]) -> dict:
     return out
 
 
+def write_input(folder: Path, parts: list[dict]) -> None:
+    """Review copies of one request's ordered input: ``input.json`` (parts, images as paths) and ``prompt.txt``."""
+    from .prompts import parts_text
+
+    (folder / "input.json").write_text(json.dumps(parts, indent=1))
+    (folder / "prompt.txt").write_text(parts_text(parts))
+
+
 class CodexCaller:
     """Calls ``codex exec`` for one turn; see the module docstring for what is recorded."""
 
@@ -96,10 +104,12 @@ class CodexCaller:
             command += ["--image", str(image)]
         return command + ["-"]
 
-    def call(self, prompt: str, images: list[Path], folder: Path) -> CallResult:
+    def call(self, parts: list[dict], folder: Path) -> CallResult:
+        """``codex exec`` cannot interleave: all images go first (in order), then all texts joined."""
         folder.mkdir(parents=True, exist_ok=True)
-        (folder / "prompt.txt").write_text(prompt)
-        (folder / "images.json").write_text(json.dumps([str(p) for p in images], indent=1))
+        write_input(folder, parts)
+        images = [Path(p["path"]) for p in parts if p["type"] == "image"]
+        prompt = "\n\n".join(p["text"] for p in parts if p["type"] == "text")
         env = {k: v for k, v in os.environ.items() if k not in ("OPENAI_API_KEY", "CODEX_API_KEY", "CODEX_ACCESS_TOKEN")}
         env["CODEX_HOME"] = self.codex_home
         attempts = []

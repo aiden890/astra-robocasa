@@ -37,3 +37,17 @@ def test_rotation_commands_prefers_presets():
     target = axis_angle_matrix([0, 0, 1], np.radians(30)) @ POINT_PRESETS["down"]
     cmds, _ = rotation_commands(POINT_PRESETS["down"], target)
     assert cmds == ["rotate yaw +30"]
+
+
+def test_split_results_keeps_partial_moves():
+    from robocasa_astra.astra_robodawn.demo_builder import pick_image_turns, split_results
+
+    results = [{"command": "move back 10", "ok": False, "note": "only part of the way", "moved_cm": [-8.9, 1.7, 0.0]},
+               {"command": "move down 20", "ok": False, "note": "blocked", "moved_cm": [0.0, 0.2, -0.3]},
+               {"command": "gripper close", "ok": True, "note": "closed"}]
+    ok, failed = split_results(results)
+    assert ok == ["move back 10", "gripper close"] and failed == ["move down 20: blocked"]
+    turns = [{"commands": ["move up 5"]}, {"commands": ["gripper close"]}, {"commands": ["move up 1"], "image": True},
+             {"commands": ["move up 2"]}, {"commands": ["point down"]}]
+    assert pick_image_turns(turns, 16) == [0, 1, 2, 4]
+    assert pick_image_turns(turns, 2) == [0, 4]

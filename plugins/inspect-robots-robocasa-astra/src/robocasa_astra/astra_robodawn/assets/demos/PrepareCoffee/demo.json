@@ -126,8 +126,8 @@
    "effect": "in the recording the fingertips moved forward -1, left -0, up +13 cm; approach became (0.83, -0.02, -0.56); gripper opening 0.99"
   },
   {
-   "label": "turn 2",
-   "image": null,
+   "label": "turn 2 (image: left overview camera at the start of the turn)",
+   "image": "frames/turn02.png",
    "state": "fingertips (forward 23, left -1, height 142) cm, approach (0.83, -0.02, -0.56), opening 0.99, work surface 92 cm",
    "scene": "Fingers half-forward, near the body at height ~142.",
    "plan": "Turn the fingers fully forward and rise to the mug's height.",
@@ -150,8 +150,8 @@
    "effect": "in the recording the fingertips moved forward +27, left -0, up -1 cm; approach became (0.99, -0.07, -0.15); gripper opening 0.27"
   },
   {
-   "label": "turn 4",
-   "image": null,
+   "label": "turn 4 (image: left overview camera at the start of the turn)",
+   "image": "frames/turn04.png",
    "state": "fingertips (forward 50, left -2, height 152) cm, approach (0.99, -0.07, -0.15), opening 1.00, work surface 92 cm",
    "scene": "Handle between the fingers.",
    "plan": "Grasp the handle.",
@@ -215,8 +215,8 @@
    "effect": "in the recording the fingertips moved forward +23, left -12, up -15 cm; approach became (0.49, -0.82, -0.30); gripper opening 0.84"
   },
   {
-   "label": "turn 9",
-   "image": null,
+   "label": "turn 9 (image: left overview camera at the start of the turn)",
+   "image": "frames/turn09.png",
    "state": "fingertips (forward 39, left -5, height 106) cm, approach (0.49, -0.82, -0.30), opening 0.17, work surface 92 cm",
    "scene": "Mug under the dispenser.",
    "plan": "Release the handle.",

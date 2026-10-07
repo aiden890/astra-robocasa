@@ -364,3 +364,21 @@
   - 마지막 턴에서 막 오른쪽 문을 열기 시작했을 때 step이 끝났습니다.
 - 문 열린 정도는 replay를 하지 않아 측정하지 않았습니다.
 - 영상: `runs/robodawn/P9-OpenCabinet-scene0-1shot/debug_sim.mp4`
+
+## P10 준비: few-shot을 RoboDawn 방식으로 변경 (2026-10-07, 완료, 모델 호출 없음)
+
+입력 구조를 RoboDawn `demo_messages`와 같게 바꿨습니다. 설명과 실제 입력(이미지 포함)은 `docs/astra-robodawn-fewshot.html`에 있습니다(`scripts/robocasa-astra/fewshot_view.py`로 다시 생성, 7.7 MB라 Git에는 넣지 않음).
+
+- **호출 방식:** `codex exec` 대신 `codex app-server`(`appserver.py`, `AppServerCaller`)를 씁니다. exec는 이미지를 항상 텍스트 앞에 붙여서, 이미지와 글을 번갈아 넣을 수 없습니다.
+  - 매 턴 새 ephemeral thread, effort low, reasoning summary detailed, 출력 스키마는 같습니다.
+  - 기록 파일: `input.json`(순서대로, 이미지는 경로), `prompt.txt`, `command.json`, `events.jsonl`(이미지 데이터는 생략), `response.json`, `call.json`.
+  - `run.py --caller exec`로 예전 방식도 쓸 수 있습니다(P4~P9 재현용).
+- **요청 구성:** 시스템 프롬프트(시연 글 제외) → 시연 블록(PRIMER, DEMO 각 턴: 이미지 → 그 턴의 글) → END 문장 → 현재 이미지 3장 → 턴 텍스트.
+  - 시연 블록은 실행 폴더의 `demo_block.json` / `demo_block.txt`에 저장됩니다.
+- **시연 다시 만들기** (`demo_builder.py`, 옛 시연은 Git 기록에 있음):
+  - 핵심 턴(첫 턴, gripper/point 턴, 지정 턴) 이미지, 마지막 포함 최대 16장. 과제 시연 이미지: OpenCabinet 7, PickPlace 4, PrepareCoffee 9, PanTransfer 7, StirVegetables 13 (명령 입문 8장 별도). 요청당 이미지 최대 24장.
+  - 실행기로 만든 시연(OpenCabinet, PickPlace)의 net effect를 물체 기준으로 바꿈: 문 열림 %, 가장 가까운 손잡이 위치, 물체 위치, 물체와 접시 중심 거리.
+  - 움직이지 못한 명령만 commands에서 빼고 "(FAILED: 명령: 이유)"로 따로 표시합니다. 일부만 움직인 명령(문이 버텨서 9/10 cm)은 commands에 남깁니다.
+  - 다시 실행해 두 시연 모두 성공을 확인했습니다(OpenCabinet 1016 step, PickPlace 347 step).
+- **검증:** 플러그인 테스트 76개 통과(가짜 app-server로 입력 순서, 이미지 data URL, 기록 파일 확인). 0번 장면 scripted dry run(`runs/robodawn/dry-fewshot-v2`)에서 요청 입력 순서를 확인했습니다.
+- 실제 Astra 실행은 아직 하지 않았습니다(장부 13/13).

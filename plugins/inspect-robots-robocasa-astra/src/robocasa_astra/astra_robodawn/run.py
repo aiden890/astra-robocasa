@@ -6,7 +6,8 @@
 Real model runs need ``--allow-astra`` and are counted in ``runs/astra_ledger.jsonl``; the protocol
 allows ``ASTRA_RUN_LIMIT`` real runs in total (P4: 1, P6: 5) and further runs are refused.
 
-Run directory: config.json, system_prompt.md, response_schema.json, episode_start.json, trace.jsonl,
+Run directory: config.json, system_prompt.md, demo_block.json/.txt (the demonstration block that starts
+every request), response_schema.json, episode_start.json, trace.jsonl,
 calls/turnNNN/ (every model call, raw), turns/ (images the model saw), memory.json, summary.json,
 video.mp4, replay/ (seed, initial state, model XML, native actions; exact replay), sim.log.
 """
@@ -22,9 +23,10 @@ import sys
 import time
 from pathlib import Path
 
+from .appserver import AppServerCaller
 from .codex import MODEL, REASONING_EFFORT, CodexCaller
 from .loop import EpisodeConfig, run_episode
-from .prompts import PROFILE_PATH, RESPONSE_SCHEMA, demos_for, load_profile, render_demos, system_prompt
+from .prompts import PROFILE_PATH, RESPONSE_SCHEMA, demo_parts, demos_for, load_profile, parts_text, system_prompt
 from .scripted import ScriptedCaller
 from .sim_client import SimClient
 
@@ -74,6 +76,9 @@ def main() -> None:
     parser.add_argument("--scripted", help="JSON list of replies to use instead of the model (no model call)")
     parser.add_argument("--allow-astra", action="store_true", help="really call gpt-6-astra (counted in the ledger)")
     parser.add_argument("--max-turns", type=int, help="override the per-task turn cap (dry runs only)")
+    parser.add_argument("--caller", choices=["appserver", "exec"], default="appserver",
+                        help="appserver: demonstration image+text interleaved (RoboDawn format, default); "
+                             "exec: codex exec, all images before the text (runs P4-P9)")
     parser.add_argument("--python", default=os.environ.get("ASTRA_PYTHON", sys.executable))
     parser.add_argument("--codex", default=os.environ.get("ASTRA_CODEX", "codex"))
     parser.add_argument("--codex-home", default=os.environ.get("ASTRA_CODEX_HOME", str(REPO / ".runtime" / "auth")))
@@ -104,9 +109,11 @@ def main() -> None:
                         max_turns=args.max_turns or spec["max_turns"])
 
     demos = demos_for(args.task, args.shots)
-    demo_text, demo_images = render_demos(demos)
-    prompt = system_prompt(load_profile(), demo_text, args.task)
+    demos_block = demo_parts(demos)
+    prompt = system_prompt(load_profile(), args.task, shown_demos=bool(demos_block))
     (run_dir / "system_prompt.md").write_text(prompt)
+    (run_dir / "demo_block.json").write_text(json.dumps(demos_block, indent=1))
+    (run_dir / "demo_block.txt").write_text(parts_text(demos_block))
     (run_dir / "response_schema.json").write_text(json.dumps(RESPONSE_SCHEMA, indent=1))
     codex_version = subprocess.run([args.codex, "--version"], capture_output=True, text=True).stdout.strip() \
         if not args.scripted else "not used (scripted)"
@@ -119,7 +126,9 @@ def main() -> None:
         "reasoning_effort": REASONING_EFFORT, "codex_version": codex_version, "git_commit": _git_commit(),
         "profile": {"path": str(PROFILE_PATH), "md5": _md5(PROFILE_PATH)},
         "demos": [{"name": d.name, "md5": _md5(d.folder / "demo.json")} for d in demos],
-        "demo_images": [str(p) for p in demo_images], "argv": sys.argv, "started": stamp,
+        "demo_block": {"parts": len(demos_block), "images": sum(p["type"] == "image" for p in demos_block),
+                       "files": ["demo_block.json", "demo_block.txt"]},
+        "caller": args.caller if args.allow_astra else "scripted", "argv": sys.argv, "started": stamp,
     }
     (run_dir / "config.json").write_text(json.dumps(config, indent=1))
 
@@ -128,16 +137,19 @@ def main() -> None:
         with LEDGER.open("a") as ledger:
             ledger.write(json.dumps({"started": stamp, "task": args.task, "shots": args.shots, "seed": seed,
                                      "scene": args.scene, "budget": cfg.budget, "run_dir": str(run_dir)}) + "\n")
-        caller = CodexCaller(args.codex, args.codex_home, run_dir / "system_prompt.md",
-                             run_dir / "response_schema.json", REPO / ".runtime" / "inference-empty")
+        kind = AppServerCaller if args.caller == "appserver" else CodexCaller
+        caller = kind(args.codex, args.codex_home, run_dir / "system_prompt.md", run_dir / "response_schema.json",
+                      REPO / ".runtime" / "inference-empty")
     else:
         caller = ScriptedCaller(json.loads(Path(args.scripted).read_text()))
 
     sim = SimClient(args.task, cfg.budget, run_dir, python=args.python, scene_dir=scene_dir)
     summary = {}
     try:
-        summary = run_episode(sim, caller, cfg, run_dir, demo_images)
+        summary = run_episode(sim, caller, cfg, run_dir, demos_block)
     finally:
+        if hasattr(caller, "close"):
+            caller.close()
         closing = sim.close()
         summary["simulator"] = closing
         summary["run_dir"] = str(run_dir)

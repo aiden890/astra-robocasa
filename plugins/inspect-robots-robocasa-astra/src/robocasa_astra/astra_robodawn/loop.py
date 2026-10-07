@@ -17,7 +17,7 @@ from .codex import ModelCallError
 from .commands import parse_command_list
 from .cost import add_usage, estimate
 from .memory import AgentMemory
-from .prompts import turn_text
+from .prompts import image_part, text_part, turn_text
 
 DONE_NOTE = ("NOT finished: the task checker has not registered success, so the episode continues. Re-read the "
              "instruction and compare it with the images (e.g. all doors fully open, object inside the container, "
@@ -45,8 +45,11 @@ def _save_views(views: list[dict], folder: Path, stem: str) -> list[Path]:
     return paths
 
 
-def run_episode(sim, caller, cfg: EpisodeConfig, run_dir: Path, demo_images: list[Path]) -> dict:
-    """Run one episode against an already started simulator client; returns the summary dict."""
+def run_episode(sim, caller, cfg: EpisodeConfig, run_dir: Path, demo_parts: list[dict]) -> dict:
+    """Run one episode against an already started simulator client; returns the summary dict.
+
+    Every request is ``demo_parts`` (the fixed demonstration block) + the current views + the turn text.
+    """
     run_dir = Path(run_dir)
     start = sim.request("reset", seed=cfg.seed)
     instruction = start["instruction"]
@@ -65,14 +68,15 @@ def run_episode(sim, caller, cfg: EpisodeConfig, run_dir: Path, demo_images: lis
         state = obs["state"]
         view_paths = _save_views(obs["views"], run_dir / "turns", f"turn{turn:03d}")
         text = turn_text(turn, cfg.max_turns, instruction, state, last_results, memory.render(),
-                         [v["caption"] for v in obs["views"]], len(demo_images), cfg.task)
+                         [v["caption"] for v in obs["views"]], cfg.task)
         record = {"turn": turn, "time": round(time.time() - t_start, 1), "state": state,
                   "images": [str(p.relative_to(run_dir)) for p in view_paths],
                   "call_dir": f"calls/turn{turn:03d}", "prompt": text}
         steps_before = state["steps_used"]
         t_call = time.time()
         try:
-            reply = caller.call(text, list(demo_images) + view_paths, run_dir / "calls" / f"turn{turn:03d}")
+            parts = list(demo_parts) + [image_part(p) for p in view_paths] + [text_part(text)]
+            reply = caller.call(parts, run_dir / "calls" / f"turn{turn:03d}")
         except ModelCallError as exc:
             failures += 1
             record.update(error=str(exc))

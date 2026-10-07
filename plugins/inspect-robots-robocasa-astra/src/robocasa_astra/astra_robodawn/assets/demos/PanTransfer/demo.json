@@ -149,8 +149,8 @@
    "effect": "in the recording the fingertips moved forward +1, left -1, up +1 cm; approach became (-0.11, 0.16, -0.98); gripper opening 0.23"
   },
   {
-   "label": "turn 4",
-   "image": null,
+   "label": "turn 4 (image: left overview camera at the start of the turn)",
+   "image": "frames/turn04.png",
    "state": "fingertips (forward 48, left 3, height 97) cm, approach (-0.11, 0.16, -0.98), opening 0.99, work surface 95 cm",
    "scene": "Handle between the fingers.",
    "plan": "Grasp the handle.",
@@ -281,8 +281,8 @@
    "effect": "in the recording the fingertips moved forward +22, left +7, up -17 cm; approach became (-0.11, -0.08, -0.99); gripper opening 0.83"
   },
   {
-   "label": "turn 14",
-   "image": null,
+   "label": "turn 14 (image: left overview camera at the start of the turn)",
+   "image": "frames/turn14.png",
    "state": "fingertips (forward 60, left -15, height 96) cm, approach (-0.11, -0.08, -0.99), opening 0.32, work surface 95 cm",
    "scene": "Pan on the burner.",
    "plan": "Release the handle.",

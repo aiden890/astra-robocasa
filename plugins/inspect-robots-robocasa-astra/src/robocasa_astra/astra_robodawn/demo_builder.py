@@ -8,6 +8,11 @@
   itself: key frames from its own camera video, annotated like the live views (same robot-mounted
   camera, so the same projection), the expert's state at each turn start, the commands written as an
   approximate translation of the expert's motion, and the measured effect from the recording.
+* Each turn's ``effect`` is the NET effect, relative to the task objects when the builder runs the executor
+  (door openings, nearest handle, object and container positions from the fingertips); failed commands
+  are listed apart in ``failed`` and the per-command outcomes are kept in ``command_results`` for review.
+  Every key turn (first, gripper/orientation turns, turns flagged ``"image": true``) gets an image, up to
+  ``MAX_DEMO_IMAGES`` including the final one.
 * ``task <Task>`` (default mode): one task demonstration. The command plan in ``demo_plans/<Task>.json`` was written
   from the key events of a RoboCasa expert episode (``expert.key_events``); it is executed with the
   executor in that expert episode's own scene (rebuilt from its ep_meta, never the evaluation
@@ -124,7 +129,71 @@ def build_primer(out: Path) -> dict:
 
 PLAN_ROOT = Path(__file__).resolve().parent / "assets" / "demo_plans"
 KEY_KINDS = ("gripper", "point")
-MAX_DEMO_IMAGES = 6
+MAX_DEMO_IMAGES = 16  # key-turn images + the final image (RoboDawn shows every key turn's image)
+
+
+def object_effect(env, pose) -> str:
+    """The task objects relative to the fingertips after a turn, in the robot frame (the demo's NET EFFECT).
+
+    Doors: how far each door of the target fixture is open and where its nearest handle is; objects
+    (``obj``/``container`` of pick-and-place tasks): where the object is and how far it is from the container.
+    """
+    def rel(world) -> np.ndarray:
+        d = pose.base_rot.T @ (np.asarray(world) - pose.tip)
+        return d * 100
+
+    def where(d: np.ndarray) -> str:
+        return f"forward {d[0]:+.0f}, left {d[1]:+.0f}, up {d[2]:+.0f} cm from the fingertips ({np.linalg.norm(d):.0f} cm away)"
+
+    parts = []
+    fxtr = getattr(env, "fxtr", None)
+    if fxtr is not None and hasattr(fxtr, "get_door_state"):
+        doors = fxtr.get_door_state(env)
+        parts.append("doors open: " + ", ".join(f"{k.replace('_', ' ')} {v * 100:.0f}%" for k, v in doors.items()))
+        model, data = env.sim.model, env.sim.data
+        handles = [i for i in range(model.nbody)
+                   if (n := model.body_id2name(i) or "").startswith(fxtr.name) and "handle" in n]
+        if handles:
+            d = min((rel(data.body_xpos[i]) for i in handles), key=np.linalg.norm)
+            parts.append("nearest handle " + where(d))
+    ids = getattr(env, "obj_body_id", {})
+    if "obj" in ids:
+        data = env.sim.data
+        obj = data.body_xpos[ids["obj"]]
+        parts.append(f"{env.get_obj_lang('obj')} " + where(rel(obj)))
+        if "container" in ids:
+            cont = data.body_xpos[ids["container"]]
+            parts.append(f"{env.get_obj_lang('obj')} centre {np.linalg.norm((obj - cont)[:2]) * 100:.0f} cm "
+                         f"horizontally from the {env.get_obj_lang('container')} centre")
+    return "; ".join(parts)
+
+
+def _did_nothing(r: dict) -> bool:
+    """A command that left the robot where it was (RoboDawn's FAILED: "arm did not move")."""
+    moved = r.get("moved_cm") or r.get("base_moved_cm") or [0.0]
+    turned = r.get("turned_deg", r.get("base_turned_deg", 0.0)) or 0.0
+    return float(np.linalg.norm(moved)) < 1.0 and abs(turned) < 3.0
+
+
+def split_results(results: list[dict]) -> tuple[list[str], list[str]]:
+    """Commands that had an effect and, apart, the ones that failed without moving (with their reason).
+
+    A command stopped part of the way (e.g. a door resisting the pull) still moved the robot, so it stays in
+    the command list; its shortfall shows in the net effect.
+    """
+    results = [r for r in results if not r["note"].startswith("not executed")]  # skipped after task success
+    ok = [r["command"] for r in results if r["ok"] or not _did_nothing(r)]
+    failed = [f"{r['command']}: {r['note']}" for r in results if not r["ok"] and _did_nothing(r)]
+    return ok, failed
+
+
+def pick_image_turns(turns: list[dict], limit: int) -> list[int]:
+    """Indices of the turns that get an image: first, flagged and gripper/orientation turns, thinned evenly."""
+    keep = [i for i, t in enumerate(turns)
+            if i == 0 or t.get("image") or any(c.split()[0] in KEY_KINDS for c in t.get("commands", []))]
+    if len(keep) > limit:
+        keep = [keep[round(k * (len(keep) - 1) / (limit - 1))] for k in range(limit)]
+    return sorted(set(keep))
 
 
 def read_video_frames(path: Path, indices: list[int]) -> dict:
@@ -200,7 +269,8 @@ def build_expert_demo(task: str, plan: dict, out: Path, dry: bool = False) -> di
     pose = Executor(env, step_budget=1).pose()
     surface = surface_height(env, pose.base, pose.base_rot)
     turns = expand_turns(episode, plan["turns"])
-    image_times = [t["t_start"] for t in turns if t.get("image")][: MAX_DEMO_IMAGES - 1] + [episode.length - 1]
+    shown = pick_image_turns(turns, MAX_DEMO_IMAGES - 1)
+    image_times = [turns[i]["t_start"] for i in shown] + [episode.length - 1]
     frames_raw = read_video_frames(episode.video(OVERVIEW_CAMERAS[0]), image_times)
 
     def picture(t: int, name: str) -> str:
@@ -217,7 +287,7 @@ def build_expert_demo(task: str, plan: dict, out: Path, dry: bool = False) -> di
     frames = []
     for i, turn in enumerate(turns, start=1):
         a, b = turn["t_start"], turn["t_end"]
-        image = picture(a, f"turn{i:02d}.png") if a in image_times[:-1] and turn.get("image") else None
+        image = picture(a, f"turn{i:02d}.png") if i - 1 in shown else None
         state = {"fingertip_cm": episode.tip_cm[a].tolist(), "approach": episode.rot[a][:, 2].tolist(),
                  "gripper_opening": float(episode.opening[a])}
         frames.append({"label": f"turn {i}" + (" (image: left overview camera at the start of the turn)" if image else ""),
@@ -254,25 +324,30 @@ def build_task_demo(task: str, out: Path, dry: bool = False) -> dict:
     episode = load_episode(task, plan["episode"])
     env = make_env_from_ep_meta(task, episode.ep_meta)
     executor = Executor(env, step_budget=plan.get("budget", 100000))
-    frames, images = [], 0
+    frames = []
+    shown = pick_image_turns(plan["turns"], MAX_DEMO_IMAGES - 1)
     if not dry:
         (out / "frames").mkdir(parents=True, exist_ok=True)
     for i, turn in enumerate(plan["turns"], start=1):
         pose = executor.pose()
         surface = surface_height(env, pose.base, pose.base_rot)
-        key = i == 1 or any(c.split()[0] in KEY_KINDS for c in turn["commands"])
         image = None
-        if key and images < MAX_DEMO_IMAGES - 1 and not dry:
-            images += 1
+        if i - 1 in shown and not dry:
             img = annotate(env, OVERVIEW_CAMERAS[0], pose.tip, pose.base, pose.base_rot, surface)
             image = f"frames/turn{i:02d}.png"
             img.resize((DEMO_IMAGE_SIZE, DEMO_IMAGE_SIZE)).save(out / image)
         before = executor.state()
+        tip_before = np.array(before["fingertip_cm"])
         results = [executor.execute(parse_command(c)).to_json() for c in turn["commands"]]
+        ok, failed = split_results(results)
+        moved = np.array(executor.state()["fingertip_cm"]) - tip_before
+        relative = object_effect(env, executor.pose())
+        effect = (relative + "; " if relative else "") + f"fingertips moved forward {moved[0]:+.0f}, left {moved[1]:+.0f}, up {moved[2]:+.0f} cm"
         frames.append({"label": f"turn {i}" + (" (image: left overview camera before the turn)" if image else ""),
                        "image": image, "state": _state_line(before, surface * 100), "scene": turn.get("scene", ""),
-                       "plan": turn["plan"], "commands": turn["commands"], "effect": _effect(results)})
-        print(f"turn {i}: {turn['commands']} -> {_effect(results)[:200]} | success={executor.success}")
+                       "plan": turn["plan"], "commands": ok, "failed": failed, "effect": effect,
+                       "command_results": _effect(results)})
+        print(f"turn {i}: {ok} failed={failed} -> {effect[:220]} | success={executor.success}")
         if executor.success:
             break
     pose = executor.pose()
@@ -280,9 +355,11 @@ def build_task_demo(task: str, out: Path, dry: bool = False) -> dict:
     if not dry:
         img = annotate(env, OVERVIEW_CAMERAS[0], pose.tip, pose.base, pose.base_rot, surface)
         img.resize((DEMO_IMAGE_SIZE, DEMO_IMAGE_SIZE)).save(out / "frames" / "final.png")
+        final_effect = object_effect(env, pose)
         frames.append({"label": "final state (image)", "image": "frames/final.png",
                        "state": _state_line(executor.state(), surface * 100),
-                       "effect": "task checker: SUCCESS" if executor.success else "task checker: not successful"})
+                       "effect": (final_effect + "; " if final_effect else "") +
+                       ("task checker: SUCCESS" if executor.success else "task checker: not successful")})
     result = {"success": executor.success, "steps": executor.steps_used, "turns": len(frames)}
     env.close()
     demo = {
