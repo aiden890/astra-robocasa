@@ -36,8 +36,9 @@ LEDGER = REPO / "runs" / "astra_ledger.jsonl"
 # + P8: 1 (OpenCabinet scene 0 with a 3600-step budget; stopped at turn 17, budget option since removed)
 # + P9: 1 (OpenCabinet scene 0 with the "open to the stop, do not touch an opened door" success wording)
 # + P10: 1 (PrepareCoffee scene 0, RoboDawn-style interleaved few-shot, "a coffee stream shows the button worked";
-#   stopped at turn 14 because of the reconnect-notice bug) + P11: 1 (PrepareCoffee scene 1, 2400 steps).
-ASTRA_RUN_LIMIT = 15
+#   stopped at turn 14 because of the reconnect-notice bug) + P11: 1 (PrepareCoffee scene 1, 2400 steps)
+# + P12: 1 (PrepareCoffee scene 1, 2400 steps, demo: lower in front of the machine, then slide in).
+ASTRA_RUN_LIMIT = 16
 SCENE_INDEX = Path(__file__).resolve().parent / "assets" / "scenes.json"
 STEPS_PER_TURN_CAP = 40  # max turns = horizon // 40 for common scenes (45 for 1800 steps, 60 for 2400)
 
