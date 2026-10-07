@@ -136,3 +136,7 @@ Spark2의 실제 PandaOmron에서는 5개 태스크 각각 4스텝 ack 후 환�
 PrepareCoffee에서는 행동이 physics에 적용됐지만 ack 전에 예외가 난 경우도 별도로 검증했습니다. [Native 오류 복구 증거](../reports/vla-depth-recovery/native-fault-proof.json)에서 승인된 4스텝부터 재생해 pending 5번째 행동을 한 번 적용하고 8스텝까지 이어가는 것을 확인했습니다.
 
 최종 로컬 검사: Astra 플러그인 94개 테스트 통과·1개 선택 의존성 검사 건너뜀, 코어 2,089개 통과·6개 건너뜀 및 coverage 100%, strict mypy 89개 파일 통과입니다. 변경한 Python 파일 19개는 Ruff 검사와 포맷 검사를 통과했습니다. 전체 저장소의 Ruff/포맷 검사에는 기준 브랜치부터 존재하던 다른 파일의 오류가 남아 있으므로 전체 저장소가 lint clean이라고 주장하지 않습니다.
+
+## 작업 및 배포 위치
+
+이 브랜치의 이후 구현·정리·검사·커밋·push는 모두 Lab-desktop에서 수행합니다. 작업 폴더는 `/home/aiden/Desktop/lab/robot/astra-vla-cartesian-rgb-depth`입니다. 기존 `/home/aiden/Desktop/lab/robot/astra-robocasa`의 미커밋 시각화·평가 변경을 보존하기 위해 별도 worktree를 사용합니다. 기존 실행 폴더에는 VLA 모듈과 필요한 공통 파일만 백업 후 반영합니다. 브랜치 전체를 전환하거나 실험을 자동으로 시작하지 않습니다.

@@ -171,3 +171,10 @@ short version:
 
 Style-only edits must never touch YAML frontmatter, code blocks, numbers,
 links, or safety qualifiers.
+
+## Astra development host
+
+- All Astra RoboCasa code edits, implementation, cleanup, tests, commits and pushes must run on Lab-desktop. A Mac checkout is not the authoritative development or deployment source.
+- Preserve the main checkout at `/home/aiden/Desktop/lab/robot/astra-robocasa`, including uncommitted user changes and runtime evidence. If switching branches would disturb it, use another Git worktree on Lab-desktop.
+- Current VLA worktree: `/home/aiden/Desktop/lab/robot/astra-vla-cartesian-rgb-depth`, branch `codex/vla-cartesian-rgb-depth`.
+- Native simulation runs on Spark2; videos and input frames stay on Lab. Code updates must not restart experiments or overwrite active work.
