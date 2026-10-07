@@ -47,17 +47,22 @@ function clearOutput(message) {
   el("action-phase").textContent="연결된 호출 없음";el("seek-call").disabled=true;
 }
 async function selectVideo(row) {
-  const current=++generation;selected=row;calls=[];
+  const current=++generation;
+  const continuing=selected?.id===row.id&&selected?.cumulative_live;
+  const savedTime=continuing?el("video").currentTime:0,savedPaused=continuing?el("video").paused:false,savedCall=continuing?el("call").value:"auto";
+  if(row.live_clip&&row.visualization_data){try{const response=await fetch(new URL("playback.json",sameOriginPath(row.visualization_data)),{cache:"no-store"});if(response.ok){const playback=await response.json();row={...row,video:playback.video,video_start_step:0,cumulative_live:true,cumulative_version:playback.version,available_end_step:playback.end_step}}}catch(e){}}
+  if(current!==generation)return;
+  selected=row;calls=[];
   el("video").pause();el("video-error").hidden=true;
   el("title").textContent=row.task+" · "+(row.scene_id||row.id);
   el("meta").textContent=[model(row),condition(row),row.robot,row.steps!=null?row.steps.toLocaleString()+" native 스텝":null,row.excluded_from_current_target?"현재 평가 대상에서 제외된 보존 기록":null].filter(Boolean).join(" · ");
   el("result-badge").textContent=status(row);el("result-badge").className="badge "+(status(row)==="성공"?"success":status(row)==="미성공"?"failed":"");
   el("call").replaceChildren(new Option("현재 재생 위치에 맞추기","auto"));
   clearOutput("모델 출력 기록을 불러오는 중입니다.");
-  const playbackURL=new URL(sameOriginPath(row.video));playbackURL.searchParams.set("playback",String(row.live_version||1));
+  const playbackURL=new URL(sameOriginPath(row.video));playbackURL.searchParams.set("playback",String(row.cumulative_version||row.live_version||1));
   el("video").src=playbackURL.href;el("video").poster=sameOriginPath(row.poster)||"";el("video").load();
   el("video").playbackRate=Number(el("speed").value);
-  if(row.live_clip){el("video").muted=true;el("video").play().catch(()=>{});}
+  if(row.live_clip){el("video").muted=true;el("video").addEventListener("loadedmetadata",()=>{el("video").currentTime=Math.min(savedTime,Math.max(0,el("video").duration-0.05));if(!savedPaused)el("video").play().catch(()=>{});},{once:true});}
   const url=new URL(location.href);url.searchParams.set("id",row.id);history.replaceState(null,"",url);
   renderList();
   const dataPath=row.visualization_data||outputIndex[row.id];
@@ -70,6 +75,7 @@ async function selectVideo(row) {
     calls=(data.calls||[]).filter(c=>Number.isInteger(c.step)).sort((a,b)=>a.step-b.step||a.call.localeCompare(b.call));
     selected={...row,control_hz:data.control_hz||row.fps||20,timeline_note:data.timeline_note};
     calls.forEach(c=>el("call").add(new Option(c.call+" · 스텝 "+c.step+((c.response.queries||[]).length?" · 거리 조회":" · 행동"),c.call)));
+    if([...el("call").options].some(o=>o.value===savedCall))el("call").value=savedCall;
     showOutput();
   } catch(e){if(current===generation){clearOutput("모델 출력 기록을 불러오지 못했습니다.");el("sync-state").textContent="기록 확인 불가"}}
 }
@@ -94,7 +100,7 @@ function showOutput() {
   el("queries").textContent=JSON.stringify({requests,answers},null,2);
   el("query-box").open=true;
   renderInputs(row,requests);
-  el("source-note").textContent=selected.live_clip?"현재 행동의 실제 프레임으로 만든 최신 20fps 영상입니다. 완료 후 전체 영상으로 바뀝니다.":selected.timeline_note||"원본 response.json · receipt.json · native 관측 스텝 기준";
+  el("source-note").textContent=selected.cumulative_live?"처음부터 누적된 실제 20fps 영상입니다. 인코더에 저장된 스텝 "+selected.available_end_step+"까지 재생할 수 있으며, 저장 중인 최신 프레임은 다음 갱신에 추가됩니다. 새 영상이 추가돼도 재생 위치를 유지합니다.":selected.live_clip?"현재 행동의 실제 프레임으로 만든 최신 20fps 영상입니다. 완료 후 전체 영상으로 바뀝니다.":selected.timeline_note||"원본 response.json · receipt.json · native 관측 스텝 기준";
   el("seek-call").disabled=!manual;
 }
 function renderInputs(row,requests) {
@@ -121,7 +127,11 @@ async function loadLibrary() {
     populate("task",records.map(r=>r.task));populate("model",records.map(model));populate("condition",records.map(condition));renderList();
     el("library-notice").textContent="영상 "+records.length+"개 · 삭제한 항목 제외";
     if(!selected){const id=new URL(location.href).searchParams.get("id");const first=records.find(r=>r.id===id)||records.find(r=>r.visualization_data||outputIndex[r.id])||records[0];if(first)await selectVideo(first)}
-    else if(selected.live_clip && records.find(r=>r.id===selected.id)?.live_version!==selected.live_version){const next=records.find(r=>r.id===selected.id);if(next)await selectVideo(next)}
+    else if(selected.live_clip){
+      const next=records.find(r=>r.id===selected.id);let changed=next?.live_version!==selected.live_version;
+      if(next?.visualization_data){try{const resp=await fetch(new URL("playback.json",sameOriginPath(next.visualization_data)),{cache:"no-store"});if(resp.ok){const info=await resp.json();changed=changed||info.version!==selected.cumulative_version}}catch(e){}}
+      if(next&&changed)await selectVideo(next);
+    }
     else if(deleted.has(selected.id)){selected=null;calls=[];el("video").pause();el("video").removeAttribute("src");el("video").load();el("title").textContent="삭제된 영상";clearOutput("이 영상은 목록에서 삭제되었습니다.")}
   } catch(e){el("library-notice").textContent="영상 목록을 불러오지 못했습니다. 잠시 후 다시 확인합니다."}
 }

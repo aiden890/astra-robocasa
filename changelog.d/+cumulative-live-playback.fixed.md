@@ -1,0 +1,1 @@
+Live rollout playback can start at native step zero and preserve its position while cumulative video grows. The panel reports the last encoded step so buffered frames are not presented as available video.
