@@ -19,7 +19,7 @@ def publish(run, site):
     relative = Path("media/vla-first-three-20261008") / config["task"]
     target = site / relative
     target.mkdir(parents=True, exist_ok=True)
-    if not (target / "turns").exists():
+    if not (target / "turns").exists() and not (target / "turns").is_symlink():
         (target / "turns").symlink_to(run / "turns", target_is_directory=True)
     frames = run / "live-frames"
     end = -1

@@ -140,7 +140,7 @@ def run_episode(
                                 "reply_text": reply.text,
                             }
                         )
-                    if "queries" not in parsed:
+                    if not parsed.get("queries"):
                         chunk, notes = validate_chunk(parsed.get("actions"))
                         progress.update(
                             phase="action", response=parsed, actions=chunk.tolist(), notes=notes
@@ -148,7 +148,7 @@ def run_episode(
                         atomic_json(progress_path, progress)
                         break
                     if (
-                        "actions" in parsed
+                        parsed.get("actions") is not None
                         or condition not in ("pixel", "grid", "hybrid")
                         or round_number >= QUERY_ROUNDS
                     ):

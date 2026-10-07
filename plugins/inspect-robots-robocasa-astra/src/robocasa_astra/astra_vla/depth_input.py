@@ -50,11 +50,13 @@ def response_schema(condition: str) -> dict:
                 "additionalProperties": False,
             },
         }
-        schema["required"].remove("actions")
-        schema["oneOf"] = [
-            {"required": ["actions"], "not": {"required": ["queries"]}},
-            {"required": ["queries"], "not": {"required": ["actions"]}},
-        ]
+        schema["properties"]["actions"] = {
+            "anyOf": [schema["properties"]["actions"], {"type": "null"}]
+        }
+        schema["properties"]["queries"] = {
+            "anyOf": [schema["properties"]["queries"], {"type": "null"}]
+        }
+        schema["required"].append("queries")
     return schema
 
 
@@ -82,7 +84,7 @@ def instructions(condition: str) -> str:
     )
     query_note += (
         "At most four query rounds per observation, then return actions. "
-        "A query does not advance physics. Do not return queries and actions together."
+        "A query does not advance physics. Always include both fields: for a query set actions=null; for actions set queries=null. Exactly one field must be non-null."
     )
     if condition == "hybrid":
         return (

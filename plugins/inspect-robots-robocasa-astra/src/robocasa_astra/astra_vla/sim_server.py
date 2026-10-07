@@ -40,6 +40,7 @@ class ChunkServer(Server):
         self.depths = {}
         self.observation_id = None
         self.start_reply = None
+        self.last_observation = None
         self.closed = False
 
     def _on_step(self, action, obs, caption):
@@ -67,6 +68,7 @@ class ChunkServer(Server):
             for name in ("video.mp4", "replay"):
                 if (self.output / name).exists():
                     shutil.move(str(self.output / name), str(archive / name))
+        self.last_observation = None
         reply = super().reset(seed)
         self.executor = ChunkExecutor(self.sim.env, self.budget, on_step=self._on_step)
         scene_hash = (
@@ -109,6 +111,11 @@ class ChunkServer(Server):
 
     def observe(self) -> dict:
         """Return aligned RGB and only the depth input enabled for this condition."""
+        if (
+            self.last_observation
+            and self.last_observation["state"]["steps_used"] == self.executor.steps_used
+        ):
+            return self.last_observation
         reply = super().observe()
         reply["dataset_state"] = self.executor.dataset_state()
         if self.condition != "rgb":
@@ -126,6 +133,7 @@ class ChunkServer(Server):
         reply["observation_id"] = self.observation_id
         if self.condition in ("color", "hybrid"):
             attach_previews(reply, self.depths)
+        self.last_observation = reply
         return reply
 
     def query(self, requests, observation_id):
