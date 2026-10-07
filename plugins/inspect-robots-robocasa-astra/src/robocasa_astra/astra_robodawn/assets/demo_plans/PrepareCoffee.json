@@ -3,7 +3,7 @@
  "episode": 36,
  "mode": "expert",
  "source_note": "Expert episode 36 (layout 16 / style 60). The executor could not reproduce the mug-handle grasp and release reliably (the handle is a C-shaped loop; a finger ends up inside the loop), so this demonstration is the expert recording itself with commands written as an approximate translation.",
- "note": "The mug stands in an open wall cabinet; the coffee machine sits on the counter below it. The expert grasped the mug by its HANDLE with the fingers forward (opening ~0.2), pulled it out, lowered it in front of the machine, slid it under the dispenser, released and backed off, then pressed the start button on the machine's front with the fingertips and moved away. Success needs: mug under the dispenser, gripper >25 cm from the mug, machine started, gripper >15 cm from the button. These commands are an approximate translation of a human recording, not re-executed.",
+ "note": "The mug stands in an open wall cabinet; the coffee machine sits on the counter below it. The expert grasped the mug by its HANDLE with the fingers forward (opening ~0.2) and pulled it out. Placing it: FIRST lower the mug to just above the drip tray while still in front of the machine (about 12 cm short of the dispenser), THEN slide it horizontally at that height under the dispenser, release, and back the fingers out. Then press the start button on the machine's front with the fingertips: a thin brown coffee stream appearing under the dispenser shows that the press worked; then move away. These commands are an approximate translation of a human recording, not re-executed.",
  "turns": [
   {
    "t_start": 0,
@@ -65,11 +65,26 @@
   },
   {
    "t_start": 305,
+   "t_end": 345,
+   "scene": "Mug held by its handle, low in front of the coffee machine, about 25 cm short of the dispenser.",
+   "plan": "Lower the mug to just above the drip-tray height (about 15 cm above the counter) while still in FRONT of the machine, about 12 cm short of the dispenser, so it cannot hit the dispenser.",
+   "commands": [
+    "move down 13",
+    "move forward 11",
+    "move right 3"
+   ],
+   "image": true
+  },
+  {
+   "t_start": 345,
    "t_end": 430,
-   "scene": "Mug held low in front of the coffee machine.",
-   "plan": "Slide the mug forward under the dispenser and set it down.",
-   "image": true,
-   "pre": []
+   "scene": "Mug just above the drip tray, about 12 cm in front of the dispenser and slightly to its left.",
+   "plan": "Slide the mug horizontally, at the same height, into the slot under the dispenser until it is centred below it.",
+   "commands": [
+    "move forward 12",
+    "move right 9"
+   ],
+   "image": true
   },
   {
    "t_start": 430,
@@ -103,7 +118,7 @@
    "t_start": 629,
    "t_end": 751,
    "scene": "Fingertips in front of the machine's start button.",
-   "plan": "Push the button with the fingertips.",
+   "plan": "Push the start button with the fingertips until they touch it.",
    "image": false,
    "pre": [
     "rotate yaw +15"
@@ -112,8 +127,8 @@
   {
    "t_start": 751,
    "t_end": 784,
-   "scene": "Button pressed: the machine is on.",
-   "plan": "Move away from the button and the mug.",
+   "scene": "Button pressed: a thin brown coffee stream now falls from the dispenser into the mug, so the machine is on.",
+   "plan": "Move away from the button and the mug (the stream stays on).",
    "image": false,
    "pre": []
   }

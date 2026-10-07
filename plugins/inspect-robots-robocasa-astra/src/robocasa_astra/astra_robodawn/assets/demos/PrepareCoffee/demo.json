@@ -111,7 +111,7 @@
    "executor_replay": false
   }
  },
- "note": "The mug stands in an open wall cabinet; the coffee machine sits on the counter below it. The expert grasped the mug by its HANDLE with the fingers forward (opening ~0.2), pulled it out, lowered it in front of the machine, slid it under the dispenser, released and backed off, then pressed the start button on the machine's front with the fingertips and moved away. Success needs: mug under the dispenser, gripper >25 cm from the mug, machine started, gripper >15 cm from the button. These commands are an approximate translation of a human recording, not re-executed.",
+ "note": "The mug stands in an open wall cabinet; the coffee machine sits on the counter below it. The expert grasped the mug by its HANDLE with the fingers forward (opening ~0.2) and pulled it out. Placing it: FIRST lower the mug to just above the drip tray while still in front of the machine (about 12 cm short of the dispenser), THEN slide it horizontally at that height under the dispenser, release, and back the fingers out. Then press the start button on the machine's front with the fingertips: a thin brown coffee stream appearing under the dispenser shows that the press worked; then move away. These commands are an approximate translation of a human recording, not re-executed.",
  "frames": [
   {
    "label": "turn 1 (image: left overview camera at the start of the turn)",
@@ -204,19 +204,30 @@
    "label": "turn 8 (image: left overview camera at the start of the turn)",
    "image": "frames/turn08.png",
    "state": "fingertips (forward 16, left 7, height 121) cm, approach (0.62, -0.75, -0.22), opening 0.17, work surface 92 cm",
-   "scene": "Mug held low in front of the coffee machine.",
-   "plan": "Slide the mug forward under the dispenser and set it down.",
+   "scene": "Mug held by its handle, low in front of the coffee machine, about 25 cm short of the dispenser.",
+   "plan": "Lower the mug to just above the drip-tray height (about 15 cm above the counter) while still in FRONT of the machine, about 12 cm short of the dispenser, so it cannot hit the dispenser.",
    "commands": [
-    "move forward 20",
-    "move forward 3",
-    "move right 12",
-    "move down 15"
+    "move down 13",
+    "move forward 11",
+    "move right 3"
    ],
-   "effect": "in the recording the fingertips moved forward +23, left -12, up -15 cm; approach became (0.49, -0.82, -0.30); gripper opening 0.84"
+   "effect": "in the recording the fingertips moved forward +11, left -3, up -13 cm; approach became (0.45, -0.88, -0.16); gripper opening 0.17"
   },
   {
    "label": "turn 9 (image: left overview camera at the start of the turn)",
    "image": "frames/turn09.png",
+   "state": "fingertips (forward 27, left 4, height 108) cm, approach (0.45, -0.88, -0.16), opening 0.17, work surface 92 cm",
+   "scene": "Mug just above the drip tray, about 12 cm in front of the dispenser and slightly to its left.",
+   "plan": "Slide the mug horizontally, at the same height, into the slot under the dispenser until it is centred below it.",
+   "commands": [
+    "move forward 12",
+    "move right 9"
+   ],
+   "effect": "in the recording the fingertips moved forward +12, left -8, up -2 cm; approach became (0.49, -0.82, -0.30); gripper opening 0.84"
+  },
+  {
+   "label": "turn 10 (image: left overview camera at the start of the turn)",
+   "image": "frames/turn10.png",
    "state": "fingertips (forward 39, left -5, height 106) cm, approach (0.49, -0.82, -0.30), opening 0.17, work surface 92 cm",
    "scene": "Mug under the dispenser.",
    "plan": "Release the handle.",
@@ -226,7 +237,7 @@
    "effect": "in the recording the fingertips moved forward +0, left -0, up -1 cm; approach became (0.49, -0.81, -0.33); gripper opening 0.99"
   },
   {
-   "label": "turn 10",
+   "label": "turn 11",
    "image": null,
    "state": "fingertips (forward 39, left -5, height 105) cm, approach (0.49, -0.81, -0.33), opening 0.84, work surface 92 cm",
    "scene": "Mug placed, gripper open around the handle.",
@@ -238,8 +249,8 @@
    "effect": "in the recording the fingertips moved forward -8, left +3, up -1 cm; approach became (0.51, -0.83, -0.22); gripper opening 1.00"
   },
   {
-   "label": "turn 11 (image: left overview camera at the start of the turn)",
-   "image": "frames/turn11.png",
+   "label": "turn 12 (image: left overview camera at the start of the turn)",
+   "image": "frames/turn12.png",
    "state": "fingertips (forward 31, left -2, height 104) cm, approach (0.51, -0.83, -0.22), opening 1.00, work surface 92 cm",
    "scene": "Gripper free of the mug.",
    "plan": "Rise to the height of the start button and turn the fingers forward again.",
@@ -252,11 +263,11 @@
    "effect": "in the recording the fingertips moved forward -2, left +1, up +21 cm; approach became (0.93, -0.30, -0.19); gripper opening 1.00"
   },
   {
-   "label": "turn 12",
+   "label": "turn 13",
    "image": null,
    "state": "fingertips (forward 28, left -1, height 125) cm, approach (0.93, -0.30, -0.19), opening 1.00, work surface 92 cm",
    "scene": "Fingertips in front of the machine's start button.",
-   "plan": "Push the button with the fingertips.",
+   "plan": "Push the start button with the fingertips until they touch it.",
    "commands": [
     "rotate yaw +15",
     "move forward 6",
@@ -265,11 +276,11 @@
    "effect": "in the recording the fingertips moved forward +6, left +1, up -4 cm; approach became (0.95, -0.03, -0.30); gripper opening 0.99"
   },
   {
-   "label": "turn 13",
+   "label": "turn 14",
    "image": null,
    "state": "fingertips (forward 35, left 0, height 121) cm, approach (0.95, -0.03, -0.30), opening 0.99, work surface 92 cm",
-   "scene": "Button pressed: the machine is on.",
-   "plan": "Move away from the button and the mug.",
+   "scene": "Button pressed: a thin brown coffee stream now falls from the dispenser into the mug, so the machine is on.",
+   "plan": "Move away from the button and the mug (the stream stays on).",
    "commands": [
     "move up 16",
     "move back 20",
