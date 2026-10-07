@@ -6,6 +6,7 @@ import json
 import os
 import select
 import subprocess
+import time
 from pathlib import Path
 
 import numpy as np
@@ -27,11 +28,22 @@ from robocasa_astra.depth import decode_depth, preview_depth
 class SparkEmbodiment:
     """Expose the simulator's actual robot-specific action contract to evaluation."""
 
-    def __init__(self, command, seed, output):
+    def __init__(self, command, seed, output, *, checkpoint_mode=False, checkpoint_identity=None):
         self.output = Path(output)
         self.output.mkdir(parents=True, exist_ok=True)
-        self.sensor_index = 0
-        self.stderr = (self.output / "simulator.log").open("w")
+        retained = list((self.output / "depth").glob("observation-*"))
+        self.sensor_index = max((int(p.name.split("-")[-1]) for p in retained), default=-1) + 1
+        self.command = command
+        self.checkpoint_mode = checkpoint_mode
+        self.seed = seed
+        self.resume_steps = 0
+        if checkpoint_mode:
+            from robocasa_astra.checkpoint import ActionCheckpoint
+
+            self.checkpoint = ActionCheckpoint(
+                self.output / "checkpoint.json", checkpoint_identity or command, seed
+            )
+        self.stderr = (self.output / "simulator.log").open("a")
         self.process = subprocess.Popen(
             command,
             stdin=subprocess.PIPE,
@@ -41,7 +53,17 @@ class SparkEmbodiment:
             bufsize=1,
         )
         try:
-            self.latest = self.call(op="reset", seed=seed)
+            if checkpoint_mode:
+                restore = self._restore
+                while True:
+                    try:
+                        self.latest = restore()
+                        break
+                    except (ConnectionError, TimeoutError, OSError):
+                        time.sleep(15)
+                        restore = self._reconnect
+            else:
+                self.latest = self.call(op="reset", seed=seed)
         except BaseException:
             self.close()
             raise
@@ -79,20 +101,89 @@ class SparkEmbodiment:
             docs=json.dumps(raw),
         )
 
-    def call(self, **request):
-        """Fail clearly on worker errors or timeouts rather than silently changing worlds."""
+    def _exchange(self, request):
+        """Exchange one request; application failures never trigger blind retries."""
         self.process.stdin.write(json.dumps(request) + "\n")
         self.process.stdin.flush()
-        ready, _, _ = select.select([self.process.stdout], [], [], 180)
-        if not ready:
-            raise TimeoutError("Spark2 simulator response timeout")
+        deadline = None if request["op"] == "checkpoint_replay" else time.monotonic() + 180
+        while not select.select([self.process.stdout], [], [], 1)[0]:
+            if self.process.poll() is not None:
+                raise ConnectionError("Spark2 worker exited during checkpoint recovery")
+            if deadline is not None and time.monotonic() >= deadline:
+                raise TimeoutError("Spark2 simulator response timeout")
         line = self.process.stdout.readline()
         if not line:
-            raise RuntimeError("Spark2 worker exited; inspect simulator.log")
+            raise ConnectionError("Spark2 worker exited; inspect simulator.log")
         response = json.loads(line)
         if "error" in response:
-            raise RuntimeError(response["error"] + ": " + response["detail"])
+            raise ValueError(response["error"] + ": " + response["detail"])
         return response
+
+    def _restore(self):
+        """Reconstruct acknowledged controller/task state without any model calls."""
+        raw = self._exchange({"op": "reset", "seed": self.seed})
+        if self.checkpoint.data is None:
+            self.checkpoint.reset(raw)
+        else:
+            actions = self.checkpoint.data["actions"]
+            if actions:
+                raw = self._exchange({"op": "checkpoint_replay", "actions": actions})
+            self.checkpoint.verify(raw)
+            self.resume_steps = self.checkpoint.data["steps"]
+        return raw
+
+    def _reconnect(self):
+        """Recreate only this worker session, preserving acknowledged action identity."""
+        if self.process.poll() is None:
+            self.process.terminate()
+            try:
+                self.process.wait(timeout=10)
+            except subprocess.TimeoutExpired:
+                self.process.kill()
+                self.process.wait(timeout=10)
+        for stream in (self.process.stdin, self.process.stdout):
+            stream.close()
+        self.process = subprocess.Popen(
+            self.command,
+            stdin=subprocess.PIPE,
+            stdout=subprocess.PIPE,
+            stderr=self.stderr,
+            text=True,
+            bufsize=1,
+        )
+        return self._restore()
+
+    def call(self, **request):
+        """Retry transport failures only after exact checkpoint reconstruction."""
+        if not self.checkpoint_mode or request["op"] != "step":
+            return self._exchange(request)
+        action = request["action"]
+        self.checkpoint.intent(action)
+        while True:
+            try:
+                raw = self._exchange(request)
+            except (ConnectionError, BrokenPipeError, TimeoutError, OSError) as error:
+                with (self.output / "recoveries.jsonl").open("a") as log:
+                    log.write(
+                        json.dumps(
+                            {
+                                "time": time.time(),
+                                "steps": self.checkpoint.data["steps"],
+                                "error": str(error),
+                                "model_recalled": False,
+                            }
+                        )
+                        + "\n"
+                    )
+                while True:
+                    try:
+                        self._reconnect()
+                        break
+                    except (ConnectionError, BrokenPipeError, TimeoutError, OSError):
+                        time.sleep(15)
+                continue
+            self.checkpoint.commit(action, raw)
+            return raw
 
     def observation(self, raw, instruction=None):
         """Decode actual rendered camera frames and retain numeric observations."""
@@ -166,5 +257,9 @@ class SparkEmbodiment:
                 self.process.wait(timeout=10)
             except Exception:
                 self.process.terminate()
-                self.process.wait(timeout=10)
+                try:
+                    self.process.wait(timeout=10)
+                except subprocess.TimeoutExpired:
+                    self.process.kill()
+                    self.process.wait(timeout=10)
         self.stderr.close()

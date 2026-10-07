@@ -94,10 +94,17 @@ def main():
             "task_success": result.get("task_success"),
             "calls": summarize_calls(calls),
         }
-        log_files = list((folder / "eval").glob("*.json"))
+        if result.get("native_steps") is not None:
+            row["steps"] = result["native_steps"]
+        log_files = sorted(
+            (folder / "eval").glob("*.json"), key=lambda p: p.stat().st_mtime, reverse=True
+        )
         if log_files:
             stats = json.loads(log_files[0].read_text())["stats"]
-            row.update(steps=stats["total_steps"], wall_seconds=stats["duration_s"])
+            row.update(
+                steps=result.get("native_steps") or stats["total_steps"],
+                wall_seconds=stats["duration_s"],
+            )
         counters = folder / "policy/summary.json"
         if counters.exists():
             row["query_requests"] = json.loads(counters.read_text())["query_requests"]

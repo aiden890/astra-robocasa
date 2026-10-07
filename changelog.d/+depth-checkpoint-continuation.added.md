@@ -1,0 +1,1 @@
+Astra depth evaluations retain acknowledged native actions and policy progress, verify frozen-scene replay before continuing interrupted simulators, and adopt detached model calls without duplicate inference.

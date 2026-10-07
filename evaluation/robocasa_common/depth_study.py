@@ -58,6 +58,41 @@ def safe_memory_slots(sample, active):
     return max(1, active + min(spark_extra, lab_extra))
 
 
+def valid_evaluation(result):
+    """Only a completed native success/failure contributes to the 200 evaluations."""
+    return result.get("execution_status") == "success" and isinstance(
+        result.get("task_success"), bool
+    )
+
+
+def retain_failed_attempt(root, job, folder, result):
+    """Keep all failure evidence while allowing checkpoint continuation or a fresh trial."""
+    archive = (
+        root
+        / "attempts"
+        / f"execution-error-{time.time_ns()}"
+        / "results"
+        / job["condition"]
+        / job["scene"]
+    )
+    archive.parent.mkdir(parents=True, exist_ok=True)
+    if (
+        (folder / "worker/checkpoint.json").exists()
+        and "Checkpoint replay diverged" not in result.get("error", "")
+        and "another scene/worker" not in result.get("error", "")
+        and "Common model-call attempt budget exceeded" not in result.get("error", "")
+        and "Maximum query rounds exceeded" not in result.get("error", "")
+    ):
+        shutil.copytree(folder, archive)
+        atomic_json(archive.parents[2] / "snapshot-only.json", {"do_not_double_count_calls": True})
+        (folder / "result.json").unlink(missing_ok=True)
+    else:
+        shutil.move(str(folder), str(archive))
+    atomic_json(
+        archive.parents[2] / "retry.json", {"job": job, "result": result, "time": time.time()}
+    )
+
+
 class AdoptedProcess:
     """Observe an orphaned trial by exact argv identity without restarting it."""
 
@@ -151,7 +186,8 @@ def main():
         )
     slots = [f"astra-depth-medium-{i:02d}-20261007" for i in range(1, 33)]
     free = slots.copy()
-    for job in jobs:
+    for original in jobs:
+        job = dict(original)
         folder = root / "results" / job["condition"] / job["scene"]
         result = folder / "result.json"
         old = prior_active.get(job["id"])
@@ -164,14 +200,20 @@ def main():
             active[job["id"]] = (adopted, slot, job)
             logs[job["id"]] = (root / "logs" / (job["id"] + ".log")).open("a")
         elif result.exists():
-            finished[job["id"]] = json.loads(result.read_text())
-        elif folder.exists():
-            finished[job["id"]] = {
-                "execution_status": "error",
-                "task_success": None,
-                "error": "Partial trial retained; no automatic reroll",
-            }
-    pending = [j for j in jobs if j["id"] not in finished and j["id"] not in active]
+            terminal = json.loads(result.read_text())
+            if valid_evaluation(terminal):
+                finished[job["id"]] = terminal
+            else:
+                retain_failed_attempt(root, job, folder, terminal)
+        elif folder.exists() and not (folder / "worker/checkpoint.json").exists():
+            retain_failed_attempt(
+                root, job, folder, {"task_success": None, "error": "Client ended before checkpoint"}
+            )
+    pending = [dict(j) for j in jobs if j["id"] not in finished and j["id"] not in active]
+    for job in pending:
+        slot_file = root / "results" / job["condition"] / job["scene"] / "resume-container.json"
+        if slot_file.exists():
+            job["resume_container"] = json.loads(slot_file.read_text())["container"]
     limit = max(1, previous.get("parallel_limit", 8)) if prior_active else 8
     last_ramp, started = time.monotonic(), previous.get("started_at", time.time())
     atomic_json(
@@ -202,7 +244,15 @@ def main():
                 }
                 folder.mkdir(parents=True, exist_ok=True)
                 atomic_json(path, result)
-            finished[identity] = result
+            if valid_evaluation(result):
+                finished[identity] = result
+            else:
+                retain_failed_attempt(root, job, folder, result)
+                pending.append(
+                    {**job, "resume_container": slot}
+                    if (folder / "worker/checkpoint.json").exists()
+                    else job
+                )
             logs.pop(identity).close()
             active.pop(identity)
             free.append(slot)
@@ -290,8 +340,22 @@ def main():
                 or sample["lab_available_gib"] < 4
             ):
                 break
-            job = pending.pop(0)
-            slot = free.pop(0)
+            candidate = next(
+                (
+                    i
+                    for i, job in enumerate(pending)
+                    if job.get("resume_container", free[0]) in free
+                ),
+                None,
+            )
+            if candidate is None:
+                break
+            job = pending.pop(candidate)
+            slot = job.get("resume_container", free[0])
+            free.remove(slot)
+            folder = root / "results" / job["condition"] / job["scene"]
+            folder.mkdir(parents=True, exist_ok=True)
+            atomic_json(folder / "resume-container.json", {"container": slot})
             log = (root / "logs" / (job["id"] + ".log")).open("a")
             process = subprocess.Popen(
                 [

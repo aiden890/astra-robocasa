@@ -4,7 +4,9 @@ import argparse
 import importlib
 import json
 import shlex
+import shutil
 import subprocess
+import time
 from pathlib import Path
 
 from robocasa_astra.bridge import SparkEmbodiment
@@ -20,9 +22,9 @@ from inspect_robots.task import Task
 class ObservedSparkEmbodiment(SparkEmbodiment):
     """Notify policy history collectors after every actual environment observation."""
 
-    def __init__(self, *args):
+    def __init__(self, *args, **kwargs):
         self.observers = []
-        super().__init__(*args)
+        super().__init__(*args, **kwargs)
 
     def reset(self, scene, *, seed=None):
         """Include the initial observation in registered histories."""
@@ -98,7 +100,39 @@ def evaluate_scene(folder, args):
     if derive_seed(0, manifest["rollout_seed"], 0) != manifest["simulator_seed"]:
         raise ValueError("Scene seed derivation does not match the fixed protocol")
     output = Path(args.output).resolve() / Path(folder).name
-    output.mkdir(parents=True, exist_ok=False)
+    resumable = getattr(args, "depth", False)
+    checkpoint = output / "worker/checkpoint.json"
+    continuing = resumable and checkpoint.exists()
+    empty_dispatch = output.exists() and {p.name for p in output.iterdir()} <= {
+        "resume-container.json"
+    }
+    if output.exists() and not continuing and not empty_dispatch:
+        raise FileExistsError(
+            "Existing episode lacks a verified checkpoint; preserve it before retry"
+        )
+    if continuing and (output / "result.json").exists():
+        previous = json.loads((output / "result.json").read_text())
+        if previous.get("execution_status") == "success":
+            return previous
+        archive = (
+            output.parents[2]
+            / "attempts"
+            / f"resume-error-{time.time_ns()}"
+            / "results"
+            / output.parent.name
+            / output.name
+        )
+        shutil.copytree(output, archive)
+        (archive.parents[2] / "snapshot-only.json").write_text(
+            json.dumps(
+                {
+                    "note": "Checkpoint snapshot; call IDs remain in live continuation",
+                    "do_not_double_count_calls": True,
+                }
+            )
+        )
+        (output / "result.json").unlink()
+    output.mkdir(parents=True, exist_ok=continuing or empty_dispatch)
     remote = [
         "docker",
         "exec",
@@ -119,9 +153,23 @@ def evaluate_scene(folder, args):
         args.mounted_root.rstrip("/") + "/scenes/" + Path(folder).name,
     ]
     if getattr(args, "depth", False):
-        remote.append("--depth")
+        remote.extend(["--depth", "--session-id", output.parent.name + "-" + output.name])
     command = remote if args.host == "local" else ["ssh", args.host, shlex.join(remote)]
-    env = ObservedSparkEmbodiment(command, manifest["simulator_seed"], output / "worker")
+    env = ObservedSparkEmbodiment(
+        command,
+        manifest["simulator_seed"],
+        output / "worker",
+        checkpoint_mode=resumable,
+        checkpoint_identity=[
+            sha256(Path(folder) / "manifest.json"),
+            args.policy,
+            output.parent.name,
+            "PandaOmron",
+            manifest["horizon"],
+        ]
+        if resumable
+        else None,
+    )
     policy = None
     try:
         receipt = json.loads(env.info.docs)["frozen_scene"]
@@ -133,6 +181,20 @@ def evaluate_scene(folder, args):
         if remote_proof is not None:
             (output / "asset-proof.json").write_text(json.dumps(remote_proof, indent=2))
         policy = resolve_factory(args.policy)(env, output / "policy")
+        if continuing and (
+            env.resume_steps >= manifest["horizon"] or env.latest["info"]["success"]
+        ):
+            result = {
+                "scene": Path(folder).name,
+                "policy": args.policy,
+                "manifest_sha256": receipt["manifest_sha256"],
+                "execution_status": "success",
+                "task_success": bool(env.latest["info"]["success"]),
+                "checkpoint_resumed_steps": env.resume_steps,
+                "native_steps": env.resume_steps,
+            }
+            (output / "result.json").write_text(json.dumps(result, indent=2))
+            return result
         task = Task(
             name=manifest["task"],
             scenes=[
@@ -143,7 +205,7 @@ def evaluate_scene(folder, args):
                 )
             ],
             scorer=success_at_end(),
-            max_steps=manifest["horizon"],
+            max_steps=max(1, manifest["horizon"] - env.resume_steps),
         )
         log = eval(
             task,
@@ -156,6 +218,8 @@ def evaluate_scene(folder, args):
             "scene": Path(folder).name,
             "policy": args.policy,
             "manifest_sha256": receipt["manifest_sha256"],
+            "checkpoint_resumed_steps": env.resume_steps,
+            "native_steps": env.checkpoint.data["steps"] if resumable else None,
             "execution_status": log.status,
             "task_success": log.results.metrics.get("success_at_end") == 1
             if log.status == "success"

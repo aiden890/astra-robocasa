@@ -111,3 +111,31 @@ Completed snapshots are immutable. Failed attempts remain separate from the shar
 All 50 new snapshots passed independent physical restoration. Initial encoded camera images
 matched in 40 snapshots; the other 10 retain pixel disagreement as a diagnostic.
 See `verification.json` for task-level diversity counts and the archive checksum.
+
+## Astra depth checkpoint continuation
+
+New depth trials commit every acknowledged native action to `worker/checkpoint.json` using
+atomic writes and fsync. The checkpoint binds the immutable scene manifest, seed, policy,
+condition, robot and horizon. `policy/progress.json` retains the remaining action chunk,
+query rounds, observation ID and the in-flight model call.
+
+The simulator is reconstructed from the frozen initial scene by replaying the acknowledged
+actions through the native controller. No model inference runs during replay. Before another
+action, the physical-state hash, RGB/depth payloads, robot observations and native success
+flags must match the checkpoint. A transport failure discards the unacknowledged world and
+applies its pending action once after verified reconstruction. Replay may take time proportional
+to the saved number of steps; this is not a direct constant-time simulator snapshot.
+
+Model calls run in a detached process with a per-call lock. A restarted client waits for the
+original call or reads its durable response. A live CLI has no fixed response deadline.
+If its runner is interrupted, the existing exact CLI PID is waited for before any replacement
+request. Every attempt retains its events, usage (unknown remains null), and timing receipt.
+
+The supervisor adopts live clients by exact argv. Ended clients with checkpoints continue
+on the same container; completed native task failures remain valid evaluations. Execution
+errors are archived separately and do not count toward the 200 normal evaluations. A replay
+mismatch is retained as an error and starts a new attempt from the same common scene.
+The Lab/Spark memory and telemetry guards still apply to resumed or new clients.
+
+Existing clients that imported the previous code do not acquire checkpoints retroactively.
+Normal results and active workers are preserved when this feature is deployed.

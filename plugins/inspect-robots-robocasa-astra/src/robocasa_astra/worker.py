@@ -4,6 +4,7 @@ import argparse
 import base64
 import contextlib
 import ctypes
+import hashlib
 import io
 import json
 import os
@@ -345,6 +346,11 @@ class Simulator:
             "action_high": env.action_spec[1].tolist(),
             "controller": env.robots[0].composite_controller_config,
         }
+        if getattr(self, "checkpoint_enabled", False):
+            info["physics_sha256"] = hashlib.sha256(
+                env.sim.get_state().flatten().tobytes()
+            ).hexdigest()
+
         return {
             "images": images,
             "depths": depths,
@@ -364,6 +370,47 @@ class Simulator:
         return self.observe()
 
 
+def worker_lease(session):
+    """Replace only a private worker with this exact session identity before replay."""
+    import fcntl
+    import os
+    import re
+    import signal
+    import time
+    from pathlib import Path
+
+    if not re.fullmatch(r"[A-Za-z0-9_-]+", session):
+        raise ValueError("Invalid checkpoint worker session")
+    path = Path("/tmp") / ("astra-checkpoint-" + session + ".lock")
+    lock = path.open("a+")
+    try:
+        fcntl.flock(lock, fcntl.LOCK_EX | fcntl.LOCK_NB)
+    except BlockingIOError:
+        lock.seek(0)
+        pid = int(lock.read())
+        args = Path(f"/proc/{pid}/cmdline").read_bytes().decode().split("\0")
+        if (
+            "robocasa_astra.worker" not in args
+            or "--session-id" not in args
+            or args[args.index("--session-id") + 1] != session
+        ):
+            raise RuntimeError("Worker lease owner could not be verified") from None
+        os.kill(pid, signal.SIGTERM)
+        for _ in range(100):
+            try:
+                fcntl.flock(lock, fcntl.LOCK_EX | fcntl.LOCK_NB)
+                break
+            except BlockingIOError:
+                time.sleep(0.1)
+        else:
+            raise RuntimeError("Previous private worker did not release its lease")
+    lock.seek(0)
+    lock.truncate()
+    lock.write(str(os.getpid()))
+    lock.flush()
+    return lock
+
+
 def main():
     """Serve only stdin requests; no public network listener or credentials."""
     parser = argparse.ArgumentParser()
@@ -375,7 +422,9 @@ def main():
     parser.add_argument("--face-workstation", action="store_true")
     parser.add_argument("--placement", action="store_true")
     parser.add_argument("--depth", action="store_true")
+    parser.add_argument("--session-id")
     args = parser.parse_args()
+    lease = worker_lease(args.session_id) if args.session_id else None
     with native_diagnostics():
         sim = Simulator(
             args.robot,
@@ -387,6 +436,7 @@ def main():
             args.depth,
             args.frozen_scene,
         )
+    sim.checkpoint_enabled = bool(lease)
     for line in sys.stdin:
         try:
             request = json.loads(line)
@@ -395,6 +445,11 @@ def main():
                     result = sim.reset(request["seed"])
                 elif request["op"] == "step":
                     result = sim.step(request["action"])
+                elif request["op"] == "checkpoint_replay":
+                    if len(request["actions"]) > sim.horizon:
+                        raise ValueError("Checkpoint exceeds native horizon")
+                    for action in request["actions"]:
+                        result = sim.step(action)
                 elif request["op"] == "replay":
                     for action in request["actions"]:
                         a = np.asarray(action, dtype=float)
