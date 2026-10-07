@@ -21,6 +21,7 @@ Phases: P4 = first run (OpenCabinet 0-shot); P6 = five tasks, 1-shot, layout 1/s
 | 13 | P9 | OpenCabinet | scene 0 (OpenCabinet-8106356) | 1 | fail (step_budget) | 45 | 1800/1800 | 132.5 cr / $5.30 | 14.5 min | [debug_sim.mp4](../runs/robodawn/P9-OpenCabinet-scene0-1shot/debug_sim.mp4) · [video.mp4](../runs/robodawn/P9-OpenCabinet-scene0-1shot/video.mp4) |
 | 14 | P10 | PrepareCoffee | scene 0 (PrepareCoffee-8806552) | 1 | fail (stopped by user (reconnect-warning bug discarded answers)) | 14 | 404/3600 | 37.0 cr / $1.48 | 3.8 min | [debug_sim.mp4](../runs/robodawn/P10-PrepareCoffee-scene0-budget3600-1shot/debug_sim.mp4) · [video.mp4](../runs/robodawn/P10-PrepareCoffee-scene0-budget3600-1shot/video.mp4) |
 | 15 | P11 | PrepareCoffee | scene 1 (PrepareCoffee-8128442) | 1 | fail (max_turns) | 60 | 2190/2400 | 126.6 cr / $5.06 | 16.5 min | [debug_sim.mp4](../runs/robodawn/P11-PrepareCoffee-scene1-budget2400-1shot/debug_sim.mp4) · [video.mp4](../runs/robodawn/P11-PrepareCoffee-scene1-budget2400-1shot/video.mp4) |
+| 16 | P12 | PrepareCoffee | scene 1 (PrepareCoffee-8128442) | 1 | fail (max_turns) | 60 | 2005/2400 | 117.9 cr / $4.72 | 17.1 min | [debug_sim.mp4](../runs/robodawn/P12-PrepareCoffee-scene1-budget2400-1shot/debug_sim.mp4) · [video.mp4](../runs/robodawn/P12-PrepareCoffee-scene1-budget2400-1shot/video.mp4) |
 
 ## Run details
 
@@ -169,3 +170,13 @@ Phases: P4 = first run (OpenCabinet 0-shot); P6 = five tasks, 1-shot, layout 1/s
 - Videos: debug (sim time): [debug_sim.mp4](../runs/robodawn/P11-PrepareCoffee-scene1-budget2400-1shot/debug_sim.mp4) · raw cameras: [video.mp4](../runs/robodawn/P11-PrepareCoffee-scene1-budget2400-1shot/video.mp4)
 - Run directory: `runs/robodawn/P11-PrepareCoffee-scene1-budget2400-1shot` (trace.jsonl, calls/, turns/, replay/)
 - Note: Scene 1, 2400-step budget, RoboDawn-style interleaved few-shot (app-server), coffee-stream wording. Fail: ended by the 60-turn cap at step 2190 (not the step budget). The mug never reached the dispenser: handle grasp at turn ~12, the mug slipped/fell around turns 16-20, then ~40 turns of failed regrasps (handle and body from above); button never pressed. 126.6 estimated credits; weekly meter 46% -> 47% (shared account, 1% resolution). No reconnect notices and no failed calls this run.
+
+### 16. `P12-PrepareCoffee-scene1-budget2400-1shot`
+
+- Result: fail (max_turns); turns 60; native steps 2005/2400; wall time 17.1 min
+- Settings: task PrepareCoffee, scene 1 (PrepareCoffee-8128442), 1-shot, step budget 2400, max turns 60, model gpt-6-astra (effort low), Codex codex-cli 0.159.2, git d30ade3
+- Prompt: system prompt md5 `b4723b73`; in-context demos: primer, PrepareCoffee
+- Tokens: input 795,610 (cached 438,016), output 14,074; spend 117.9 cr / $4.72
+- Videos: debug (sim time): [debug_sim.mp4](../runs/robodawn/P12-PrepareCoffee-scene1-budget2400-1shot/debug_sim.mp4) · raw cameras: [video.mp4](../runs/robodawn/P12-PrepareCoffee-scene1-budget2400-1shot/video.mp4)
+- Run directory: `runs/robodawn/P12-PrepareCoffee-scene1-budget2400-1shot` (trace.jsonl, calls/, turns/, replay/)
+- Note: Scene 1, 2400 steps, revised PrepareCoffee demo (lower in front of the machine, then slide in). Fail: 60-turn cap at step 2005. ~38 turns of handle-grasp attempts in the cabinet (closures on nothing or slipping, opening 0.01-0.03); the mug came out at turn 39 with a weak grasp (opening 0.13) and was dropped during a combined 34 cm sideways + 40 cm down move; the rest was failed regrasps. Placement and button never reached. 117.9 estimated credits; weekly meter 47% -> 47%. No reconnect notices, no failed calls.
