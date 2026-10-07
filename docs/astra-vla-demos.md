@@ -8,7 +8,7 @@ Every real `gpt-6-astra` run of the VLA-output variant: one chunk of 16 x 12-D R
 | 1 | ? | OpenCabinet | scene 0 (OpenCabinet-8106356) | 1 | fail (interrupted) | 11 | 176/1800 | 71.6 cr / $2.86 | 4.4 min | [debug_sim.mp4](../runs/vla12/V1-OpenCabinet-scene0-1shot/debug_sim.mp4) · [video.mp4](../runs/vla12/V1-OpenCabinet-scene0-1shot/video.mp4) |
 | 2 | ? | OpenCabinet | scene 0 (OpenCabinet-8106356) | 1 | SUCCESS (success) | 39 | 620/1800 | 216.3 cr / $8.65 | 15.4 min | [debug_sim.mp4](../runs/vla12/V2-OpenCabinet-scene0-1shot/debug_sim.mp4) · [video.mp4](../runs/vla12/V2-OpenCabinet-scene0-1shot/video.mp4) |
 | 3 | ? | PrepareCoffee | scene 0 (PrepareCoffee-8806552) | 1 | fail (max_turns) | 112 | 1792/1800 | 444.1 cr / $17.76 | 53.7 min | [debug_sim.mp4](../runs/vla12/V3-PrepareCoffee-scene0-1shot/debug_sim.mp4) · [video.mp4](../runs/vla12/V3-PrepareCoffee-scene0-1shot/video.mp4) |
-| 4 | ? | PickPlaceSinkToCounter | scene 0 (PickPlaceSinkToCounter-8410431) | 1 | interrupted (no summary) | 81 | - | - | - | [video.mp4](../runs/vla12/V4-PickPlaceSinkToCounter-scene0-1shot/video.mp4) |
+| 4 | ? | PickPlaceSinkToCounter | scene 0 (PickPlaceSinkToCounter-8410431) | 1 | fail (max_turns) | 112 | 1792/1800 | 416.2 cr / $16.65 | 58.8 min | [debug_sim.mp4](../runs/vla12/V4-PickPlaceSinkToCounter-scene0-1shot/debug_sim.mp4) · [video.mp4](../runs/vla12/V4-PickPlaceSinkToCounter-scene0-1shot/video.mp4) |
 
 ## Run details
 
@@ -44,9 +44,10 @@ Every real `gpt-6-astra` run of the VLA-output variant: one chunk of 16 x 12-D R
 
 ### 4. `V4-PickPlaceSinkToCounter-scene0-1shot`
 
-- Result: interrupted (no summary); turns 81; native steps -; wall time -
+- Result: fail (max_turns); turns 112; native steps 1792/1800; wall time 58.8 min
 - Settings: task PickPlaceSinkToCounter, scene 0 (PickPlaceSinkToCounter-8410431), 1-shot, step budget 1800, max turns 112, model gpt-6-astra (effort low), Codex codex-cli 0.159.2, git 7e82d0e
 - Prompt: system prompt md5 `483d2cd8`; in-context demos: primer, PickPlaceSinkToCounter
-- Tokens: input 0 (cached 0), output 0; spend -
-- Videos: raw cameras: [video.mp4](../runs/vla12/V4-PickPlaceSinkToCounter-scene0-1shot/video.mp4)
+- Tokens: input 2,593,375 (cached 1,460,352), output 77,182; spend 416.2 cr / $16.65
+- Videos: debug (sim time): [debug_sim.mp4](../runs/vla12/V4-PickPlaceSinkToCounter-scene0-1shot/debug_sim.mp4) · raw cameras: [video.mp4](../runs/vla12/V4-PickPlaceSinkToCounter-scene0-1shot/video.mp4)
 - Run directory: `runs/vla12/V4-PickPlaceSinkToCounter-scene0-1shot` (trace.jsonl, calls/, turns/, replay/)
+- Note: Fail: 112-turn cap (1792 / 1800 steps), PickPlaceSinkToCounter scene 0 (fish), VLA output, fish demo (skill P13 trajectory as chunks). Never secured the fish: descents into the basin kept stopping at fingertip height 78-82 cm (contact with the fish / basin bottom), which the model read as an obstruction and answered with retreats, wrist tilts and a base move (same pattern as skill P13, turns 4-18); grasps at turns ~42 and ~108-111 closed to 0.03-0.17 and lost the fish on lifting. 416.2 estimated credits; weekly meter 17% -> 38% (V3 ran in parallel until 12:29).
