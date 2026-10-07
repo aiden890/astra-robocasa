@@ -41,6 +41,43 @@ RESPONSE_SCHEMA = {
     "additionalProperties": False,
 }
 
+# The native RoboCasa success checks (_check_success) in plain words, with the same thresholds. The checker runs
+# after every simulation step; the episode ends the moment every listed condition holds at the same time.
+SUCCESS_CONDITIONS = {
+    "OpenCabinet": (
+        "EVERY door of the target cabinet must be open to at least 90% of its full opening range at the same time "
+        "(for a double-door cabinet: BOTH doors). A partly opened door does not count.",
+        "every door of the cabinet >= 90% open"),
+    "PickPlaceSinkToCounter": (
+        "(1) the object rests ON / IN the container (plate) on the counter: touching it and with its centre "
+        "horizontally within 70% of the container's radius from the container centre; (2) the container still "
+        "touches the counter; (3) the gripper (fingertip centre) is MORE THAN 25 cm away from the object. "
+        "So: place the object on the middle of the container, release, then move the gripper away.",
+        "object on the container centre, container on the counter, gripper > 25 cm from the object"),
+    "PrepareCoffee": (
+        "(1) the mug stands under the coffee machine's dispenser: its centre within 4 cm horizontally of the "
+        "machine's mug spot and within 10 cm vertically; (2) the gripper is MORE THAN 25 cm away from the mug; "
+        "(3) the machine has been started: the gripper must have TOUCHED the start button at least once (any "
+        "contact turns it on for the rest of the episode); (4) the gripper is MORE THAN 15 cm away from the start "
+        "button. So: put the mug under the dispenser, release and back off, touch the start button, then move away.",
+        "mug within 4 cm of the dispenser spot, gripper > 25 cm from the mug, start button touched once, gripper > 15 cm from the button"),
+    "PanTransfer": (
+        "(1) the vegetable is ON the plate (touching it, centre within 70% of the plate radius); (2) the pan is back "
+        "on the stove, its centre within 8 cm of a burner centre; (3) the gripper is MORE THAN 25 cm away from the "
+        "pan; (4) the robot NEVER touched the food during the whole episode (one touch of the gripper on the "
+        "vegetable fails the task for good). So: hold only the pan handle, tip the vegetable onto the plate, put "
+        "the pan back on a burner, release and move away.",
+        "vegetable on the plate, pan on a burner (<= 8 cm), gripper > 25 cm from the pan, food never touched"),
+    "StirVegetables": (
+        "(1) BOTH named vegetables are inside the pot (touching it, centre within 70% of its radius); (2) the pot "
+        "stays on the burner that is on (within 15 cm of its centre); (3) the spatula is grasped (fingers closed on "
+        "it, touching it); (4) while all of that holds, the spatula moves BOTH vegetables (each moves at least "
+        "0.5 mm horizontally in a simulation step while the spatula touches at least one of them) for at least 5 "
+        "simulation steps in total. So: put both vegetables in the pot, grasp the spatula, put its blade among the "
+        "vegetables and move it back and forth in small strokes.",
+        "both vegetables in the pot on the lit burner, spatula grasped, stir so both vegetables move for >= 5 steps"),
+}
+
 DEMO_NOTE = (
     "DEMONSTRATIONS are shown below: first a PRIMER showing what each command does, then (if present) one "
     "successful episode of the same kind of task recorded by an expert in a DIFFERENT kitchen (other layout, "
@@ -109,8 +146,9 @@ def render_demos(demos: list[Demo]) -> tuple[str, list[Path]]:
     return "\n\n".join(blocks), images
 
 
-def system_prompt(profile: dict, demo_text: str) -> str:
+def system_prompt(profile: dict, demo_text: str, task: str | None = None) -> str:
     """Static instructions for the whole episode (written to the model instructions file)."""
+    success = SUCCESS_CONDITIONS.get(task)
     parts = [
         "You are the controller of a robot in a physics simulator. Each turn you receive camera images and the "
         "robot state, and you reply with a few discrete commands that are executed in order. Then you get new "
@@ -118,6 +156,9 @@ def system_prompt(profile: dict, demo_text: str) -> str:
         _profile_text(profile),
         GRAMMAR_HELP,
     ]
+    if success:
+        parts.append("TASK SUCCESS CONDITION (checked after every simulation step; the episode ends successfully the "
+                     "moment ALL of these hold at the same time, and only then):\n" + success[0])
     if demo_text:
         parts += [DEMO_NOTE, demo_text]
     parts.append(
@@ -148,8 +189,11 @@ def state_text(state: dict) -> str:
 
 
 def turn_text(turn: int, max_turns: int, instruction: str, state: dict, last_results: list[dict], memory_text: str,
-              captions: list[str], n_demo_images: int) -> str:
-    parts = [f"TASK: {instruction}", f"TURN {turn} of at most {max_turns}."]
+              captions: list[str], n_demo_images: int, task: str | None = None) -> str:
+    parts = [f"TASK: {instruction}"]
+    if task in SUCCESS_CONDITIONS:
+        parts.append("SUCCESS WHEN (all at once): " + SUCCESS_CONDITIONS[task][1])
+    parts.append(f"TURN {turn} of at most {max_turns}.")
     if last_results:
         lines = [f"- {r['command']}: {'ok' if r.get('ok') else 'FAILED'}" + (f" ({r['note']})" if r.get("note") else "")
                  for r in last_results]

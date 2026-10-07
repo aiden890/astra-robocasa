@@ -28,10 +28,17 @@ def rebuild_matching(replay_dir: Path, max_tries: int = 12):
     folder = Path(replay_dir)
     scene = json.loads((folder / "scene.json").read_text())
     reference = np.load(folder / "initial_state.npz")["state"]
+    if scene.get("scene_dir"):  # common frozen scene: the restore itself is exact (and verified) every time
+        max_tries = 1
     best = np.inf
     for attempt in range(1, max_tries + 1):
-        sim = Simulator("PandaOmron", scene["task"], horizon=scene["horizon"])
-        sim.reset(scene["seed"])
+        if scene.get("scene_dir"):
+            from .portable_scene import open_scene
+
+            sim = open_scene(scene["task"], scene["horizon"], scene["scene_dir"], scene["seed"])
+        else:
+            sim = Simulator("PandaOmron", scene["task"], horizon=scene["horizon"])
+            sim.reset(scene["seed"])
         diff = float(np.abs(sim.env.sim.get_state().flatten() - reference).max())
         if diff < MATCH_TOL:
             return sim, scene, attempt

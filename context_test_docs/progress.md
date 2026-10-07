@@ -291,3 +291,64 @@
 - **추가한 도구:**
   - `scripts/robocasa-astra/review_run.py`: 세부 목표 계산
   - `scripts/robocasa-astra/summarize_runs.py`: 결과 표
+
+## P7: 공통 장면 + 종료 조건 (2026-10-07, 진행 중)
+
+**사용자 지시**
+1. 장면 조건을 공통 장면 릴리스(`common-scenes-diverse-v2-20261006`)로 통일합니다.
+2. 장면에 번호를 붙입니다.
+3. 프롬프트에 종료(성공) 조건을 넣고, 0번 장면으로 과제별 1번씩 1-shot 실행합니다.
+4. 디버깅 영상을 두 버전으로 만듭니다(시뮬레이션 시간, 실제 reasoning 시간 포함).
+
+**Git**
+- `feat/context_astra_robodawn` 브랜치에 지금까지의 작업을 커밋했습니다(99d8e28).
+- `origin/codex/evaluation-common-scenes`를 병합했습니다. 충돌은 없었고, 병합 후 테스트 82개가 통과했습니다.
+
+**장면 데이터**
+- 릴리스 8조각을 내려받아 조각별 SHA256과 전체 SHA256(`405502b8…d8b4`)이 모두 일치하는 것을 확인했습니다.
+- `/data/astra-robocasa-scenes/common-eval-panda-diverse-scenes-20261006`(4.3 GB)에 풀었고, `.runtime/amp2.env`에 `ASTRA_SCENE_ROOT`로 등록했습니다.
+
+**장면 번호** (`scripts/robocasa-astra/index_scenes.py` → `assets/scenes.json`, [scenes.md](scenes.md))
+- 과제별 n번 장면 = `evaluation/seeds.json`의 n번째 seed입니다. n번 장면은 layout n+1 / style n+1입니다.
+- horizon은 PrepareCoffee, PanTransfer, OpenCabinet, PickPlaceSinkToCounter가 1,800, StirVegetables가 2,400입니다. 공통 프로토콜 값이라 그대로 씁니다. 이전 P4/P6 설정(OpenCabinet 1,050, PickPlace 900)과는 다릅니다.
+- 최대 턴은 horizon ÷ 40입니다(45턴, StirVegetables 60턴).
+- 실행은 `run.py --scene N`으로 하고, 실행 폴더 이름은 `<Task>-scene<N>-1shot-<시각>`입니다.
+- PanTransfer 시연(layout 9 / style 9)은 공통 장면 8번과 같은 주방입니다. 0번 장면과는 겹치지 않지만, 8번을 평가할 때는 시연을 바꿔야 합니다.
+
+**장면 복원: x86_64 이식** (`portable_scene.py`)
+- 공통 장면은 aarch64(Spark2)에서 만들어졌습니다. 패키지 버전과 고정된 소스 해시 두 개는 우리 서버와 같습니다.
+- 그런데 원래 `restore_scene`은 우리 서버에서 실패했습니다. 원인은 두 가지입니다.
+  1. MuJoCo가 x86에서 컴파일한 메시 다각형 배열(`mesh_polymap`, `mesh_polyvert`)이 원소 2개 짧습니다.
+  2. C `char`의 부호가 플랫폼마다 달라서 `plugin_attr`의 자료형이 다릅니다(uint8 대 int8).
+- 해결:
+  - 다각형 배열 묶음 9개는 우리 컴파일 결과를 유지합니다(서로 인덱스로 연결되어 일부만 덮어쓸 수 없음).
+  - 자료형만 다른 배열은 바이트 그대로 옮깁니다.
+  - 나머지 모델 배열 390개는 저장된 값으로 덮어씁니다.
+  - 형상 위치는 바이트 비교 대신 최대 차이를 측정해 기록합니다.
+- 공유 코드 `frozen_scene.py`는 고치지 않았습니다.
+- **검증 (0번 장면 5개, 모델 호출 없음):**
+  - 물리 상태가 바이트 단위로 일치했습니다.
+  - 형상 위치 최대 차이는 1e-15 m 수준이었습니다.
+  - 카메라 픽셀은 일치하지 않았습니다(플랫폼 차이, 진단으로 기록).
+  - replay 재실행 시 마지막 상태 차이 0.0이었습니다.
+- 평가 README에 따라, 이 결과는 "x86_64 이식 복원"이라는 별도 환경으로 보고합니다.
+
+**종료 조건** (`prompts.SUCCESS_CONDITIONS`)
+- RoboCasa `_check_success`와 같은 기준값을 쓴 문장을 시스템 프롬프트("TASK SUCCESS CONDITION")에 넣었습니다.
+- 매 턴 프롬프트에는 "SUCCESS WHEN"으로 짧게 다시 넣었습니다.
+- 진행 정도(예: 문이 몇 % 열렸는지)는 특권 정보라 주지 않습니다.
+- 테스트를 추가해 83개가 통과했습니다.
+
+**디버깅 영상** (`debug_video.py`)
+- `debug_sim.mp4`: 시뮬레이션 시간만 담은 버전(20fps)
+- `debug_realtime.mp4`: 모델이 생각한 시간만큼 멈춰서, 모델이 받은 이미지 3장과 프롬프트를 보여준 뒤 동작을 재생하는 버전
+- 패널 내용:
+  - 턴과 스텝
+  - 이번 턴과 누적 시간(reasoning, 시뮬레이션 동작, 합계, 실제 실행 시간)
+  - 토큰(이번 턴 / 누적)과 크레딧
+  - 프롬프트 핵심(지난 결과, 현재 상태)
+  - 모델 응답(scene, progress, plan)
+  - 명령별 결과(현재 명령 강조, 실패 원인)
+  - 턴 타임라인(실패한 턴은 빨간색)
+- 앞으로의 실행은 턴별 시간(`timing`: call_start_s, model_s, exec_wall_s, motion_sim_s)을 `trace.jsonl`에 정확히 남깁니다.
+- 기존 실행은 턴 시작 시각과 응답 시간으로 계산합니다.

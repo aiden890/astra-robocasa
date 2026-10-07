@@ -26,6 +26,7 @@ import numpy as np
 from ..worker import Simulator
 from .commands import parse_command
 from .executor import Executor
+from .portable_scene import open_scene
 from .recorder import ReplayRecorder, VideoRecorder
 from .views import render_views, surface_height
 
@@ -50,8 +51,9 @@ def _versions() -> dict:
 class Server:
     """Owns one native environment, its executor and the per-run recorders."""
 
-    def __init__(self, task: str, budget: int, output: Path):
+    def __init__(self, task: str, budget: int, output: Path, scene_dir: str | None = None):
         self.task, self.budget, self.output = task, budget, Path(output)
+        self.scene_dir = scene_dir
         self.sim = self.executor = self.video = self.replay = None
         self.turn = 0
         self.caption = ""
@@ -62,8 +64,13 @@ class Server:
                        + (" | SUCCESS" if self.executor.success else ""))
 
     def reset(self, seed: int) -> dict:
-        self.sim = Simulator("PandaOmron", self.task, horizon=self.budget)
-        self.sim.reset(seed)
+        if self.scene_dir:
+            # Common frozen scene: native XML, model arrays and the exact initial state are restored
+            # (portable restore, see portable_scene); ``seed`` must be the scene's simulator seed.
+            self.sim = open_scene(self.task, self.budget, self.scene_dir, seed)
+        else:
+            self.sim = Simulator("PandaOmron", self.task, horizon=self.budget)
+            self.sim.reset(seed)
         env = self.sim.env
         self.video = VideoRecorder(self.output / "video.mp4")
         self.replay = ReplayRecorder(self.output / "replay")
@@ -73,7 +80,9 @@ class Server:
             "task": self.task, "robot": "PandaOmron", "seed": seed, "horizon": self.budget,
             "layout_id": meta.get("layout_id"), "style_id": meta.get("style_id"),
             "instruction": meta.get("lang"), "control_freq": env.control_freq,
-            "replay": "scripts/robocasa-astra/replay_run.py <run>/replay (mode seed reproduces exactly)",
+            "scene_dir": self.scene_dir,
+            "frozen_scene_receipt": self.sim.frozen_scene_receipt,
+            "replay": "scripts/robocasa-astra/replay_run.py <run>/replay",
             "versions": _versions(),
         }
         self.replay.save_initial(env, scene)
@@ -113,10 +122,11 @@ def main() -> None:
     parser.add_argument("--task", required=True)
     parser.add_argument("--budget", type=int, required=True)
     parser.add_argument("--output", required=True)
+    parser.add_argument("--scene-dir", help="common frozen scene folder to restore (exact initial state)")
     args = parser.parse_args()
     protocol = sys.stdout
     with contextlib.redirect_stdout(sys.stderr):
-        server = Server(args.task, args.budget, Path(args.output))
+        server = Server(args.task, args.budget, Path(args.output), args.scene_dir)
         for line in sys.stdin:
             try:
                 request = json.loads(line)

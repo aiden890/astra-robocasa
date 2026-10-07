@@ -19,12 +19,15 @@ class SimulatorError(RuntimeError):
 class SimClient:
     """Starts ``python -m robocasa_astra.astra_robodawn.sim_server`` and exchanges JSON lines with it."""
 
-    def __init__(self, task: str, budget: int, output: Path, python: str | None = None, nice: int = 10):
+    def __init__(self, task: str, budget: int, output: Path, python: str | None = None, nice: int = 10,
+                 scene_dir: str | None = None):
         self.output = Path(output)
         self.log_path = self.output / "sim.log"
         self._log = self.log_path.open("w")
         command = ["nice", "-n", str(nice), python or sys.executable, "-m", "robocasa_astra.astra_robodawn.sim_server",
                    "--task", task, "--budget", str(budget), "--output", str(self.output)]
+        if scene_dir:
+            command += ["--scene-dir", str(scene_dir)]
         self.process = subprocess.Popen(command, stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=self._log,
                                         text=True, bufsize=1, env=dict(os.environ))
 

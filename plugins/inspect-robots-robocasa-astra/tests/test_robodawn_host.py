@@ -128,3 +128,14 @@ def test_loop_runs_to_success_and_writes_trace(tmp_path):
     assert (tmp_path / "calls" / "turn001" / "prompt.txt").exists()
     assert (tmp_path / "turns" / "turn001_cam.png").exists() and (tmp_path / "memory.json").exists()
     assert "RESULT OF YOUR LAST COMMANDS" in (tmp_path / "calls" / "turn002" / "prompt.txt").read_text()
+
+
+def test_success_conditions_in_prompts():
+    for task in ("OpenCabinet", "PickPlaceSinkToCounter", "PrepareCoffee", "PanTransfer", "StirVegetables"):
+        text = prompts.system_prompt(prompts.load_profile(), "", task)
+        assert "TASK SUCCESS CONDITION" in text and prompts.SUCCESS_CONDITIONS[task][0] in text
+        state = {"fingertip_cm": [1, 2, 3], "approach": [0, 0, -1], "finger_axis": [0, 1, 0], "gripper_opening": 1.0,
+                 "gripper_command": "open", "surface_z_cm": 92, "steps_used": 0, "step_budget": 10}
+        turn = prompts.turn_text(1, 5, "do it", state, [], "", ["c"], 0, task)
+        assert "SUCCESS WHEN (all at once): " + prompts.SUCCESS_CONDITIONS[task][1] in turn
+    assert "TASK SUCCESS CONDITION" not in prompts.system_prompt(prompts.load_profile(), "")

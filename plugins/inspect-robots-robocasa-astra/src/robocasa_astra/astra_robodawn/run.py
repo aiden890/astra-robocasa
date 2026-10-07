@@ -30,7 +30,10 @@ from .sim_client import SimClient
 
 REPO = Path(__file__).resolve().parents[5]
 LEDGER = REPO / "runs" / "astra_ledger.jsonl"
-ASTRA_RUN_LIMIT = 6
+# P4: 1 + P6: 5 (scene-less, layout 1 / style 1) + P7: 5 (common scene 0 with success conditions).
+ASTRA_RUN_LIMIT = 11
+SCENE_INDEX = Path(__file__).resolve().parent / "assets" / "scenes.json"
+STEPS_PER_TURN_CAP = 40  # max turns = horizon // 40 for common scenes (45 for 1800 steps, 60 for 2400)
 
 # Native step budgets (RoboCasa dataset_registry horizons) and turn caps per task.
 TASKS = {
@@ -61,7 +64,10 @@ def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     parser.add_argument("--task", required=True, choices=sorted(TASKS))
     parser.add_argument("--shots", type=int, choices=[0, 1], required=True)
-    parser.add_argument("--seed", type=int, default=771001)
+    parser.add_argument("--seed", type=int, default=771001, help="legacy native-scene seed (ignored with --scene)")
+    parser.add_argument("--scene", type=int, help="common frozen scene number (0-9) from assets/scenes.json")
+    parser.add_argument("--scene-root", default=os.environ.get("ASTRA_SCENE_ROOT"),
+                        help="extracted common scene collection (default $ASTRA_SCENE_ROOT)")
     parser.add_argument("--output", help="new run directory (default runs/robodawn/<task>-<shots>shot-s<seed>-<time>)")
     parser.add_argument("--scripted", help="JSON list of replies to use instead of the model (no model call)")
     parser.add_argument("--allow-astra", action="store_true", help="really call gpt-6-astra (counted in the ledger)")
@@ -78,23 +84,33 @@ def main() -> None:
     if args.allow_astra and _ledger_count() >= ASTRA_RUN_LIMIT:
         parser.error(f"{LEDGER} already lists {ASTRA_RUN_LIMIT} real runs; the protocol allows no more")
 
-    spec = TASKS[args.task]
+    spec = dict(TASKS[args.task])
+    scene, scene_dir, seed = None, None, args.seed
+    if args.scene is not None:
+        if not args.scene_root:
+            parser.error("--scene needs --scene-root or ASTRA_SCENE_ROOT")
+        scene = json.loads(SCENE_INDEX.read_text())["tasks"][args.task][args.scene]
+        scene_dir = str(Path(args.scene_root) / scene["folder"])
+        seed = scene["simulator_seed"]
+        spec = {"budget": scene["horizon"], "max_turns": scene["horizon"] // STEPS_PER_TURN_CAP}
     stamp = time.strftime("%Y%m%d-%H%M%S")
+    label = f"scene{args.scene}" if scene else f"s{args.seed}"
     # Absolute: codex runs in an empty working directory, so attached image paths must not be relative.
-    run_dir = Path(args.output or REPO / "runs" / "robodawn" / f"{args.task}-{args.shots}shot-s{args.seed}-{stamp}").resolve()
+    run_dir = Path(args.output or REPO / "runs" / "robodawn" / f"{args.task}-{label}-{args.shots}shot-{stamp}").resolve()
     run_dir.mkdir(parents=True, exist_ok=False)
-    cfg = EpisodeConfig(task=args.task, seed=args.seed, shots=args.shots, budget=spec["budget"],
+    cfg = EpisodeConfig(task=args.task, seed=seed, shots=args.shots, budget=spec["budget"],
                         max_turns=args.max_turns or spec["max_turns"])
 
     demos = demos_for(args.task, args.shots)
     demo_text, demo_images = render_demos(demos)
-    prompt = system_prompt(load_profile(), demo_text)
+    prompt = system_prompt(load_profile(), demo_text, args.task)
     (run_dir / "system_prompt.md").write_text(prompt)
     (run_dir / "response_schema.json").write_text(json.dumps(RESPONSE_SCHEMA, indent=1))
     codex_version = subprocess.run([args.codex, "--version"], capture_output=True, text=True).stdout.strip() \
         if not args.scripted else "not used (scripted)"
     config = {
-        "task": args.task, "seed": args.seed, "shots": args.shots, "budget": cfg.budget, "max_turns": cfg.max_turns,
+        "task": args.task, "seed": seed, "scene": args.scene, "scene_info": scene, "scene_dir": scene_dir,
+        "shots": args.shots, "budget": cfg.budget, "max_turns": cfg.max_turns,
         "mode": "astra" if args.allow_astra else "scripted", "model": MODEL if args.allow_astra else "scripted",
         "reasoning_effort": REASONING_EFFORT, "codex_version": codex_version, "git_commit": _git_commit(),
         "profile": {"path": str(PROFILE_PATH), "md5": _md5(PROFILE_PATH)},
@@ -106,14 +122,14 @@ def main() -> None:
     if args.allow_astra:
         LEDGER.parent.mkdir(parents=True, exist_ok=True)
         with LEDGER.open("a") as ledger:
-            ledger.write(json.dumps({"started": stamp, "task": args.task, "shots": args.shots, "seed": args.seed,
-                                     "run_dir": str(run_dir)}) + "\n")
+            ledger.write(json.dumps({"started": stamp, "task": args.task, "shots": args.shots, "seed": seed,
+                                     "scene": args.scene, "run_dir": str(run_dir)}) + "\n")
         caller = CodexCaller(args.codex, args.codex_home, run_dir / "system_prompt.md",
                              run_dir / "response_schema.json", REPO / ".runtime" / "inference-empty")
     else:
         caller = ScriptedCaller(json.loads(Path(args.scripted).read_text()))
 
-    sim = SimClient(args.task, cfg.budget, run_dir, python=args.python)
+    sim = SimClient(args.task, cfg.budget, run_dir, python=args.python, scene_dir=scene_dir)
     summary = {}
     try:
         summary = run_episode(sim, caller, cfg, run_dir, demo_images)

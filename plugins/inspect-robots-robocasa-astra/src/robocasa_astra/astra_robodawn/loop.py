@@ -65,10 +65,12 @@ def run_episode(sim, caller, cfg: EpisodeConfig, run_dir: Path, demo_images: lis
         state = obs["state"]
         view_paths = _save_views(obs["views"], run_dir / "turns", f"turn{turn:03d}")
         text = turn_text(turn, cfg.max_turns, instruction, state, last_results, memory.render(),
-                         [v["caption"] for v in obs["views"]], len(demo_images))
+                         [v["caption"] for v in obs["views"]], len(demo_images), cfg.task)
         record = {"turn": turn, "time": round(time.time() - t_start, 1), "state": state,
                   "images": [str(p.relative_to(run_dir)) for p in view_paths],
                   "call_dir": f"calls/turn{turn:03d}", "prompt": text}
+        steps_before = state["steps_used"]
+        t_call = time.time()
         try:
             reply = caller.call(text, list(demo_images) + view_paths, run_dir / "calls" / f"turn{turn:03d}")
         except ModelCallError as exc:
@@ -82,6 +84,7 @@ def run_episode(sim, caller, cfg: EpisodeConfig, run_dir: Path, demo_images: lis
             last_results = [{"command": "(no command)", "ok": False,
                              "note": "your previous reply could not be obtained; reply with the JSON object"}]
             continue
+        t_reply = time.time()
         add_usage(usage_total, reply.usage)
         record.update(usage=reply.usage, cost=estimate(reply.usage), latency_s=reply.seconds,
                       reasoning=reply.reasoning, reply_text=reply.text)
@@ -114,10 +117,14 @@ def run_episode(sim, caller, cfg: EpisodeConfig, run_dir: Path, demo_images: lis
         results += [{"command": "(invalid)", "kind": "invalid", "ok": False, "note": err} for err in errors]
         after = next((r["state_after"] for r in reversed(results) if "state_after" in r), state)
         success = any(r.get("task_success") for r in results)
+        t_done = time.time()
         memory.record_turn(turn, results, after, state.get("surface_z_cm"))
         record.update(response=parsed, commands=[c.text() for c in commands], command_errors=errors,
                       results=[{k: v for k, v in r.items() if k != "state_after"} for r in results],
-                      state_after=after, task_success=success)
+                      state_after=after, task_success=success,
+                      timing={"call_start_s": round(t_call - t_start, 2), "model_s": round(t_reply - t_call, 2),
+                              "exec_wall_s": round(t_done - t_reply, 2),
+                              "motion_sim_s": round((after["steps_used"] - steps_before) / 20.0, 2)})
         trace_file.write(json.dumps(record) + "\n")
         trace_file.flush()
         last_results = results
