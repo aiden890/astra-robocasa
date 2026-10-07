@@ -49,14 +49,26 @@ def main() -> None:
             )
         else:
             caller = ScriptedCaller(json.loads(args.scripted.read_text()))
-        sim = ChunkSimClient(
-            cfg.task,
-            cfg.budget,
-            run_dir,
-            python=args.python,
-            scene_dir=config["scene_dir"],
-            condition=config["condition"],
-        )
+        if config.get("transport"):
+            from .spark_transport import SparkChunkSimClient
+
+            sim = SparkChunkSimClient(
+                cfg.task,
+                cfg.budget,
+                run_dir,
+                config["scene_dir"],
+                config["condition"],
+                config["transport"],
+            )
+        else:
+            sim = ChunkSimClient(
+                cfg.task,
+                cfg.budget,
+                run_dir,
+                python=args.python,
+                scene_dir=config["scene_dir"],
+                condition=config["condition"],
+            )
         try:
             summary = run_episode(
                 sim, caller, cfg, run_dir, block, config["condition"], bool(args.resume)

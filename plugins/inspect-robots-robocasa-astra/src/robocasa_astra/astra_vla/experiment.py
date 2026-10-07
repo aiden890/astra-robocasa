@@ -128,6 +128,9 @@ def prepare(argv: list[str] | None = None):
         (run_dir / "demo_block.txt").write_text(parts_text(block))
         config = {
             "variant": "vla12-depth-recovery",
+            "transport": json.loads(os.environ["ASTRA_SPARK_TRANSPORT"])
+            if os.environ.get("ASTRA_SPARK_TRANSPORT")
+            else None,
             "task": args.task,
             "seed": cfg.seed,
             "scene": args.scene,

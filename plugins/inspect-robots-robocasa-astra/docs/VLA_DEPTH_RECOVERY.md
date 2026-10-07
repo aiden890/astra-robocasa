@@ -145,3 +145,7 @@ PrepareCoffee에서는 행동이 physics에 적용됐지만 ack 전에 예외가
 ## 세 태스크 비교 계획
 
 A 기본(규리)은 RGB·현재 로봇 상태·최근 12턴 텍스트 기억을 사용하고 성공 예시는 제외합니다. B few-shot(규리)은 A에 평가 씬과 분리된 성공 예시를 추가합니다. C depth(민경호)는 A에 정렬된 depth 이미지와 pixel Z 조회를 함께 제공하는 `--condition hybrid --shots 0`입니다. C에는 별도 과거 영상이나 성공 예시를 추가하지 않습니다. 모델은 depth 이미지를 받은 상태에서 필요할 때 같은 관측의 픽셀을 질문하고 답변을 받은 뒤 행동합니다. 실제 요청/답변은 토큰·시간과 함께 기록됩니다.
+
+## Spark 연결과 실시간 영상
+
+`spark_transport.py`는 Lab 모델 클라이언트와 Spark native worker를 SSH RPC로 연결합니다. 연결 단절 시 실제 worker의 PID/argv 생존 여부를 확인하고 종료가 확인되었을 때만 체크포인트를 복구합니다. 영상·프레임·체크포인트는 Lab 전용 저장소에 기록합니다. `live_capture.py`는 초기 상태와 매 native 스텝의 RGB/depth 프레임을 저장하고 `live_publish.py`는 20fps 누적 영상, 행동 16행, 모델 응답, 픽셀 조회, 토큰을 기존 뷰어에 게시합니다.

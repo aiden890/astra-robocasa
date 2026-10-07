@@ -46,6 +46,9 @@ class ChunkServer(Server):
         if self.journal:
             self.journal.commit(self.sim.env, self.executor, action)
         super()._on_step(action, obs, caption)
+        from .live_capture import capture
+
+        capture(self.sim.env, obs, self.output, self.executor.steps_used, self.condition)
 
     def reset(self, seed: int) -> dict:
         """Adopt a live environment or restore acknowledged actions from a frozen scene."""
@@ -93,6 +96,15 @@ class ChunkServer(Server):
         self.executor.before_step = self.journal.intent
         reply["state"] = self.executor.state()
         self.start_reply = reply
+        from .live_capture import capture
+
+        capture(
+            self.sim.env,
+            self.sim.env._get_observations(force_update=True),
+            self.output,
+            self.executor.steps_used,
+            self.condition,
+        )
         return reply
 
     def observe(self) -> dict:
