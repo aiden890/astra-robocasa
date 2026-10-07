@@ -142,6 +142,18 @@ def main():
                     "sha256": hashlib.sha256(target.read_bytes()).hexdigest(),
                 }
                 atomic_json(proof_path, proofs)
+            visualization = folder / "visualization.json"
+            if visualization.exists():
+                viewer = public / (job["id"] + "-view")
+                viewer.mkdir(exist_ok=True)
+                for filename in ("visualization.json", "visualization.html", "latest.jpg"):
+                    source = folder / filename
+                    if source.exists():
+                        shutil.copyfile(source, viewer / filename)
+                link = viewer / "video.mp4"
+                if not link.exists():
+                    link.symlink_to("../" + name)
+                row["visualization"] = job["id"] + "-view/visualization.html"
             row["video"] = name
             board.append(
                 {
@@ -233,6 +245,12 @@ def main():
     }
     atomic_json(public / "experiment.json", report)
     atomic_json(public / "plan.json", {k: v for k, v in plan.items() if k != "xiaomi_runtime"})
+    for row in rows:
+        row["video_link"] = (
+            '<a href="' + row.get("visualization", row["video"]) + '">영상·모델 출력</a>'
+            if row.get("video")
+            else "—"
+        )
     table = "".join(
         f"<tr><td>{html.escape(r['task'])}</td><td>{html.escape(r['scene'])}</td>"
         f"<td>{LABELS[r['condition']]}</td><td>{html.escape(r['execution_status'])}</td>"
@@ -242,7 +260,7 @@ def main():
         f"<td>{r['calls']['reported_tokens']['cached_input_tokens']}</td>"
         f"<td>{r['calls']['reported_tokens']['output_tokens']}</td>"
         f"<td>{r['calls']['usage_missing_attempts']}</td><td>{r['calls']['cli_seconds']['median']}</td>"
-        f"<td>{('<a href=' + r['video'] + '>영상</a>') if r.get('video') else '—'}</td></tr>"
+        f"<td>{r['video_link']}</td></tr>"
         for r in rows
     )
     page = Path(__file__).with_name("depth_protocol.html").read_text()

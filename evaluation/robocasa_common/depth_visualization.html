@@ -1,0 +1,21 @@
+<!doctype html><html lang="ko"><meta charset="utf-8">
+<title>Astra 시뮬레이션 · 모델 출력</title>
+<style>body{max-width:1000px;margin:24px auto;padding:16px;background:#101722;color:#edf2fa;font:16px system-ui}video,img{width:100%;background:black}section{padding:20px;background:#1c293b;border-radius:12px;margin-top:12px}pre{white-space:pre-wrap;overflow-wrap:anywhere}dl{display:grid;grid-template-columns:repeat(4,1fr);gap:12px}dt{color:#b8c8de}dd{margin:4px 0;font-size:22px}select{max-width:100%;padding:8px}small{color:#b8c8de}</style>
+<h1>Astra 시뮬레이션</h1><video id="video" controls></video><img id="live" hidden>
+<section><label>표시할 호출 <select id="select"><option value="auto">재생 위치 / 최신 호출</option></select></label>
+<p id="position"></p><h2>모델의 행동 이유</h2><pre id="reason"></pre>
+<h3>호출별 토큰 사용량</h3><dl id="usage"></dl>
+<small>캐시 토큰은 입력 토큰에 포함됩니다. 별도 추론 토큰 수는 미제공입니다.</small>
+<h3>행동 · 거리 조회</h3><pre id="details"></pre></section>
+<script>
+const video=document.querySelector('#video'),live=document.querySelector('#live'),sel=document.querySelector('#select');let data={calls:[]};
+const fmt=x=>Number.isInteger(x)?x.toLocaleString():'미확인';
+function show(){let row;if(sel.value!=='auto')row=data.calls.find(x=>x.call===sel.value);else{const step=Math.floor(video.currentTime*20);row=live.hidden?[...data.calls].reverse().find(x=>x.step<=step&&!(x.response.queries||[]).length):data.calls.at(-1)}
+if(!row){document.querySelector('#reason').textContent='이 재생 위치에는 아직 모델 응답이 없습니다.';document.querySelector('#usage').replaceChildren();document.querySelector('#details').textContent='';document.querySelector('#position').textContent='';return}
+document.querySelector('#position').textContent=row.call+' · 관측 스텝 '+row.step+' · '+row.condition;
+document.querySelector('#reason').textContent=row.response.reason||'설명 미제공';
+const usage=document.querySelector('#usage');usage.replaceChildren();for(const [key,label]of [['input_tokens','입력'],['output_tokens','출력'],['cached_input_tokens','캐시 입력'],['total_tokens','총 토큰']]){const box=document.createElement('div'),dt=document.createElement('dt'),dd=document.createElement('dd');dt.textContent=label;dd.textContent=fmt(row.usage?.[key]);box.append(dt,dd);usage.append(box)}
+document.querySelector('#details').textContent=JSON.stringify({action:row.response.action,repeat:row.response.repeat,queries:row.response.queries||[],query_answers:row.query_answers||[]},null,2)}
+async function refresh(){try{const r=await fetch('visualization.json?t='+Date.now());if(!r.ok)return;data=await r.json();const chosen=sel.value;sel.replaceChildren(new Option('재생 위치 / 최신 호출','auto'));for(const row of data.calls)sel.add(new Option(row.call+' · 스텝 '+row.step+((row.response.queries||[]).length?' · 거리 조회':''),row.call));sel.value=[...sel.options].some(x=>x.value===chosen)?chosen:'auto';if(!live.hidden)live.src='latest.jpg?t='+Date.now();show()}catch(e){document.querySelector('#reason').textContent='모델 출력 기록을 기다리는 중입니다.'}}
+video.src='video.mp4';video.addEventListener('error',()=>{video.hidden=true;live.hidden=false;live.src='latest.jpg';show()});video.addEventListener('timeupdate',show);sel.addEventListener('change',show);refresh();setInterval(refresh,2000);
+</script></html>

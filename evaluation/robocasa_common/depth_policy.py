@@ -18,6 +18,7 @@ from robocasa_astra.policy import CodexPolicy
 
 from inspect_robots.policy import PolicyConfig, PolicyInfo
 from inspect_robots.types import Action, ActionChunk
+from robocasa_common.depth_visualization import record_response
 
 CONDITIONS = {"rgb": (), "color": (), "pixel": ("pixel",), "grid": ("grid",)}
 
@@ -248,9 +249,16 @@ class DepthPolicy:
                 stdin=subprocess.PIPE,
                 stderr=self.video_log,
             )
-        self.video.stdin.write(
-            np.concatenate([observation.images[c] for c in cameras], axis=1).tobytes()
-        )
+        frame = np.concatenate([observation.images[c] for c in cameras], axis=1)
+        self.video.stdin.write(frame.tobytes())
+        decision = self.progress.get("decision", {})
+        if observation.extra.get("steps") in (
+            0,
+            decision.get("start_step", 0) + decision.get("repeat", 0),
+        ):
+            temporary = self.output.parent / "latest.tmp.jpg"
+            Image.fromarray(frame).save(temporary, quality=85)
+            temporary.replace(self.output.parent / "latest.jpg")
 
     def save_progress(self, **updates):
         """Save action-chunk/query state before any physical motion."""
@@ -559,6 +567,7 @@ class DepthPolicy:
                     self.query_count += 1
                     answers.append(result)
                 (folder / "query-results.json").write_text(json.dumps(answers, indent=2))
+                record_response(self.output, folder, step, self.condition, value, answers)
                 query_round += 1
                 self.save_progress(answers=answers, query_round=query_round, inflight=None)
                 continue
@@ -567,6 +576,7 @@ class DepthPolicy:
             except ValueError:
                 self.save_progress(inflight=None)
                 raise
+            record_response(self.output, folder, step, self.condition, value, answers)
             self.history.append(value)
             self.save_progress(
                 inflight=None,
