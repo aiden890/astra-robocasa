@@ -36,8 +36,8 @@ REPO = Path(__file__).resolve().parents[5]
 LEDGER = REPO / "runs" / "astra_ledger_vla.jsonl"
 # V1: OpenCabinet scene 0 (stopped at turn 11: shared weekly meter at 91%); after the meter reset (agreed
 # 2026-10-07): V2: OpenCabinet scene 0 again, V3: PrepareCoffee scene 0, V4: PickPlaceSinkToCounter scene 0,
-# one run each.
-VLA_RUN_LIMIT = 4
+# V5: PanTransfer scene 0, one run each.
+VLA_RUN_LIMIT = 5
 SCENE_INDEX = Path(__file__).resolve().parents[1] / "astra_robodawn" / "assets" / "scenes.json"
 TASKS = ("OpenCabinet", "PickPlaceSinkToCounter", "PrepareCoffee", "PanTransfer", "StirVegetables")
 
