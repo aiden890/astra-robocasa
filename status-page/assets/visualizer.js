@@ -1,7 +1,7 @@
 "use strict";
 const el = id => document.getElementById(id);
 const conditions = {rgb:"RGB only",color:"RGB + depth image",pixel:"RGB + pixel Z",grid:"RGB + 16×16 grid Z"};
-let records = [], outputIndex = {}, selected = null, calls = [], generation = 0, limit = 20;
+let records = [], outputIndex = {}, selected = null, calls = [], generation = 0, limit = 20, inputIndex = {}, inputKey = "";
 const token = x => Number.isInteger(x) ? x.toLocaleString() : "미확인";
 const clock = x => Number.isFinite(x) ? Math.floor(x/60)+":"+String(Math.floor(x%60)).padStart(2,"0") : "0:00";
 const status = r => r.task_success === true || r.success === true ? "성공" : r.task_success === false || r.success === false ? "미성공" : ({complete:"완료",error:"오류",running:"진행 중"}[r.status] || r.status || "미확인");
@@ -41,7 +41,7 @@ function renderList() {
   el("more").hidden=filtered.length<=limit;
 }
 function clearOutput(message) {
-  el("reason").textContent=message;
+  el("reason").textContent=message;inputKey="";el("input-images").replaceChildren();el("input-note").textContent="";
   ["input-token","output-token","cache-token","total-token"].forEach(id=>el(id).textContent="—");
   ["action","queries","repeat","call-meta","source-note"].forEach(id=>el(id).textContent="");
   el("action-phase").textContent="연결된 호출 없음";el("seek-call").disabled=true;
@@ -64,7 +64,9 @@ async function selectVideo(row) {
   if(!dataPath){clearOutput("이 영상에는 연결된 모델 설명·토큰 기록이 없습니다.");el("sync-state").textContent="기록 없음";return}
   try {
     const response=await fetch(sameOriginPath(dataPath),{cache:"no-store"});if(!response.ok)throw Error();
-    const data=await response.json();if(current!==generation)return;
+    const data=await response.json();
+    inputIndex={};try{const inputs=await fetch(new URL("inputs.json",sameOriginPath(dataPath)),{cache:"no-store"});if(inputs.ok)inputIndex=await inputs.json()}catch(e){}
+    if(current!==generation)return;
     calls=(data.calls||[]).filter(c=>Number.isInteger(c.step)).sort((a,b)=>a.step-b.step||a.call.localeCompare(b.call));
     selected={...row,control_hz:data.control_hz||row.fps||20,timeline_note:data.timeline_note};
     calls.forEach(c=>el("call").add(new Option(c.call+" · 스텝 "+c.step+((c.response.queries||[]).length?" · 거리 조회":" · 행동"),c.call)));
@@ -90,9 +92,23 @@ function showOutput() {
   const requests=group.flatMap(c=>c.response.queries||[]);
   const answers=row.query_answers?.length?row.query_answers:group.flatMap(c=>c.query_answers||[]);
   el("queries").textContent=JSON.stringify({requests,answers},null,2);
-  el("query-box").open=requests.length>0;
+  el("query-box").open=true;
+  renderInputs(row,requests);
   el("source-note").textContent=selected.live_clip?"현재 행동의 실제 프레임으로 만든 최신 20fps 영상입니다. 완료 후 전체 영상으로 바뀝니다.":selected.timeline_note||"원본 response.json · receipt.json · native 관측 스텝 기준";
   el("seek-call").disabled=!manual;
+}
+function renderInputs(row,requests) {
+  const key=selected.id+":"+row.call;if(inputKey===key)return;inputKey=key;
+  el("input-images").replaceChildren();
+  const images=inputIndex[row.call]||row.input_images||[];
+  el("input-note").textContent=(images.length?"해당 호출에 실제 전달된 원본 이미지입니다. Depth는 카메라 Z이며 밝기 범위는 이미지 하단에 표시됩니다.":"이 호출의 입력 이미지가 아직 게시되지 않았습니다.")+(requests.length?" 빨간 표시는 모델이 요청한 조회 위치입니다.":" 이 관측에서 모델의 거리 조회 요청은 없습니다.");
+  for(const item of images){
+    const figure=document.createElement("figure"),label=document.createElement("figcaption"),canvas=document.createElement("canvas"),img=new Image();
+    label.textContent=item.camera+" · "+(item.kind==="depth"?"Depth 입력":"RGB 입력");figure.append(label,canvas);el("input-images").append(figure);
+    img.onload=()=>{canvas.width=img.naturalWidth;canvas.height=img.naturalHeight;const ctx=canvas.getContext("2d");ctx.drawImage(img,0,0);ctx.strokeStyle="#ff384f";ctx.fillStyle="#ff384f";ctx.lineWidth=2;
+      requests.filter(q=>q.camera===item.camera).forEach(q=>{if(q.kind==="pixel"||q.u!=null){ctx.beginPath();ctx.arc(q.u,q.v,Math.max(4,q.radius||0),0,Math.PI*2);ctx.stroke();ctx.fillText("("+q.u+","+q.v+")",Math.min(q.u+6,canvas.width-65),Math.max(12,q.v-6))}});
+    };img.src=sameOriginPath(item.url);
+  }
 }
 async function loadLibrary() {
   try {
