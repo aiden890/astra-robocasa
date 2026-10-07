@@ -34,8 +34,9 @@ REPO = Path(__file__).resolve().parents[5]
 LEDGER = REPO / "runs" / "astra_ledger.jsonl"
 # P4: 1 + P6: 5 (scene-less, layout 1 / style 1) + P7: 5 (common scene 0 with success conditions)
 # + P8: 1 (OpenCabinet scene 0 with a 3600-step budget; stopped at turn 17, budget option since removed)
-# + P9: 1 (OpenCabinet scene 0 with the "open to the stop, do not touch an opened door" success wording).
-ASTRA_RUN_LIMIT = 13
+# + P9: 1 (OpenCabinet scene 0 with the "open to the stop, do not touch an opened door" success wording)
+# + P10: 1 (PrepareCoffee scene 0, RoboDawn-style interleaved few-shot, "a coffee stream shows the button worked").
+ASTRA_RUN_LIMIT = 14
 SCENE_INDEX = Path(__file__).resolve().parent / "assets" / "scenes.json"
 STEPS_PER_TURN_CAP = 40  # max turns = horizon // 40 for common scenes (45 for 1800 steps, 60 for 2400)
 
@@ -76,6 +77,8 @@ def main() -> None:
     parser.add_argument("--scripted", help="JSON list of replies to use instead of the model (no model call)")
     parser.add_argument("--allow-astra", action="store_true", help="really call gpt-6-astra (counted in the ledger)")
     parser.add_argument("--max-turns", type=int, help="override the per-task turn cap (dry runs only)")
+    parser.add_argument("--budget", type=int, help="native step budget instead of the protocol horizon (recorded in "
+                        "config.json as a deviation; max turns become budget // 40)")
     parser.add_argument("--caller", choices=["appserver", "exec"], default="appserver",
                         help="appserver: demonstration image+text interleaved (RoboDawn format, default); "
                              "exec: codex exec, all images before the text (runs P4-P9)")
@@ -100,6 +103,8 @@ def main() -> None:
         scene_dir = str(Path(args.scene_root) / scene["folder"])
         seed = scene["simulator_seed"]
         spec = {"budget": scene["horizon"], "max_turns": scene["horizon"] // STEPS_PER_TURN_CAP}
+    if args.budget:
+        spec = {"budget": args.budget, "max_turns": args.budget // STEPS_PER_TURN_CAP}
     stamp = time.strftime("%Y%m%d-%H%M%S")
     label = f"scene{args.scene}" if scene else f"s{args.seed}"
     # Absolute: codex runs in an empty working directory, so attached image paths must not be relative.
@@ -121,6 +126,7 @@ def main() -> None:
         "task": args.task, "seed": seed, "scene": args.scene, "scene_info": scene, "scene_dir": scene_dir,
         "shots": args.shots,
         "protocol_horizon": scene["horizon"] if scene else None,
+        "budget_deviates_from_protocol": bool(args.budget and scene and args.budget != scene["horizon"]),
         "budget": cfg.budget, "max_turns": cfg.max_turns,
         "mode": "astra" if args.allow_astra else "scripted", "model": MODEL if args.allow_astra else "scripted",
         "reasoning_effort": REASONING_EFFORT, "codex_version": codex_version, "git_commit": _git_commit(),

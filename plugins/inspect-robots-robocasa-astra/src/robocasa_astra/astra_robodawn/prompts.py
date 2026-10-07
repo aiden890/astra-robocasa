@@ -70,8 +70,14 @@ SUCCESS_CONDITIONS = {
         "machine's mug spot and within 10 cm vertically; (2) the gripper is MORE THAN 25 cm away from the mug; "
         "(3) the machine has been started: the gripper must have TOUCHED the start button at least once (any "
         "contact turns it on for the rest of the episode); (4) the gripper is MORE THAN 15 cm away from the start "
-        "button. So: put the mug under the dispenser, release and back off, touch the start button, then move away.",
-        "mug within 4 cm of the dispenser spot, gripper > 25 cm from the mug, start button touched once, gripper > 15 cm from the button"),
+        "button. So: put the mug under the dispenser, release and back off, touch the start button, then move away. "
+        "HOW TO SEE THAT THE BUTTON WORKED: the moment the start button is really pressed, a thin brown stream of "
+        "coffee appears, falling from the machine's dispenser down to the mug spot, and it stays visible for the rest "
+        "of the episode (it is thin: a few pixels wide in the overview images). If you do not see that brown stream, "
+        "the button was NOT pressed: go back and press it again (move the fingertips onto the button until they touch "
+        "it). Only after you see the stream, move the gripper away.",
+        "mug within 4 cm of the dispenser spot, gripper > 25 cm from the mug, start button pressed (a thin brown coffee "
+        "stream is visible under the dispenser), gripper > 15 cm from the button"),
     "PanTransfer": (
         "(1) the vegetable is ON the plate (touching it, centre within 70% of the plate radius); (2) the pan is back "
         "on the stove, its centre within 8 cm of a burner centre; (3) the gripper is MORE THAN 25 cm away from the "
