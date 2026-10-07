@@ -22,6 +22,7 @@ Phases: P4 = first run (OpenCabinet 0-shot); P6 = five tasks, 1-shot, layout 1/s
 | 14 | P10 | PrepareCoffee | scene 0 (PrepareCoffee-8806552) | 1 | fail (stopped by user (reconnect-warning bug discarded answers)) | 14 | 404/3600 | 37.0 cr / $1.48 | 3.8 min | [debug_sim.mp4](../runs/robodawn/P10-PrepareCoffee-scene0-budget3600-1shot/debug_sim.mp4) · [video.mp4](../runs/robodawn/P10-PrepareCoffee-scene0-budget3600-1shot/video.mp4) |
 | 15 | P11 | PrepareCoffee | scene 1 (PrepareCoffee-8128442) | 1 | fail (max_turns) | 60 | 2190/2400 | 126.6 cr / $5.06 | 16.5 min | [debug_sim.mp4](../runs/robodawn/P11-PrepareCoffee-scene1-budget2400-1shot/debug_sim.mp4) · [video.mp4](../runs/robodawn/P11-PrepareCoffee-scene1-budget2400-1shot/video.mp4) |
 | 16 | P12 | PrepareCoffee | scene 1 (PrepareCoffee-8128442) | 1 | fail (max_turns) | 60 | 2005/2400 | 117.9 cr / $4.72 | 17.1 min | [debug_sim.mp4](../runs/robodawn/P12-PrepareCoffee-scene1-budget2400-1shot/debug_sim.mp4) · [video.mp4](../runs/robodawn/P12-PrepareCoffee-scene1-budget2400-1shot/video.mp4) |
+| 17 | P13 | PickPlaceSinkToCounter | scene 0 (PickPlaceSinkToCounter-8410431) | 1 | fail (step_budget) | 34 | 1800/1800 | 94.6 cr / $3.78 | 10.3 min | [debug_sim.mp4](../runs/robodawn/P13-PickPlaceSinkToCounter-scene0-1shot/debug_sim.mp4) · [video.mp4](../runs/robodawn/P13-PickPlaceSinkToCounter-scene0-1shot/video.mp4) |
 
 ## Run details
 
@@ -180,3 +181,13 @@ Phases: P4 = first run (OpenCabinet 0-shot); P6 = five tasks, 1-shot, layout 1/s
 - Videos: debug (sim time): [debug_sim.mp4](../runs/robodawn/P12-PrepareCoffee-scene1-budget2400-1shot/debug_sim.mp4) · raw cameras: [video.mp4](../runs/robodawn/P12-PrepareCoffee-scene1-budget2400-1shot/video.mp4)
 - Run directory: `runs/robodawn/P12-PrepareCoffee-scene1-budget2400-1shot` (trace.jsonl, calls/, turns/, replay/)
 - Note: Scene 1, 2400 steps, revised PrepareCoffee demo (lower in front of the machine, then slide in). Fail: 60-turn cap at step 2005. ~38 turns of handle-grasp attempts in the cabinet (closures on nothing or slipping, opening 0.01-0.03); the mug came out at turn 39 with a weak grasp (opening 0.13) and was dropped during a combined 34 cm sideways + 40 cm down move; the rest was failed regrasps. Placement and button never reached. 117.9 estimated credits; weekly meter 47% -> 47%. No reconnect notices, no failed calls.
+
+### 17. `P13-PickPlaceSinkToCounter-scene0-1shot`
+
+- Result: fail (step_budget); turns 34; native steps 1800/1800; wall time 10.3 min
+- Settings: task PickPlaceSinkToCounter, scene 0 (PickPlaceSinkToCounter-8410431), 1-shot, step budget 1800, max turns 45, model gpt-6-astra (effort low), Codex codex-cli 0.159.2, git fe79072
+- Prompt: system prompt md5 `90c83d58`; in-context demos: primer, PickPlaceSinkToCounter
+- Tokens: input 440,283 (cached 110,848), output 7,565; spend 94.6 cr / $3.78
+- Videos: debug (sim time): [debug_sim.mp4](../runs/robodawn/P13-PickPlaceSinkToCounter-scene0-1shot/debug_sim.mp4) · raw cameras: [video.mp4](../runs/robodawn/P13-PickPlaceSinkToCounter-scene0-1shot/video.mp4)
+- Run directory: `runs/robodawn/P13-PickPlaceSinkToCounter-scene0-1shot` (trace.jsonl, calls/, turns/, replay/)
+- Note: Scene 0 (fish), new fish demo + lowest-point effects + carrying tips, 1800 steps. Fail at the step budget (34 turns). Turns 4-18 (~800 steps): descents stopped on contact at 78-81 cm (the fish / basin), the model read it as an obstruction and kept changing posture. Turn 19 grasp near the HEAD end (fish lies diagonally; no yaw rotation to cross the body), so it hung vertically; lift stopped at fingertip 95 (+17 of 20). Carried right (blocked once, backed off), reached above the plate at turn 27, could not lower (fish tail already on the plate), released at turn 29: fish ended on/at the plate edge without success; a late regrasp ran out of steps. Progress over P7: the fish reached the plate. 94.6 estimated credits; weekly meter 47% -> 48% (shared account).
