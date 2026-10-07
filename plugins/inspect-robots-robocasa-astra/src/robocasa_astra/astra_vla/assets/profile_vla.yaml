@@ -1,0 +1,77 @@
+# Robot profile for the VLA-output variant. Same content as astra_robodawn/assets/profile_panda_omron.yaml
+# (robot, frame, workspace, cameras, gripper, tips); only sentences that named skill commands ('point forward',
+# 'base commands', "each command is executed until it stops", 'done') are rewritten for 12-D action chunks.
+robot: >-
+  a single 7-DoF Franka Panda arm with a two-finger parallel gripper (opens to about 8 cm), mounted on
+  a wheeled mobile platform in a simulated kitchen. The robot starts facing the fixture the task is about
+  (cabinet, sink, stove, coffee machine, ...), usually standing right against the counter.
+frame: >-
+  ROBOT frame, units are centimetres, and it moves with the robot: forward = the way the robot faces,
+  left = the robot's left, up = up. Positions are reported as (forward, left, height): forward/left are measured
+  from the centre of the robot platform, height is measured from the floor. The height of the work surface
+  (counter top) in front of the robot is given in CURRENT STATE. Kitchen counters are usually ~92 cm high,
+  wall cabinets start ~45 cm above the counter. The action's position and rotation inputs use the same axes.
+workspace: >-
+  Measured fingertip reach with the platform still: with the fingers pointing down the fingertips reach about
+  forward 20..50 cm and left -55..+65 cm; with the fingers pointing forward (horizontal) they reach up to about
+  forward 90 cm. Heights from about the counter top up to ~150 cm. Turning the fingers to point forward needs
+  room for the wrist, which sits ~15 cm behind the fingertips: do it with the fingertips at least ~35 cm forward
+  (at the start they are at ~25 cm), otherwise an arm joint reaches its limit. Close to the robot body the
+  fingertips cannot go much below the counter top (the elbow reaches its limit): to reach low, first move forward,
+  away from the body. Things on the far side of a deep counter or high up may require the fingers pointing
+  forward. The platform can drive sideways and backwards; it cannot drive into a counter. Use base_motion only
+  when a target is clearly out of reach of the arm.
+cameras: >-
+  Two overview cameras are mounted on the robot and look forward over its left and right shoulders. On both,
+  a thin grey 10 cm grid is drawn ON THE WORK SURFACE (its height is given in CURRENT STATE): F<n> labels give the distance
+  forward, L<n> labels the distance to the left (negative = right). A cyan circle marked 'tip' is the fingertip
+  centre; the dashed cyan line drops from it straight down to its shadow (small dot) on the work surface, so the
+  dot's grid position is the fingertips' forward/left position. A small legend shows the fwd (red), left
+  (green) and up (blue) directions. The wrist camera looks along the fingers: use it to check that the target
+  is centred between the fingers right before closing.
+gripper: >-
+  'fingertip' is the point between the two fingertips; all position and rotation inputs act about this point.
+  In the start pose the fingers close LEFT-RIGHT (finger axis (0, 1, 0)), so they can straddle a vertical handle
+  from the front or an object from above; rotation inputs change this.
+  'approach' is the unit vector (forward, left, up) the fingers point along, e.g. (0, 0, -1) = straight down,
+  (1, 0, 0) = straight forward. 'finger axis' is the direction along which the fingers close. 'opening' is
+  0 (closed) .. 1 (open). After closing (gripper_close = +1 for at least ~12 steps) an opening clearly above 0.06
+  means an object is held; 0.00 means the fingers closed on nothing.
+tips:
+- >-
+  Plan with sub-goals: orient the gripper, move above / in front of the target, align using both overview
+  images (grid + tip shadow) and then the wrist camera, approach slowly, grasp, lift or pull, transport at a
+  safe height, place, release, move the gripper away.
+- >-
+  Each chunk is executed open loop, exactly as given: nothing corrects it while it runs. The result reports how
+  far the fingertips really moved next to how far the chunk should have moved them in free space. A large
+  shortfall means something blocks the hand or arm (e.g. the wrist under a wall cabinet, a door edge, the counter)
+  or an arm joint is at its limit (reported) - move away from the body first, change the gripper orientation, or
+  move the base. Do not repeat a blocked chunk unchanged.
+- >-
+  With the fingers pointing down, the wrist sits ~15 cm above the fingertips: when working under wall cabinets
+  or inside a cabinet, prefer the fingers pointing forward so the hand does not hit the cabinet.
+- >-
+  In free space use large inputs (up to 1.0, about 19 cm per chunk); within 5 cm of an object use small inputs
+  (about 0.05-0.2: 1-4 cm per chunk), or move only in the first steps of the chunk and hold (zeros) for the rest,
+  and look at the result before continuing.
+- >-
+  After closing the gripper check the reported opening and, after lifting, that the object visibly rose with the
+  gripper. If not, open, re-align (often 1-2 cm off) and retry.
+- >-
+  Carrying a held object, in this order: (1) FIRST lift straight up until the object's LOWEST point - not the
+  fingertips - is clearly above every rim and edge on the way (sink rim, counter edge, shelf); a long object
+  held near one end hangs 10-20 cm below the fingertips. (2) THEN move sideways at that height, one direction per
+  chunk and at most about 10 cm per chunk. (3) Lower it only when it is above the target. Never combine a sideways
+  and a downward motion in the same chunk while holding something, and if the opening drops towards 0.00 while
+  carrying, the object has slipped out.
+- >-
+  Long objects (fish, carrot, banana, cucumber, spatula): grasp across the MIDDLE of the body, fingers
+  closing across it, so the object stays level instead of hanging from one end.
+- >-
+  Many success checks require the gripper to be clearly away from the object at the end (often more than
+  25 cm): after releasing, move the gripper away (e.g. up and back) and keep acting until the episode ends.
+- >-
+  If you believe the goal is reached but the episode continues, it is not reached yet: look again at all
+  images, compare with the instruction (all doors fully open? object inside the container? machine started?)
+  and keep going.
