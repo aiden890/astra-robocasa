@@ -1,15 +1,19 @@
-"""One model decision via ``codex app-server`` (JSON-RPC over stdio) with the saved ChatGPT subscription login.
+"""One model decision via ``codex app-server`` (JSON-RPC over stdio) with the saved ChatGPT
+subscription login.
 
-Unlike ``codex exec``, which always puts attached images before the prompt text, ``turn/start`` takes an
+Unlike ``codex exec``, which always puts attached images before the prompt text, ``turn/start``
+takes an
 ordered list of text and image parts. That is what the RoboDawn demonstration format needs: every
 demonstration image directly followed by its own text, then the current views, then the turn text.
 
 One app-server process serves a whole episode; every call starts a fresh ephemeral thread (no memory
 between turns: the episode memory is in the prompt), so each request is self-contained like before.
 
-Every call writes, under its own folder, the same review files as ``CodexCaller``: ``input.json`` (the
+Every call writes, under its own folder, the same review files as ``CodexCaller``: ``input.json``
+(the
 ordered parts, images as file paths), ``prompt.txt`` (readable rendering), ``command.json`` (process
-argv and the exact RPC parameters, images as paths), ``events.jsonl`` (every server message of the call,
+argv and the exact RPC parameters, images as paths), ``events.jsonl`` (every server message of the
+call,
 image data URLs elided), ``stderr.log``, ``response.json``, and ``call.json`` with usage, reasoning
 summaries, latency and every retry. Reasoning effort is fixed to ``low`` by the experiment protocol.
 """
@@ -26,17 +30,33 @@ import time
 from collections import deque
 from pathlib import Path
 
+from .codex import (
+    CAPACITY_MARKERS,
+    MAX_ATTEMPTS,
+    MODEL,
+    REASONING_EFFORT,
+    CallResult,
+    ModelCallError,
+    write_input,
+)
 from .cost import add_usage
-from .codex import CAPACITY_MARKERS, MAX_ATTEMPTS, MODEL, REASONING_EFFORT, CallResult, ModelCallError, write_input
 
 CALL_TIMEOUT_S = 300
 RPC_TIMEOUT_S = 60
 SECRET_ENV = ("OPENAI_API_KEY", "CODEX_API_KEY", "CODEX_ACCESS_TOKEN")
-TOOL_ITEMS = ("commandExecution", "fileChange", "mcpToolCall", "dynamicToolCall", "webSearch", "imageGeneration")
+TOOL_ITEMS = (
+    "commandExecution",
+    "fileChange",
+    "mcpToolCall",
+    "dynamicToolCall",
+    "webSearch",
+    "imageGeneration",
+)
 
 
 def _elide(value):
-    """Copy of a JSON value with image data URLs replaced by their size (keeps events.jsonl readable)."""
+    """Copy of a JSON value with image data URLs replaced by their size (keeps events.jsonl
+    readable)."""
     if isinstance(value, str) and value.startswith("data:image"):
         return f"<image data url, {len(value)} chars>"
     if isinstance(value, dict):
@@ -59,48 +79,88 @@ def wire_input(parts: list[dict]) -> list[dict]:
 
 
 def usage_from(breakdown: dict) -> dict:
-    """App-server ``TokenUsageBreakdown`` in the field names used by ``codex exec`` and ``cost.estimate``."""
-    return {"input_tokens": breakdown.get("inputTokens", 0), "cached_input_tokens": breakdown.get("cachedInputTokens", 0),
-            "output_tokens": breakdown.get("outputTokens", 0),
-            "reasoning_output_tokens": breakdown.get("reasoningOutputTokens", 0)}
+    """App-server ``TokenUsageBreakdown`` in the field names used by ``codex exec`` and
+    ``cost.estimate``."""
+    return {
+        "input_tokens": breakdown.get("inputTokens", 0),
+        "cached_input_tokens": breakdown.get("cachedInputTokens", 0),
+        "output_tokens": breakdown.get("outputTokens", 0),
+        "reasoning_output_tokens": breakdown.get("reasoningOutputTokens", 0),
+    }
 
 
 def weekly_from(rate_limits: dict) -> dict | None:
-    """The subscription's weekly window from a ``RateLimitSnapshot``: used percent (integer) and reset time."""
+    """The subscription's weekly window from a ``RateLimitSnapshot``: used percent (integer) and
+    reset time."""
     for window in (rate_limits.get("primary"), rate_limits.get("secondary")):
         if window and window.get("windowDurationMins") == 10080:
-            return {"used_percent": window["usedPercent"], "resets_at": window.get("resetsAt"),
-                    "observed_at": round(time.time(), 1)}
+            return {
+                "used_percent": window["usedPercent"],
+                "resets_at": window.get("resetsAt"),
+                "observed_at": round(time.time(), 1),
+            }
     return None
 
 
 class AppServerCaller:
     """Calls ``codex app-server`` for one turn; see the module docstring for what is recorded."""
 
-    def __init__(self, executable: str, codex_home: str, system_prompt_path: Path, schema_path: Path,
-                 workdir: Path, model: str = MODEL):
+    def __init__(
+        self,
+        executable: str,
+        codex_home: str,
+        system_prompt_path: Path,
+        schema_path: Path,
+        workdir: Path,
+        model: str = MODEL,
+        call_timeout: float | None = CALL_TIMEOUT_S,
+        effort: str = REASONING_EFFORT,
+    ):
         self.executable, self.codex_home = executable, codex_home
         self.system_prompt = Path(system_prompt_path).read_text()
         self.schema = json.loads(Path(schema_path).read_text())
         self.workdir = Path(workdir)
         self.workdir.mkdir(parents=True, exist_ok=True)
         self.model = model
+        self.call_timeout, self.effort = call_timeout, effort
         self.proc = None
         self.serial = 0
         self.log = None  # events of the current call are appended here
-        self.weekly: dict | None = None  # latest subscription weekly-limit snapshot (see weekly_snapshot)
+        self.weekly: dict | None = (
+            None  # latest subscription weekly-limit snapshot (see weekly_snapshot)
+        )
 
     def argv(self) -> list[str]:
-        return [self.executable, "app-server", "--strict-config", "-c", 'model_provider="openai"',
-                "-c", 'forced_login_method="chatgpt"', "--listen", "stdio://"]
+        """Build the isolated subscription app-server command."""
+        return [
+            self.executable,
+            "app-server",
+            "--strict-config",
+            "-c",
+            'model_provider="openai"',
+            "-c",
+            'forced_login_method="chatgpt"',
+            "--listen",
+            "stdio://",
+        ]
 
     # -- process and JSON-RPC -------------------------------------------------------------------
     def _start(self, stderr_path: Path) -> None:
         env = {k: v for k, v in os.environ.items() if k not in SECRET_ENV}
         env["CODEX_HOME"] = self.codex_home
         self.stderr = stderr_path.open("a")
-        self.proc = subprocess.Popen(self.argv(), cwd=self.workdir, env=env, stdin=subprocess.PIPE,
-                                     stdout=subprocess.PIPE, stderr=self.stderr, text=True, encoding="utf-8", bufsize=1)
+        self.proc = subprocess.Popen(
+            self.argv(),
+            cwd=self.workdir,
+            env=env,
+            stdin=subprocess.PIPE,
+            stdout=subprocess.PIPE,
+            stderr=self.stderr,
+            text=True,
+            encoding="utf-8",
+            bufsize=1,
+        )
+        self.process_started()
         self.incoming: queue.Queue = queue.Queue()
         self.pending: deque = deque()  # notifications that arrived while waiting for an RPC result
 
@@ -113,13 +173,22 @@ class AppServerCaller:
             sink.put(None)
 
         threading.Thread(target=reader, args=(self.proc.stdout, self.incoming), daemon=True).start()
-        self.rpc("initialize", {"clientInfo": {"name": "astra_robodawn", "title": "astra_robodawn", "version": "1"}})
+        self.rpc(
+            "initialize",
+            {"clientInfo": {"name": "astra_robodawn", "title": "astra_robodawn", "version": "1"}},
+        )
         self._send({"method": "initialized", "params": {}})
         account = self.rpc("account/read", {"refreshToken": False}).get("account") or {}
         if account.get("type") != "chatgpt":
-            raise ModelCallError(f"expected the ChatGPT subscription login, got account type {account.get('type')!r}")
+            raise ModelCallError(
+                f"expected the ChatGPT subscription login, got account type {account.get('type')!r}"
+            )
+
+    def process_started(self) -> None:
+        """Optional hook to persist process identity before sending any provider request."""
 
     def close(self) -> None:
+        """Terminate this caller owned app-server and close its log."""
         if self.proc and self.proc.poll() is None:
             self.proc.terminate()
             try:
@@ -134,9 +203,11 @@ class AppServerCaller:
         self.proc.stdin.write(json.dumps(message) + "\n")
         self.proc.stdin.flush()
 
-    def _receive(self, deadline: float) -> dict:
+    def _receive(self, deadline: float | None) -> dict:
         try:
-            message = self.incoming.get(timeout=max(0.0, deadline - time.monotonic()))
+            message = self.incoming.get(
+                timeout=None if deadline is None else max(0.0, deadline - time.monotonic())
+            )
         except queue.Empty:
             raise TimeoutError("no answer from codex app-server before the deadline") from None
         if message is None:
@@ -145,15 +216,26 @@ class AppServerCaller:
             self.log.write(json.dumps(_elide(message)) + "\n")
         if message.get("method") == "account/rateLimits/updated":
             self.weekly = weekly_from(message["params"].get("rateLimits") or {}) or self.weekly
-        if "method" in message and "id" in message:  # server-initiated request (approval, tool input): deny
-            self._send({"id": message["id"], "error": {"code": -32601, "message": "denied: the robot controller has no tools"}})
+        if (
+            "method" in message and "id" in message
+        ):  # server-initiated request (approval, tool input): deny
+            self._send(
+                {
+                    "id": message["id"],
+                    "error": {
+                        "code": -32601,
+                        "message": "denied: the robot controller has no tools",
+                    },
+                }
+            )
         return message
 
-    def rpc(self, method: str, params: dict, timeout: float = RPC_TIMEOUT_S) -> dict:
+    def rpc(self, method: str, params: dict, timeout: float | None = RPC_TIMEOUT_S) -> dict:
+        """Send one RPC, preserving intervening notifications for the model turn."""
         self.serial += 1
         request_id = self.serial
         self._send({"id": request_id, "method": method, "params": params})
-        deadline = time.monotonic() + timeout
+        deadline = None if timeout is None else time.monotonic() + timeout
         while True:
             message = self._receive(deadline)
             if message.get("id") == request_id and "method" not in message:
@@ -163,7 +245,8 @@ class AppServerCaller:
             self.pending.append(message)
 
     def weekly_snapshot(self, stderr_path: Path) -> dict | None:
-        """Read the weekly usage now (``account/rateLimits/read``; no model call). Used at episode start and end."""
+        """Read the weekly usage now (``account/rateLimits/read``; no model call). Used at episode
+        start and end."""
         if self.proc is None or self.proc.poll() is not None:
             self._start(stderr_path)
         reply = self.rpc("account/rateLimits/read", {})
@@ -174,24 +257,57 @@ class AppServerCaller:
 
     # -- one decision ---------------------------------------------------------------------------
     def _turn(self, parts: list[dict], folder: Path, suffix: str) -> dict:
-        thread_params = {"model": self.model, "modelProvider": "openai", "cwd": str(self.workdir),
-                         "approvalPolicy": "never", "sandbox": "read-only", "ephemeral": True,
-                         "baseInstructions": self.system_prompt}
-        turn_params = {"input": parts, "model": self.model, "effort": REASONING_EFFORT, "summary": "detailed",
-                       "outputSchema": self.schema}
-        (folder / f"command{suffix}.json").write_text(json.dumps(
-            {"argv": self.argv(), "thread/start": {**thread_params, "baseInstructions": "<system_prompt.md>"},
-             "turn/start": {**turn_params, "input": "<input.json; images sent as PNG data URLs>"}}, indent=1))
+        thread_params = {
+            "model": self.model,
+            "modelProvider": "openai",
+            "cwd": str(self.workdir),
+            "approvalPolicy": "never",
+            "sandbox": "read-only",
+            "ephemeral": True,
+            "baseInstructions": self.system_prompt,
+        }
+        turn_params = {
+            "input": parts,
+            "model": self.model,
+            "effort": self.effort,
+            "summary": "detailed",
+            "outputSchema": self.schema,
+        }
+        (folder / f"command{suffix}.json").write_text(
+            json.dumps(
+                {
+                    "argv": self.argv(),
+                    "thread/start": {**thread_params, "baseInstructions": "<system_prompt.md>"},
+                    "turn/start": {
+                        **turn_params,
+                        "input": "<input.json; images sent as PNG data URLs>",
+                    },
+                },
+                indent=1,
+            )
+        )
         if self.proc is None or self.proc.poll() is not None:
             self._start(folder / f"stderr{suffix}.log")
         self.pending.clear()
         thread = self.rpc("thread/start", thread_params)
         thread_id = thread["thread"]["id"]
-        out = {"thread_id": thread_id, "resolved_model": thread.get("model"), "usage": {}, "reasoning": [],
-               "messages": [], "errors": [], "warnings": [], "status": None}
-        reply = self.rpc("turn/start", {**turn_params, "threadId": thread_id, "input": wire_input(parts)})
+        out = {
+            "thread_id": thread_id,
+            "resolved_model": thread.get("model"),
+            "usage": {},
+            "reasoning": [],
+            "messages": [],
+            "errors": [],
+            "warnings": [],
+            "status": None,
+        }
+        reply = self.rpc(
+            "turn/start",
+            {**turn_params, "threadId": thread_id, "input": wire_input(parts)},
+            timeout=None if self.call_timeout is None else RPC_TIMEOUT_S,
+        )
         turn_id = reply["turn"]["id"]
-        deadline = time.monotonic() + CALL_TIMEOUT_S
+        deadline = None if self.call_timeout is None else time.monotonic() + self.call_timeout
         while out["status"] is None:
             message = self.pending.popleft() if self.pending else self._receive(deadline)
             method, params = message.get("method"), message.get("params") or {}
@@ -208,7 +324,8 @@ class AppServerCaller:
                 elif item.get("type") in TOOL_ITEMS:
                     out["errors"].append(f"unexpected tool item {item['type']}")
             elif method == "error":
-                # willRetry: a transient connection problem the server recovers from itself ("Reconnecting... 2/5")
+                # willRetry: a transient connection problem the server recovers from itself
+                # ("Reconnecting... 2/5")
                 key = "warnings" if params.get("willRetry") else "errors"
                 out[key].append(params.get("error", {}).get("message", ""))
             elif "id" in message and "method" in message:
@@ -218,12 +335,14 @@ class AppServerCaller:
                 out["status"] = turn.get("status")
                 if turn.get("error"):
                     out["errors"].append(turn["error"].get("message", json.dumps(turn["error"])))
-        finals = [m for m in out["messages"] if m.get("phase") == "final_answer"] or \
-                 [m for m in out["messages"] if m.get("phase") is None]
+        finals = [m for m in out["messages"] if m.get("phase") == "final_answer"] or [
+            m for m in out["messages"] if m.get("phase") is None
+        ]
         out["text"] = finals[-1]["text"] if finals else None
         return out
 
     def call(self, parts: list[dict], folder: Path) -> CallResult:
+        """Return a final response and retain every provider attempt."""
         folder.mkdir(parents=True, exist_ok=True)
         write_input(folder, parts)
         attempts = []
@@ -237,18 +356,35 @@ class AppServerCaller:
                 try:
                     out = self._turn(parts, folder, suffix)
                 except (TimeoutError, ConnectionError, RuntimeError) as exc:
-                    out = {"status": "client_error", "errors": [f"{type(exc).__name__}: {exc}"], "usage": {}, "text": None}
+                    out = {
+                        "status": "client_error",
+                        "errors": [f"{type(exc).__name__}: {exc}"],
+                        "usage": {},
+                        "text": None,
+                    }
                     self.close()  # a fresh process for the retry
                 finally:
                     self.log = None
-            record.update(seconds=round(time.monotonic() - t0, 2), status=out["status"], usage=out["usage"],
-                          errors=out["errors"], warnings=out.get("warnings", []), thread_id=out.get("thread_id"),
-                          resolved_model=out.get("resolved_model"))
+            record.update(
+                seconds=round(time.monotonic() - t0, 2),
+                status=out["status"],
+                usage=out["usage"],
+                errors=out["errors"],
+                warnings=out.get("warnings", []),
+                thread_id=out.get("thread_id"),
+                resolved_model=out.get("resolved_model"),
+            )
             attempts.append(record)
             if out["status"] == "completed" and out["text"] and not out["errors"]:
                 (folder / "response.json").write_text(out["text"])
-                result = CallResult(out["text"], out["usage"], out["reasoning"], round(time.monotonic() - start, 2), attempts,
-                                    weekly=self.weekly)
+                result = CallResult(
+                    out["text"],
+                    out["usage"],
+                    out["reasoning"],
+                    round(time.monotonic() - start, 2),
+                    attempts,
+                    weekly=self.weekly,
+                )
                 self._write_record(folder, result)
                 return result
             error_text = " ".join(out["errors"])
@@ -261,15 +397,26 @@ class AppServerCaller:
             break
         (folder / "attempts.json").write_text(json.dumps(attempts, indent=1))
         error = ModelCallError(f"no final answer after {len(attempts)} attempt(s); see {folder}")
-        error.usage = {}  # discarded answers are still billed: the loop adds this to the episode total
+        error.usage = {}  # discarded answers are still billed: the loop adds this to the episode
         for record in attempts:
             add_usage(error.usage, record["usage"])
         raise error
 
     def _write_record(self, folder: Path, result: CallResult) -> None:
-        (folder / "call.json").write_text(json.dumps({
-            "caller": "codex app-server", "model": self.model, "reasoning_effort": REASONING_EFFORT,
-            "reasoning_summary_requested": True, "seconds": result.seconds, "usage": result.usage,
-            "reasoning": result.reasoning, "final_text": result.text, "attempts": result.attempts,
-            "weekly_usage_after": result.weekly,
-        }, indent=1))
+        (folder / "call.json").write_text(
+            json.dumps(
+                {
+                    "caller": "codex app-server",
+                    "model": self.model,
+                    "reasoning_effort": self.effort,
+                    "reasoning_summary_requested": True,
+                    "seconds": result.seconds,
+                    "usage": result.usage,
+                    "reasoning": result.reasoning,
+                    "final_text": result.text,
+                    "attempts": result.attempts,
+                    "weekly_usage_after": result.weekly,
+                },
+                indent=1,
+            )
+        )

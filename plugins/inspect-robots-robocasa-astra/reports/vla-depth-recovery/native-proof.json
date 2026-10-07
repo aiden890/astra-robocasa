@@ -1,0 +1,73 @@
+{
+  "engine": "Spark2 / PandaOmron / 20Hz",
+  "scope": "short deterministic replay and pending-action validation; not task success evaluation",
+  "model_calls": 0,
+  "video_files": 0,
+  "tasks": [
+    {
+      "task": "PrepareCoffee",
+      "scene": "PrepareCoffee-8009960",
+      "ack_before_restart": 4,
+      "pending_restored_step": 5,
+      "chunk_final_steps": 8,
+      "duplicate_reply_additional_steps": 0,
+      "digest4": "d787ff4283b8403e728bf350de044c31aa0418e8b31743dee238acfdc38fea55",
+      "query_Z_m": 0.5113064646720886,
+      "passed": true,
+      "model_calls": 0,
+      "video_files": 0
+    },
+    {
+      "task": "PanTransfer",
+      "scene": "PanTransfer-8483621",
+      "ack_before_restart": 4,
+      "pending_restored_step": 5,
+      "chunk_final_steps": 8,
+      "duplicate_reply_additional_steps": 0,
+      "digest4": "f744c056e4f0b363568e2b05dd5e7c24416ee3e292fe9a49c8417fc6121bc4ff",
+      "query_Z_m": 0.5087447166442871,
+      "passed": true,
+      "model_calls": 0,
+      "video_files": 0
+    },
+    {
+      "task": "OpenCabinet",
+      "scene": "OpenCabinet-8065184",
+      "ack_before_restart": 4,
+      "pending_restored_step": 5,
+      "chunk_final_steps": 8,
+      "duplicate_reply_additional_steps": 0,
+      "digest4": "6e5067121e714deb615560a646ace79a19d2e4de0ce0915b72f3de1df5aca6d4",
+      "query_Z_m": 0.5340883731842041,
+      "passed": true,
+      "model_calls": 0,
+      "video_files": 0
+    },
+    {
+      "task": "PickPlaceSinkToCounter",
+      "scene": "PickPlaceSinkToCounter-8020512",
+      "ack_before_restart": 4,
+      "pending_restored_step": 5,
+      "chunk_final_steps": 8,
+      "duplicate_reply_additional_steps": 0,
+      "digest4": "9eec099142e6f97bdf66261b831c8ee5f71c2b8824a4b34a9ba246fcf2b2ce14",
+      "query_Z_m": 0.699507474899292,
+      "passed": true,
+      "model_calls": 0,
+      "video_files": 0
+    },
+    {
+      "task": "StirVegetables",
+      "scene": "StirVegetables-8115047",
+      "ack_before_restart": 4,
+      "pending_restored_step": 5,
+      "chunk_final_steps": 8,
+      "duplicate_reply_additional_steps": 0,
+      "digest4": "814908b1b8039c4132d4a3609dde5d12087179a0b7a85c396df573426a7d84c3",
+      "query_Z_m": 0.35766714811325073,
+      "passed": true,
+      "model_calls": 0,
+      "video_files": 0
+    }
+  ]
+}

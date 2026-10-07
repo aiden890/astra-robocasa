@@ -128,3 +128,7 @@ and final 20fps videos on the standalone video board.
 Capacity responses are retried up to 20 times with increasing waits capped at 120 seconds. The simulator receives no action while waiting, and each attempt keeps its own log. Other errors still fail explicitly. Running processes retain their imported code.
 
 A historical one-off recovery (retained in Git history) recovered the specific interrupted Panda trial in a separate output directory. It replays the 1,791 recorded native actions with seed 771003, requires all saved numeric observations to match within 1e-9 and all three camera images to match exactly, and only then evaluates the remaining nine steps. Original failure logs remain intact. This is verified action replay, not a saved full simulator checkpoint.
+
+## VLA depth and recovery
+
+See [VLA input conditions, modules and resume](docs/VLA_DEPTH_RECOVERY.md) for optional success demonstrations, depth inputs, durable response waiting and frozen-scene checkpoint recovery.

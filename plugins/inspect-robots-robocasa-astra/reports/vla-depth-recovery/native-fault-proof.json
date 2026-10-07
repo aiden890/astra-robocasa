@@ -1,0 +1,21 @@
+{
+  "scope": "native step applied but interrupted before acknowledgement, followed by exact frozen-scene replay",
+  "model_calls": 0,
+  "video_files": 0,
+  "tasks": [
+    {
+      "task": "PrepareCoffee",
+      "scene": "PrepareCoffee-8009960",
+      "fault_after_physics_step": 5,
+      "ack_before_restart": 4,
+      "pending_restored_step": 5,
+      "chunk_final_steps": 8,
+      "duplicate_reply_additional_steps": 0,
+      "digest4": "d787ff4283b8403e728bf350de044c31aa0418e8b31743dee238acfdc38fea55",
+      "query_Z_m": 0.5113064646720886,
+      "passed": true,
+      "model_calls": 0,
+      "video_files": 0
+    }
+  ]
+}
