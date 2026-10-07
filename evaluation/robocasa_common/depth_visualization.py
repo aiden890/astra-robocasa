@@ -12,13 +12,15 @@ def record_response(policy_root, call_folder, step, condition, response, query_a
     path = root / "visualization.json"
     data = json.loads(path.read_text()) if path.exists() else {"control_hz": 20, "calls": []}
     receipt = Path(call_folder) / "receipt.json"
-    usage = json.loads(receipt.read_text()).get("usage") if receipt.exists() else None
+    record = json.loads(receipt.read_text()) if receipt.exists() else {}
+    usage = record.get("usage")
     row = {
         "call": Path(call_folder).name,
         "step": step,
         "condition": condition,
         "response": response,
         "usage": usage,
+        "cli_seconds": record.get("cli_end_to_end_seconds"),
         "query_answers": query_answers or [],
     }
     data["calls"] = [x for x in data["calls"] if x["call"] != row["call"]] + [row]

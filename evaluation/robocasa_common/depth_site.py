@@ -298,6 +298,9 @@ def main():
         "run_ids": [r["id"] for r in board],
     }
     atomic_json(path, [topic, *topics])
+    from robocasa_common.visualization_library import publish_library
+
+    publish_library(root, site)
 
 
 if __name__ == "__main__":

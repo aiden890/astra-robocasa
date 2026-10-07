@@ -1,6 +1,7 @@
 """Serve public page assets and reversible board visibility changes on the private host."""
 
 import argparse
+import email.utils
 import json
 import re
 import threading
@@ -41,6 +42,62 @@ class BoardHandler(SimpleHTTPRequestHandler):
                 self.respond(200, self.read_state())
             return
         super().do_GET()
+
+    def send_head(self):
+        """Support single byte ranges so MP4 playback can seek without full downloads."""
+        self._range_remaining = None
+        path = Path(self.translate_path(self.path))
+        if path.suffix.lower() != ".mp4" or not path.is_file():
+            return super().send_head()
+        size = path.stat().st_size
+        start, end = 0, size - 1
+        requested = self.headers.get("Range")
+        if requested:
+            match = re.fullmatch(r"bytes=(\d*)-(\d*)", requested)
+            try:
+                if not match or not any(match.groups()):
+                    raise ValueError("Invalid byte range")
+                if not match[1]:
+                    length = int(match[2])
+                    if length <= 0:
+                        raise ValueError("Invalid suffix range")
+                    start = max(0, size - length)
+                else:
+                    start = int(match[1])
+                    if match[2]:
+                        end = min(int(match[2]), end)
+                if start > end or start >= size:
+                    raise ValueError("Unsatisfiable byte range")
+            except ValueError:
+                self.send_response(416)
+                self.send_header("Content-Range", f"bytes */{size}")
+                self.send_header("Content-Length", "0")
+                self.end_headers()
+                return None
+        stream = path.open("rb")
+        stream.seek(start)
+        self._range_remaining = max(0, end - start + 1)
+        self.send_response(206 if requested else 200)
+        self.send_header("Content-Type", "video/mp4")
+        self.send_header("Accept-Ranges", "bytes")
+        self.send_header("Content-Length", str(self._range_remaining))
+        self.send_header("Last-Modified", email.utils.formatdate(path.stat().st_mtime, usegmt=True))
+        if requested:
+            self.send_header("Content-Range", f"bytes {start}-{end}/{size}")
+        self.end_headers()
+        return stream
+
+    def copyfile(self, source, outputfile):
+        """Send only the selected bytes while preserving ordinary static-file handling."""
+        remaining = getattr(self, "_range_remaining", None)
+        if remaining is None:
+            return super().copyfile(source, outputfile)
+        while remaining:
+            chunk = source.read(min(65536, remaining))
+            if not chunk:
+                break
+            outputfile.write(chunk)
+            remaining -= len(chunk)
 
     def do_POST(self):
         """Apply same-origin reversible delete or restore without touching recordings."""
