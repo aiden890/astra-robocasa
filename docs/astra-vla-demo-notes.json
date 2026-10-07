@@ -1,0 +1,3 @@
+{
+  "V1-OpenCabinet-scene0-1shot": "First VLA-output run (16 x 12-D chunks, open loop), OpenCabinet scene 0, 1-shot, 1800 steps. Stopped by Claude at turn 11 / step 176 because the shared subscription's weekly meter rose 89% -> 91% in 10 turns (other users had moved it from 49% to 89% earlier). Not a task result. The chunks were well formed every turn and the measured motion matched the model's stated plan (e.g. asked ~12 cm forward/14 cm up, got +9.3/+12.0); it turned the fingers forward, retracted, re-aligned and closed on the left handle at turn 11. ~24k input tokens per call with almost no prompt-cache hits (1 of 11), 71.6 estimated credits for 11 calls (~6.5 per call vs ~2.1 for skill turns)."
+}
