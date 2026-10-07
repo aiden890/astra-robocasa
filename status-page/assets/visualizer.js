@@ -4,7 +4,7 @@ const conditions = {rgb:"RGB only",color:"RGB + depth image",pixel:"RGB + pixel 
 let records = [], outputIndex = {}, selected = null, calls = [], generation = 0, limit = 20, inputIndex = {}, inputKey = "";
 const token = x => Number.isInteger(x) ? x.toLocaleString() : "미확인";
 const clock = x => Number.isFinite(x) ? Math.floor(x/60)+":"+String(Math.floor(x%60)).padStart(2,"0") : "0:00";
-const status = r => r.task_success === true || r.success === true ? "성공" : r.task_success === false || r.success === false ? "미성공" : ({complete:"완료",error:"오류",running:"진행 중","user-stopped":"사용자 종료"}[r.status] || r.status || "미확인");
+const status = r => r.user_assessment === "failed" || r.status === "user-stopped" ? "실패" : r.task_success === true || r.success === true ? "성공" : r.task_success === false || r.success === false ? "미성공" : ({complete:"완료",error:"오류",running:"진행 중"}[r.status] || r.status || "미확인");
 const model = r => r.model || "모델 미기록";
 const condition = r => conditions[r.condition] || r.type || "조건 미기록";
 function sameOriginPath(path) {

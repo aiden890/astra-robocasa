@@ -1,0 +1,1 @@
+Added a separate Astra policy for comparing current observations with up to five seconds of native-time RGB history, aligned depth images, and actually observed pixel-query answers. Saved observation windows support checkpoint continuation without exposing private depth to RGB or pixel conditions.
