@@ -34,7 +34,9 @@ from .sim_client import ChunkSimClient
 
 REPO = Path(__file__).resolve().parents[5]
 LEDGER = REPO / "runs" / "astra_ledger_vla.jsonl"
-VLA_RUN_LIMIT = 2  # V1: OpenCabinet scene 0, V2: PrepareCoffee scene 0 (agreed 2026-10-07, one run each)
+# V1: OpenCabinet scene 0 (stopped at turn 11: shared weekly meter at 91%); after the meter reset (agreed
+# 2026-10-07): V2: OpenCabinet scene 0 again, V3: PrepareCoffee scene 0, one run each.
+VLA_RUN_LIMIT = 3
 SCENE_INDEX = Path(__file__).resolve().parents[1] / "astra_robodawn" / "assets" / "scenes.json"
 TASKS = ("OpenCabinet", "PickPlaceSinkToCounter", "PrepareCoffee", "PanTransfer", "StirVegetables")
 
