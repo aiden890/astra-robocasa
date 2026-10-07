@@ -1,0 +1,336 @@
+{
+  "created_at": 1791292194.4116766,
+  "sampling": "SystemRandom uniform without replacement, range [8000000,9000000), excludes recorded seeds",
+  "tasks": {
+    "PrepareCoffee": [
+      8806552,
+      8128442,
+      8476319,
+      8576931,
+      8377222,
+      8240499,
+      8114271,
+      8009960,
+      8246297,
+      8530539
+    ],
+    "PanTransfer": [
+      8991090,
+      8964791,
+      8845002,
+      8706693,
+      8603732,
+      8885554,
+      8666558,
+      8483621,
+      8938970,
+      8527274
+    ],
+    "OpenCabinet": [
+      8106356,
+      8205459,
+      8542224,
+      8452192,
+      8877349,
+      8735171,
+      8727872,
+      8065184,
+      8358361,
+      8367873
+    ],
+    "PickPlaceSinkToCounter": [
+      8410431,
+      8360874,
+      8853038,
+      8555019,
+      8231171,
+      8294894,
+      8147758,
+      8880498,
+      8020512,
+      8740893
+    ],
+    "StirVegetables": [
+      8135354,
+      8115047,
+      8739883,
+      8891813,
+      8909692,
+      8615026,
+      8697189,
+      8219143,
+      8126237,
+      8719656
+    ]
+  },
+  "robots": [
+    "PandaOmron"
+  ],
+  "paired_robot_seeds": false,
+  "unique_seed_count": 50,
+  "planned_runs": 50,
+  "existing_seed_intersection": [],
+  "scene_version": "diverse-kitchens-20261006-v2",
+  "kitchen_assignment": {
+    "PrepareCoffee": [
+      {
+        "seed": 8806552,
+        "layout_id": 1,
+        "style_id": 1
+      },
+      {
+        "seed": 8128442,
+        "layout_id": 2,
+        "style_id": 2
+      },
+      {
+        "seed": 8476319,
+        "layout_id": 3,
+        "style_id": 3
+      },
+      {
+        "seed": 8576931,
+        "layout_id": 4,
+        "style_id": 4
+      },
+      {
+        "seed": 8377222,
+        "layout_id": 5,
+        "style_id": 5
+      },
+      {
+        "seed": 8240499,
+        "layout_id": 6,
+        "style_id": 6
+      },
+      {
+        "seed": 8114271,
+        "layout_id": 7,
+        "style_id": 7
+      },
+      {
+        "seed": 8009960,
+        "layout_id": 8,
+        "style_id": 8
+      },
+      {
+        "seed": 8246297,
+        "layout_id": 9,
+        "style_id": 9
+      },
+      {
+        "seed": 8530539,
+        "layout_id": 10,
+        "style_id": 10
+      }
+    ],
+    "PanTransfer": [
+      {
+        "seed": 8991090,
+        "layout_id": 1,
+        "style_id": 1
+      },
+      {
+        "seed": 8964791,
+        "layout_id": 2,
+        "style_id": 2
+      },
+      {
+        "seed": 8845002,
+        "layout_id": 3,
+        "style_id": 3
+      },
+      {
+        "seed": 8706693,
+        "layout_id": 4,
+        "style_id": 4
+      },
+      {
+        "seed": 8603732,
+        "layout_id": 5,
+        "style_id": 5
+      },
+      {
+        "seed": 8885554,
+        "layout_id": 6,
+        "style_id": 6
+      },
+      {
+        "seed": 8666558,
+        "layout_id": 7,
+        "style_id": 7
+      },
+      {
+        "seed": 8483621,
+        "layout_id": 8,
+        "style_id": 8
+      },
+      {
+        "seed": 8938970,
+        "layout_id": 9,
+        "style_id": 9
+      },
+      {
+        "seed": 8527274,
+        "layout_id": 10,
+        "style_id": 10
+      }
+    ],
+    "OpenCabinet": [
+      {
+        "seed": 8106356,
+        "layout_id": 1,
+        "style_id": 1
+      },
+      {
+        "seed": 8205459,
+        "layout_id": 2,
+        "style_id": 2
+      },
+      {
+        "seed": 8542224,
+        "layout_id": 3,
+        "style_id": 3
+      },
+      {
+        "seed": 8452192,
+        "layout_id": 4,
+        "style_id": 4
+      },
+      {
+        "seed": 8877349,
+        "layout_id": 5,
+        "style_id": 5
+      },
+      {
+        "seed": 8735171,
+        "layout_id": 6,
+        "style_id": 6
+      },
+      {
+        "seed": 8727872,
+        "layout_id": 7,
+        "style_id": 7
+      },
+      {
+        "seed": 8065184,
+        "layout_id": 8,
+        "style_id": 8
+      },
+      {
+        "seed": 8358361,
+        "layout_id": 9,
+        "style_id": 9
+      },
+      {
+        "seed": 8367873,
+        "layout_id": 10,
+        "style_id": 10
+      }
+    ],
+    "PickPlaceSinkToCounter": [
+      {
+        "seed": 8410431,
+        "layout_id": 1,
+        "style_id": 1
+      },
+      {
+        "seed": 8360874,
+        "layout_id": 2,
+        "style_id": 2
+      },
+      {
+        "seed": 8853038,
+        "layout_id": 3,
+        "style_id": 3
+      },
+      {
+        "seed": 8555019,
+        "layout_id": 4,
+        "style_id": 4
+      },
+      {
+        "seed": 8231171,
+        "layout_id": 5,
+        "style_id": 5
+      },
+      {
+        "seed": 8294894,
+        "layout_id": 6,
+        "style_id": 6
+      },
+      {
+        "seed": 8147758,
+        "layout_id": 7,
+        "style_id": 7
+      },
+      {
+        "seed": 8880498,
+        "layout_id": 8,
+        "style_id": 8
+      },
+      {
+        "seed": 8020512,
+        "layout_id": 9,
+        "style_id": 9
+      },
+      {
+        "seed": 8740893,
+        "layout_id": 10,
+        "style_id": 10
+      }
+    ],
+    "StirVegetables": [
+      {
+        "seed": 8135354,
+        "layout_id": 1,
+        "style_id": 1
+      },
+      {
+        "seed": 8115047,
+        "layout_id": 2,
+        "style_id": 2
+      },
+      {
+        "seed": 8739883,
+        "layout_id": 3,
+        "style_id": 3
+      },
+      {
+        "seed": 8891813,
+        "layout_id": 4,
+        "style_id": 4
+      },
+      {
+        "seed": 8909692,
+        "layout_id": 5,
+        "style_id": 5
+      },
+      {
+        "seed": 8615026,
+        "layout_id": 6,
+        "style_id": 6
+      },
+      {
+        "seed": 8697189,
+        "layout_id": 7,
+        "style_id": 7
+      },
+      {
+        "seed": 8219143,
+        "layout_id": 8,
+        "style_id": 8
+      },
+      {
+        "seed": 8126237,
+        "layout_id": 9,
+        "style_id": 9
+      },
+      {
+        "seed": 8719656,
+        "layout_id": 10,
+        "style_id": 10
+      }
+    ]
+  }
+}

@@ -23,6 +23,7 @@ def main():
     parser.add_argument("--native-scene", action="store_true")
     parser.add_argument("--face-workstation", action="store_true")
     parser.add_argument("--worker-script")
+    parser.add_argument("--frozen-scene", help="Scene directory mounted inside the simulator")
     parser.add_argument("--steps", type=int, default=1800)
     parser.add_argument("--seed", type=int, default=771001)
     parser.add_argument("--output", required=True)
@@ -63,6 +64,14 @@ def main():
         marker = command.index("-m")
         command[marker : marker + 2] = [args.worker_script]
     command += ["--horizon", str(args.steps)]
+    if args.frozen_scene:
+        location = command.index(
+            "PYTHONPATH=/astra/src:/astra/plugins/inspect-robots-robocasa-astra/src"
+        )
+        command[location] = (
+            "PYTHONPATH=/frozen-code:/astra/src:/astra/plugins/inspect-robots-robocasa-astra/src"
+        )
+        command += ["--frozen-scene", args.frozen_scene]
     if args.face_workstation:
         command += ["--face-workstation"]
     if args.robot == "PandaOmron" and args.task == "PrepareCoffee" and not args.native_scene:

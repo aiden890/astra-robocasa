@@ -3,6 +3,7 @@
 import argparse
 import base64
 import contextlib
+import ctypes
 import io
 import json
 import os
@@ -12,6 +13,21 @@ import tempfile
 import traceback
 
 import numpy as np
+
+
+@contextlib.contextmanager
+def native_diagnostics():
+    """Keep Python and native renderer diagnostics off the JSON response stream."""
+    sys.stdout.flush()
+    saved = os.dup(1)
+    try:
+        os.dup2(2, 1)
+        with contextlib.redirect_stdout(sys.stderr):
+            yield
+    finally:
+        ctypes.CDLL(None).fflush(None)
+        os.dup2(saved, 1)
+        os.close(saved)
 
 
 def protect_assets():
@@ -47,11 +63,23 @@ class Simulator:
     """Own one native environment; retain actual controller and success semantics."""
 
     def __init__(
-        self, robot, task, fixture=None, placement=False, horizon=1800, face_workstation=False
+        self,
+        robot,
+        task,
+        fixture=None,
+        placement=False,
+        horizon=1800,
+        face_workstation=False,
+        frozen_scene=None,
+        layout_id=None,
+        style_id=None,
     ):
         self.robot, self.task = robot, task
         self.fixture, self.placement = fixture, placement
         self.horizon, self.face_workstation = horizon, face_workstation
+        self.frozen_scene = frozen_scene
+        self.layout_id, self.style_id = layout_id, style_id
+        self.frozen_scene_receipt = None
         self.initial_alignment = None
         self.env = None
         self.steps = 0
@@ -115,12 +143,22 @@ class Simulator:
             styles = [i for i in range(1, 11) if i not in task_class.EXCLUDE_STYLES]
             if not layouts or not styles:
                 raise ValueError("Task has no compatible target layout/style")
+            layout_id, style_id = self.layout_id, self.style_id
+            if self.frozen_scene:
+                from pathlib import Path
+
+                meta = json.loads((Path(self.frozen_scene) / "episode-meta.json").read_text())
+                layout_id, style_id = meta["layout_id"], meta["style_id"]
+            if layout_id is not None and layout_id not in layouts:
+                raise ValueError("Requested layout is incompatible with task")
+            if style_id is not None and style_id not in styles:
+                raise ValueError("Requested style is incompatible with task")
             self.env = create_env(
                 self.task,
                 robots=self.robot,
                 seed=seed,
-                layout_ids=layouts[:1],
-                style_ids=styles[:1],
+                layout_ids=[layout_id] if layout_id is not None else layouts[:1],
+                style_ids=[style_id] if style_id is not None else styles[:1],
                 camera_names=["robot0_agentview_left", "robot0_agentview_right"]
                 + (
                     ["robot0_eye_in_hand"]
@@ -134,6 +172,11 @@ class Simulator:
                 horizon=self.horizon,
             )
             self.env.reset()
+        frozen_manifest = None
+        if self.frozen_scene:
+            from robocasa_astra.frozen_scene import restore_scene
+
+            frozen_manifest = restore_scene(self, self.frozen_scene, seed)
         if self.face_workstation and self.robot == "GR1FloatingBody":
             self.align_workstation()
         if self.env.control_freq != 20:
@@ -141,7 +184,14 @@ class Simulator:
         self.steps, self.streak = 0, 0
         robot = self.env.robots[0]
         self.parts = {key: list(value) for key, value in robot._action_split_indexes.items()}
-        return self.observe()
+        observation = self.observe()
+        if frozen_manifest:
+            from robocasa_astra.frozen_scene import image_hashes
+
+            self.frozen_scene_receipt["initial_images_exact"] = (
+                image_hashes(observation) == frozen_manifest["initial_images"]
+            )
+        return observation
 
     def align_workstation(self):
         """Face the native task fixture and preserve collision-free starting clearance."""
@@ -248,6 +298,7 @@ class Simulator:
             "instruction": env.get_ep_meta().get("lang", self.task),
             "horizon": self.horizon,
             "initial_alignment": self.initial_alignment,
+            "frozen_scene": self.frozen_scene_receipt,
             "native_task_success": success,
             "placement_success": placement_success,
             "success": placement_success if self.placement else success,
@@ -282,18 +333,25 @@ def main():
     parser.add_argument("--robot", default="PandaOmron")
     parser.add_argument("--task", default="PrepareCoffee")
     parser.add_argument("--fixture")
+    parser.add_argument("--frozen-scene")
     parser.add_argument("--horizon", type=int, default=1800)
     parser.add_argument("--face-workstation", action="store_true")
     parser.add_argument("--placement", action="store_true")
     args = parser.parse_args()
-    with contextlib.redirect_stdout(sys.stderr):
+    with native_diagnostics():
         sim = Simulator(
-            args.robot, args.task, args.fixture, args.placement, args.horizon, args.face_workstation
+            args.robot,
+            args.task,
+            args.fixture,
+            args.placement,
+            args.horizon,
+            args.face_workstation,
+            args.frozen_scene,
         )
     for line in sys.stdin:
         try:
             request = json.loads(line)
-            with contextlib.redirect_stdout(sys.stderr):
+            with native_diagnostics():
                 if request["op"] == "reset":
                     result = sim.reset(request["seed"])
                 elif request["op"] == "step":

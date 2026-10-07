@@ -1,0 +1,20 @@
+{
+  "complete": true,
+  "scenes": 50,
+  "unique_layouts_per_task": 10,
+  "unique_styles_per_task": 10,
+  "unique_asset_compositions_per_task": 10,
+  "images_head200": 200,
+  "archive": {
+    "episodes": 50,
+    "bytes": 3968211012,
+    "sha256": "405502b8d3c52b375f2874cbba4173536b9b73e5106ef165c59aaed5aeafd8b4",
+    "filename": "common-eval-panda-diverse-scenes-20261006.tar.gz",
+    "pixel_equal_scenes": 40,
+    "physical_exact_scenes": 50
+  },
+  "robot_actions": 0,
+  "model_calls": 0,
+  "old_set_deleted": true,
+  "unique_asset_compositions_total": 50
+}
