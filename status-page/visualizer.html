@@ -26,6 +26,7 @@
 <div class="heading"><div><p class="eyebrow">SIMULATION PLAYBACK</p><h2 id="title">영상을 선택하세요</h2></div><span id="result-badge" class="badge"></span></div>
 <p id="meta" class="muted"></p>
 <div class="player"><video id="video" controls playsinline preload="metadata" aria-label="시뮬레이션 영상"></video><p id="video-error" role="status" hidden></p></div>
+<section id="depth-player" hidden><h3>Depth 영상 · RGB와 스텝 동기화</h3><video id="depth-video" muted playsinline preload="metadata" aria-label="Depth 시뮬레이션 영상" style="width:100%;background:#000"></video><p id="depth-note" class="footnote"></p></section>
 <div class="play-position"><span id="position">0:00 / 0:00</span><label>재생 속도 <select id="speed"><option value="0.5">0.5×</option><option value="1" selected>1×</option><option value="2">2×</option><option value="4">4×</option></select></label></div>
 <section class="output" aria-label="현재 호출의 모델 출력">
 <div class="section-heading"><h3>모델 출력</h3><span id="sync-state" class="badge">영상과 동기화</span></div>

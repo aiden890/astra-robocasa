@@ -57,6 +57,13 @@ async function selectVideo(row) {
   if(row.live_clip&&row.visualization_data){try{const response=await fetch(new URL("playback.json",sameOriginPath(row.visualization_data)),{cache:"no-store"});if(response.ok){const playback=await response.json();row={...row,video:playback.video,video_start_step:0,cumulative_live:true,cumulative_version:playback.version,available_end_step:playback.end_step}}}catch(e){}}
   if(current!==generation)return;
   selected=row;calls=[];
+  el("depth-video").pause();
+  el("depth-player").hidden=!['color','pixel','grid'].includes(row.condition);
+  if(row.depth_video){
+    const depthURL=new URL(sameOriginPath(row.depth_video));depthURL.searchParams.set('v',String(row.depth_version));
+    el("depth-video").src=depthURL.href;el("depth-video").load();
+  }else{el("depth-video").removeAttribute('src');el("depth-video").load();}
+  el("depth-note").textContent=row.depth_video?"카메라 Z 시각화 · 밝을수록 가까움 · 기록 구간: 스텝 "+row.depth_start_step+"–"+row.depth_end_step+". 모델에 추가 전달하지 않는 표시용 영상입니다.":"Depth 영상은 기록 준비 중이거나 해당 과거 실행에 저장되지 않았습니다.";
   el("video").pause();el("video-error").hidden=true;
   el("title").textContent=row.task+" · "+(row.scene_id||row.id);
   el("meta").textContent=[model(row),condition(row),row.robot,row.steps!=null?row.steps.toLocaleString()+" native 스텝":null,row.excluded_from_current_target?"현재 평가 대상에서 제외된 보존 기록":null].filter(Boolean).join(" · ");
@@ -84,6 +91,7 @@ async function selectVideo(row) {
   } catch(e){if(current===generation){clearOutput("모델 출력 기록을 불러오지 못했습니다.");el("sync-state").textContent="기록 확인 불가"}}
 }
 function showOutput() {
+  syncDepth();
   const video=el("video"),step=(selected?.video_start_step||0)+Math.floor((video.currentTime+1e-6)*(selected?.control_hz||selected?.fps||20));
   el("position").textContent=clock(video.currentTime)+" / "+clock(video.duration)+" · native 스텝 "+step;
   if(!calls.length)return;
@@ -106,6 +114,18 @@ function showOutput() {
   renderInputs(row,requests);
   el("source-note").textContent=selected.cumulative_live?"처음부터 누적된 실제 20fps 영상입니다. 인코더에 저장된 스텝 "+selected.available_end_step+"까지 재생할 수 있으며, 저장 중인 최신 프레임은 다음 갱신에 추가됩니다. 새 영상이 추가돼도 재생 위치를 유지합니다.":selected.live_clip?"현재 행동의 실제 프레임으로 만든 최신 20fps 영상입니다. 완료 후 전체 영상으로 바뀝니다.":selected.timeline_note||"원본 response.json · receipt.json · native 관측 스텝 기준";
   el("seek-call").disabled=!manual;
+}
+function syncDepth(){
+  const depth=el('depth-video'),rgb=el('video');
+  if(!selected?.depth_video||!Number.isFinite(depth.duration))return;
+  const step=(selected.video_start_step||0)+rgb.currentTime*(selected.control_hz||20);
+  const offset=(step-selected.depth_start_step)/(selected.control_hz||20);
+  const available=offset>=0&&step<=selected.depth_end_step;
+  depth.hidden=!available;
+  if(!available){depth.pause();return;}
+  if(Math.abs(depth.currentTime-offset)>0.15)depth.currentTime=Math.min(offset,depth.duration);
+  depth.playbackRate=rgb.playbackRate;
+  if(rgb.paused)depth.pause();else depth.play().catch(()=>{});
 }
 function renderInputs(row,requests) {
   const key=selected.id+":"+row.call;if(inputKey===key)return;inputKey=key;
@@ -142,6 +162,7 @@ async function loadLibrary() {
 ["search","task","model","condition","result","with-output"].forEach(id=>el(id).addEventListener(id==="search"?"input":"change",()=>{limit=20;renderList()}));
 el("more").addEventListener("click",()=>{limit+=20;renderList()});
 el("video").addEventListener("timeupdate",showOutput);el("video").addEventListener("loadedmetadata",showOutput);el("video").addEventListener("seeked",showOutput);
+el("video").addEventListener("play",syncDepth);el("video").addEventListener("pause",syncDepth);el("depth-video").addEventListener("loadedmetadata",syncDepth);
 el("video").addEventListener("error",()=>{el("video-error").hidden=false;el("video-error").textContent="영상을 불러오지 못했습니다. 파일 또는 연결 상태를 확인해 주세요."});
 el("speed").addEventListener("change",()=>el("video").playbackRate=Number(el("speed").value));
 el("call").addEventListener("change",showOutput);

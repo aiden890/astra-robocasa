@@ -39,9 +39,15 @@ def test_inputs_and_restart(tmp_path, monkeypatch, condition, maximum):
             )
         )
     assert len(list(policy.snapshots.glob("step-*"))) == 101
+    display_frames = policy.output.parent / "depth-frames"
+    assert len(list(display_frames.glob("*.jpg"))) == (112 if condition != "rgb" else 0)
     source = policy.snapshots / "step-0000091"
     (source / "query-answers.json").write_text(
         json.dumps([{"observation_id": "scene:step-91", "pixel_depth_m": 0.2}])
+    )
+    between = policy.snapshots / "step-0000090"
+    (between / "query-answers.json").write_text(
+        json.dumps([{"observation_id": "scene:step-90", "pixel_depth_m": 0.3}] * 2)
     )
     replacement = HistoryPolicy.__new__(HistoryPolicy)
     replacement.__dict__.update(policy.__dict__)
@@ -62,6 +68,10 @@ def test_inputs_and_restart(tmp_path, monkeypatch, condition, maximum):
     assert [x["step"] for x in manifest["observations"]] == [111, 91, 71, 51, 31, 11]
     assert [x["relative_seconds"] for x in manifest["observations"]] == [0, -1, -2, -3, -4, -5]
     assert ("actually_observed_query_answers" in captured["prompt"]) == (condition == "pixel")
+    if condition == "pixel":
+        assert [x["step"] for x in manifest["actually_observed_query_answers"]] == [90, 91]
+        assert len(manifest["actually_observed_query_answers"][0]["answers"]) == 1
+        assert "scene:step-90" in captured["prompt"]
     if condition != "color":
         assert not list(folder.glob("*__depth.png"))
         assert not list(policy.snapshots.glob("*/*__depth.png"))
@@ -75,3 +85,37 @@ def test_missing_history_fails_closed(tmp_path, monkeypatch):
     policy.snapshots = tmp_path
     with pytest.raises(FileNotFoundError):
         policy.call("prompt", [], tmp_path)
+
+
+def test_query_window_bounds_and_alignment(tmp_path):
+    """Include the whole closed past window but reject answers from another observation."""
+    policy = HistoryPolicy.__new__(HistoryPolicy)
+    policy.history_seconds, policy.condition, policy.snapshots = 3, "pixel", tmp_path
+    for step in (39, 40, 41, 99, 100, 101):
+        folder = tmp_path / f"step-{step:07d}"
+        folder.mkdir()
+        identity = f"scene:step-{step}"
+        (folder / "observation.json").write_text(json.dumps({"observation_id": identity}))
+        (folder / "query-answers.json").write_text(
+            json.dumps([{"observation_id": identity, "pixel_depth_m": step / 100}])
+        )
+    assert [r["step"] for r in policy.query_history(100)] == [40, 41, 99]
+    policy.condition = "rgb"
+    assert policy.query_history(100) == []
+    policy.condition = "pixel"
+    (tmp_path / "step-0000041/query-answers.json").write_text(
+        json.dumps([{"observation_id": "wrong:step-41"}])
+    )
+    with pytest.raises(ValueError, match="observation ID mismatch"):
+        policy.query_history(100)
+
+
+def test_retained_call_keeps_original_history_manifest(tmp_path, monkeypatch):
+    """Adopting an old inflight request must not relabel its actual historical inputs."""
+    (tmp_path / "runner-request.json").write_text("{}")
+    evidence = '{"query_history_protocol":"original"}'
+    (tmp_path / "history-inputs.json").write_text(evidence)
+    monkeypatch.setattr(DepthPolicy, "call", lambda *args: {"retained": True})
+    policy = HistoryPolicy.__new__(HistoryPolicy)
+    assert policy.call("new prompt", [], tmp_path) == {"retained": True}
+    assert (tmp_path / "history-inputs.json").read_text() == evidence

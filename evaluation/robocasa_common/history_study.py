@@ -168,6 +168,37 @@ def publish(root, job, result, active):
             },
         )
     normal = valid_evaluation(result)
+    depth_record = {}
+    frames = sorted((folder / "depth-frames").glob("[0-9]*.jpg"))
+    if frames:
+        first, last_depth = int(frames[0].stem), int(frames[-1].stem)
+        if [int(f.stem) for f in frames] != list(range(first, last_depth + 1)):
+            raise ValueError("Depth visualization has missing or duplicate native frames")
+        info_file = dest / "depth-playback.json"
+        info = json.loads(info_file.read_text()) if info_file.exists() else {}
+        if info.get("end_step") != last_depth or info.get("start_step") != first:
+            pending = dest / "depth.pending.mp4"
+            writer = imageio_ffmpeg.write_frames(
+                str(pending),
+                (768, 256),
+                fps=20,
+                codec="libx264",
+                output_params=["-threads", "2", "-movflags", "+faststart"],
+            )
+            writer.send(None)
+            try:
+                for frame in frames:
+                    writer.send(np.asarray(Image.open(frame).convert("RGB")))
+            finally:
+                writer.close()
+            pending.replace(dest / "depth.mp4")
+            atomic_json(info_file, {"start_step": first, "end_step": last_depth, "fps": 20})
+        depth_record = {
+            "depth_video": str((dest / "depth.mp4").relative_to(site)),
+            "depth_start_step": first,
+            "depth_end_step": last_depth,
+            "depth_version": last_depth,
+        }
     if normal and (folder / "video.mp4").exists() and not (dest / "video.mp4").exists():
         reader = imageio_ffmpeg.read_frames(str(folder / "video.mp4"))
         metadata = next(reader)
@@ -186,6 +217,7 @@ def publish(root, job, result, active):
     if not video.exists():
         return None
     return {
+        **depth_record,
         "id": root.name + "-" + job["id"],
         "collection": root.name,
         "task": job["task"],

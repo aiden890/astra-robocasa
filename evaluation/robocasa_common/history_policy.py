@@ -50,6 +50,29 @@ class HistoryPolicy(PairedLivePolicy):
         step = observation.extra["steps"]
         self.snapshot_step = step
         cameras = [c for c in observation.images if not c.endswith("__depth")]
+        if self.condition in ("color", "pixel"):
+            depths = observation.extra.get("_depth_arrays", {})
+            if not depths and self.embodiment.current_depth_step == step:
+                depths = self.embodiment.current_depth_arrays
+            if depths:
+                # Display-only files never enter the model's history/image manifest.
+                display = self.output.parent / "depth-frames"
+                display.mkdir(exist_ok=True)
+                frames = []
+                for camera in cameras:
+                    image = Image.fromarray(preview_depth(depths[camera])).convert("RGB")
+                    scale = preview_scale(depths[camera])
+                    draw = ImageDraw.Draw(image)
+                    draw.rectangle((0, 236, 255, 255), fill="black")
+                    draw.text(
+                        (2, 238),
+                        f"Z {scale['near_white_m']:.2f}..{scale['far_black_m']:.2f}m",
+                        fill="white",
+                    )
+                    frames.append(np.asarray(image))
+                temporary = display / "frame.pending.jpg"
+                Image.fromarray(np.concatenate(frames, axis=1)).save(temporary, quality=85)
+                temporary.replace(display / f"{step:07d}.jpg")
         joined = Image.fromarray(np.concatenate([observation.images[c] for c in cameras], axis=1))
         joined.save(self.output.parent / "latest.jpg")
         if step == 0:
@@ -108,6 +131,9 @@ class HistoryPolicy(PairedLivePolicy):
 
     def call(self, prompt, images, folder):
         """Send only real saved observations and previously answered pixel queries."""
+        if (folder / "runner-request.json").exists():
+            # Retained calls used their saved prompt; preserve its input evidence on resume.
+            return super().call(prompt, images, folder)
         step = self.snapshot_step
         entries = []
         current = json.loads((self.snapshots / f"step-{step:07d}" / "observation.json").read_text())
@@ -132,16 +158,16 @@ class HistoryPolicy(PairedLivePolicy):
                     path = folder / f"history-{past:07d}-{name}"
                     shutil.copy2(source / name, path)
                     images.append(path)
-                answer = source / "query-answers.json"
-                if self.condition == "pixel" and answer.exists():
-                    entry["actually_observed_query_answers"] = json.loads(answer.read_text())
             cursor += len(metadata["files"])
             entries.append(entry)
+        query_history = self.query_history(step)
         manifest = {
             "history_seconds": self.history_seconds,
             "current_step": step,
             "image_count": len(images),
             "observations": entries,
+            "query_history_protocol": "all-native-steps-v1",
+            "actually_observed_query_answers": query_history,
         }
         atomic_json(folder / "history-inputs.json", manifest)
         labels = [
@@ -154,17 +180,60 @@ class HistoryPolicy(PairedLivePolicy):
             "Compare motion across these observations. Missing early offsets are omitted. "
             "New distance queries must target the current observation_id only."
         )
+        if query_history:
+            prompt += (
+                "\nactually_observed_query_answers (every native step in the history window): "
+                + json.dumps(query_history)
+                + "\nThese are historical measurements, not current distances. "
+                "No additional images are attached for these query-only observations."
+            )
         (folder / "prompt.txt").write_text(prompt)
         return super().call(prompt, images, folder)
 
+    def query_history(self, step):
+        """Retain every answered observation in the window, independently of image sampling."""
+        if self.condition != "pixel" or not self.history_seconds:
+            return []
+        records = []
+        for source in sorted(self.snapshots.glob("step-*")):
+            past = int(source.name[5:])
+            if not max(0, step - self.history_seconds * 20) <= past < step:
+                continue
+            path = source / "query-answers.json"
+            if not path.exists():
+                continue
+            metadata = json.loads((source / "observation.json").read_text())
+            answers, seen = [], set()
+            for answer in json.loads(path.read_text()):
+                if (
+                    answer.get("observation_id", metadata["observation_id"])
+                    != metadata["observation_id"]
+                ):
+                    raise ValueError("Historical query observation ID mismatch")
+                key = json.dumps(answer, sort_keys=True)
+                if key not in seen:
+                    seen.add(key)
+                    answers.append(answer)
+            if answers:
+                records.append(
+                    {
+                        "step": past,
+                        "observation_id": metadata["observation_id"],
+                        "relative_seconds": (past - step) / 20,
+                        "answers": answers,
+                    }
+                )
+        return records
+
     def act(self, observation):
         """Keep only actual pixel answers for this observation's future history."""
-        result = super().act(observation)
-        answers = self.progress.get("answers", [])
-        if self.condition == "pixel" and answers:
-            folder = self.snapshots / f"step-{observation.extra['steps']:07d}"
-            atomic_json(folder / "query-answers.json", answers)
-        return result
+        try:
+            return super().act(observation)
+        finally:
+            answers = self.progress.get("answers", [])
+            if self.condition == "pixel" and answers:
+                folder = self.snapshots / f"step-{observation.extra['steps']:07d}"
+                atomic_json(folder / "query-answers.json", answers)
 
 
 def create_policy(embodiment, output):

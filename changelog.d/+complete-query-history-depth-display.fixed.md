@@ -1,0 +1,1 @@
+Include actual distance-query answers from every native step in the selected history window without adding query-step images. Preserve retained requests' original input evidence and show display-only depth movies synchronized to RGB over their captured native interval.
