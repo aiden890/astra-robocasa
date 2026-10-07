@@ -54,9 +54,10 @@ async function selectVideo(row) {
   el("result-badge").textContent=status(row);el("result-badge").className="badge "+(status(row)==="성공"?"success":status(row)==="미성공"?"failed":"");
   el("call").replaceChildren(new Option("현재 재생 위치에 맞추기","auto"));
   clearOutput("모델 출력 기록을 불러오는 중입니다.");
-  const playbackURL=new URL(sameOriginPath(row.video));playbackURL.searchParams.set("playback","1");
+  const playbackURL=new URL(sameOriginPath(row.video));playbackURL.searchParams.set("playback",String(row.live_version||1));
   el("video").src=playbackURL.href;el("video").poster=sameOriginPath(row.poster)||"";el("video").load();
   el("video").playbackRate=Number(el("speed").value);
+  if(row.live_clip){el("video").muted=true;el("video").play().catch(()=>{});}
   const url=new URL(location.href);url.searchParams.set("id",row.id);history.replaceState(null,"",url);
   renderList();
   const dataPath=row.visualization_data||outputIndex[row.id];
@@ -71,7 +72,7 @@ async function selectVideo(row) {
   } catch(e){if(current===generation){clearOutput("모델 출력 기록을 불러오지 못했습니다.");el("sync-state").textContent="기록 확인 불가"}}
 }
 function showOutput() {
-  const video=el("video"),step=Math.floor((video.currentTime+1e-6)*(selected?.control_hz||selected?.fps||20));
+  const video=el("video"),step=(selected?.video_start_step||0)+Math.floor((video.currentTime+1e-6)*(selected?.control_hz||selected?.fps||20));
   el("position").textContent=clock(video.currentTime)+" / "+clock(video.duration)+" · native 스텝 "+step;
   if(!calls.length)return;
   const manual=el("call").value!=="auto";
@@ -90,7 +91,7 @@ function showOutput() {
   const answers=row.query_answers?.length?row.query_answers:group.flatMap(c=>c.query_answers||[]);
   el("queries").textContent=JSON.stringify({requests,answers},null,2);
   el("query-box").open=requests.length>0;
-  el("source-note").textContent=selected.timeline_note||"원본 response.json · receipt.json · native 관측 스텝 기준";
+  el("source-note").textContent=selected.live_clip?"현재 행동의 실제 프레임으로 만든 최신 20fps 영상입니다. 완료 후 전체 영상으로 바뀝니다.":selected.timeline_note||"원본 response.json · receipt.json · native 관측 스텝 기준";
   el("seek-call").disabled=!manual;
 }
 async function loadLibrary() {
@@ -104,6 +105,7 @@ async function loadLibrary() {
     populate("task",records.map(r=>r.task));populate("model",records.map(model));populate("condition",records.map(condition));renderList();
     el("library-notice").textContent="영상 "+records.length+"개 · 삭제한 항목 제외";
     if(!selected){const id=new URL(location.href).searchParams.get("id");const first=records.find(r=>r.id===id)||records.find(r=>r.visualization_data||outputIndex[r.id])||records[0];if(first)await selectVideo(first)}
+    else if(selected.live_clip && records.find(r=>r.id===selected.id)?.live_version!==selected.live_version){const next=records.find(r=>r.id===selected.id);if(next)await selectVideo(next)}
     else if(deleted.has(selected.id)){selected=null;calls=[];el("video").pause();el("video").removeAttribute("src");el("video").load();el("title").textContent="삭제된 영상";clearOutput("이 영상은 목록에서 삭제되었습니다.")}
   } catch(e){el("library-notice").textContent="영상 목록을 불러오지 못했습니다. 잠시 후 다시 확인합니다."}
 }
@@ -113,5 +115,5 @@ el("video").addEventListener("timeupdate",showOutput);el("video").addEventListen
 el("video").addEventListener("error",()=>{el("video-error").hidden=false;el("video-error").textContent="영상을 불러오지 못했습니다. 파일 또는 연결 상태를 확인해 주세요."});
 el("speed").addEventListener("change",()=>el("video").playbackRate=Number(el("speed").value));
 el("call").addEventListener("change",showOutput);
-el("seek-call").addEventListener("click",()=>{const row=calls.find(c=>c.call===el("call").value);if(row){el("video").currentTime=row.step/(selected.control_hz||20);el("call").value="auto";showOutput()}});
-loadLibrary();setInterval(loadLibrary,30000);
+el("seek-call").addEventListener("click",()=>{const row=calls.find(c=>c.call===el("call").value);if(row){el("video").currentTime=Math.max(0,row.step-(selected.video_start_step||0))/(selected.control_hz||20);el("call").value="auto";showOutput()}});
+loadLibrary();setInterval(loadLibrary,5000);
