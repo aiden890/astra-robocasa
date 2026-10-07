@@ -213,7 +213,7 @@ class Renderer:
         x = x0
         for t in self.turns:
             tw = w * max(t.steps, 1) / total
-            d.rectangle([x, y0, x + tw - 1, y0 + 14], fill=BAD if t.failed else (70, 90, 110),
+            d.rectangle([x, y0, max(x, x + tw - 1), y0 + 14], fill=BAD if t.failed else (70, 90, 110),
                         outline=ACCENT if t.index == turn.index else BG)
             x += tw
         cursor = x0 + w * (sum(max(t.steps, 1) for t in self.turns if t.index < turn.index)

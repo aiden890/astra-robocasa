@@ -30,8 +30,9 @@ from .sim_client import SimClient
 
 REPO = Path(__file__).resolve().parents[5]
 LEDGER = REPO / "runs" / "astra_ledger.jsonl"
-# P4: 1 + P6: 5 (scene-less, layout 1 / style 1) + P7: 5 (common scene 0 with success conditions).
-ASTRA_RUN_LIMIT = 11
+# P4: 1 + P6: 5 (scene-less, layout 1 / style 1) + P7: 5 (common scene 0 with success conditions)
+# + P8: 1 (OpenCabinet scene 0 with a 3600-step budget; stopped at turn 17, budget option since removed).
+ASTRA_RUN_LIMIT = 12
 SCENE_INDEX = Path(__file__).resolve().parent / "assets" / "scenes.json"
 STEPS_PER_TURN_CAP = 40  # max turns = horizon // 40 for common scenes (45 for 1800 steps, 60 for 2400)
 
@@ -110,7 +111,9 @@ def main() -> None:
         if not args.scripted else "not used (scripted)"
     config = {
         "task": args.task, "seed": seed, "scene": args.scene, "scene_info": scene, "scene_dir": scene_dir,
-        "shots": args.shots, "budget": cfg.budget, "max_turns": cfg.max_turns,
+        "shots": args.shots,
+        "protocol_horizon": scene["horizon"] if scene else None,
+        "budget": cfg.budget, "max_turns": cfg.max_turns,
         "mode": "astra" if args.allow_astra else "scripted", "model": MODEL if args.allow_astra else "scripted",
         "reasoning_effort": REASONING_EFFORT, "codex_version": codex_version, "git_commit": _git_commit(),
         "profile": {"path": str(PROFILE_PATH), "md5": _md5(PROFILE_PATH)},
@@ -123,7 +126,7 @@ def main() -> None:
         LEDGER.parent.mkdir(parents=True, exist_ok=True)
         with LEDGER.open("a") as ledger:
             ledger.write(json.dumps({"started": stamp, "task": args.task, "shots": args.shots, "seed": seed,
-                                     "scene": args.scene, "run_dir": str(run_dir)}) + "\n")
+                                     "scene": args.scene, "budget": cfg.budget, "run_dir": str(run_dir)}) + "\n")
         caller = CodexCaller(args.codex, args.codex_home, run_dir / "system_prompt.md",
                              run_dir / "response_schema.json", REPO / ".runtime" / "inference-empty")
     else:
