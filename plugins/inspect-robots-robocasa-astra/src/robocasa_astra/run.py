@@ -2,6 +2,7 @@
 
 import argparse
 import json
+import sys
 from pathlib import Path
 
 from inspect_robots import eval
@@ -26,6 +27,10 @@ def main():
     parser.add_argument("--seed", type=int, default=771001)
     parser.add_argument("--output", required=True)
     parser.add_argument("--container", default="astra-robocasa-20261006")
+    parser.add_argument(
+        "--local", action="store_true", help="run the worker on this host instead of Spark2"
+    )
+    parser.add_argument("--python", default=sys.executable, help="worker interpreter for --local")
     parser.add_argument("--codex", required=True)
     parser.add_argument("--codex-home", required=True)
     parser.add_argument("--model", default="gpt-6-astra")
@@ -38,23 +43,22 @@ def main():
         parser.error("Held-mug fixtures are verified only for PandaOmron; use full GR1 task")
     output = Path(args.output).resolve()
     output.mkdir(parents=True, exist_ok=False)
-    command = [
-        "ssh",
-        "spark2",
-        "docker",
-        "exec",
-        "-i",
-        "-e",
-        "PYTHONPATH=/astra/src:/astra/plugins/inspect-robots-robocasa-astra/src",
-        args.container,
-        "python3",
-        "-m",
-        "robocasa_astra.worker",
-        "--robot",
-        args.robot,
-        "--task",
-        args.task,
-    ]
+    if args.local:
+        # Inherits PYTHONPATH and MUJOCO_GL from run.sh; lower priority than co-located training.
+        launcher = ["nice", "-n", "10", args.python]
+    else:
+        launcher = [
+            "ssh",
+            "spark2",
+            "docker",
+            "exec",
+            "-i",
+            "-e",
+            "PYTHONPATH=/astra/src:/astra/plugins/inspect-robots-robocasa-astra/src",
+            args.container,
+            "python3",
+        ]
+    command = launcher + ["-m", "robocasa_astra.worker", "--robot", args.robot, "--task", args.task]
     if args.worker_script:
         marker = command.index("-m")
         command[marker : marker + 2] = [args.worker_script]
@@ -99,7 +103,12 @@ def main():
             print("native reset/render/step passed", env.info.name)
             return
         policy = CodexPolicy(
-            env, output / "inference", args.codex, args.codex_home, args.model, args.noop
+            env,
+            output / "inference",
+            args.codex,
+            args.codex_home,
+            args.model,
+            args.noop,
         )
         instruction = (
             "Place the held mug under the dispenser and release. Do not press the button."

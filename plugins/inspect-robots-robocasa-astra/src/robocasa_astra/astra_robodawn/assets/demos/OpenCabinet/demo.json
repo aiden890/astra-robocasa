@@ -1,0 +1,397 @@
+{
+ "kind": "task",
+ "task": "OpenCabinet",
+ "instruction": "Open the cabinet doors.",
+ "source": {
+  "dataset": "/data/code/robocasa/datasets/v1.0/pretrain/atomic/OpenCabinet/20250819/lerobot",
+  "episode": 18,
+  "layout_id": 57,
+  "style_id": 53,
+  "expert_key_events": [
+   {
+    "t": 0,
+    "event": "start",
+    "fingertip_cm": [
+     24.3,
+     -2.1,
+     130.6
+    ],
+    "approach": [
+     0.3,
+     -0.01,
+     -0.96
+    ],
+    "finger_axis": [
+     -0.02,
+     1.0,
+     -0.01
+    ],
+    "opening_after": 0.51,
+    "base_moved_before_cm": [
+     0.0,
+     0.0
+    ]
+   },
+   {
+    "t": 78,
+    "event": "close",
+    "fingertip_cm": [
+     41.2,
+     -5.7,
+     156.2
+    ],
+    "approach": [
+     0.99,
+     0.14,
+     0.08
+    ],
+    "finger_axis": [
+     -0.15,
+     0.98,
+     0.14
+    ],
+    "opening_after": 0.34,
+    "base_moved_before_cm": [
+     -0.0,
+     -0.0
+    ]
+   },
+   {
+    "t": 111,
+    "event": "open",
+    "fingertip_cm": [
+     13.3,
+     4.7,
+     155.1
+    ],
+    "approach": [
+     0.97,
+     0.18,
+     0.14
+    ],
+    "finger_axis": [
+     -0.19,
+     0.98,
+     0.1
+    ],
+    "opening_after": 0.97,
+    "base_moved_before_cm": [
+     0.0,
+     -0.0
+    ]
+   },
+   {
+    "t": 251,
+    "event": "close",
+    "fingertip_cm": [
+     42.0,
+     -13.8,
+     158.4
+    ],
+    "approach": [
+     1.0,
+     0.05,
+     -0.02
+    ],
+    "finger_axis": [
+     -0.05,
+     0.99,
+     -0.14
+    ],
+    "opening_after": 0.27,
+    "base_moved_before_cm": [
+     -0.0,
+     0.0
+    ]
+   },
+   {
+    "t": 291,
+    "event": "open",
+    "fingertip_cm": [
+     14.8,
+     -28.1,
+     158.4
+    ],
+    "approach": [
+     0.99,
+     0.03,
+     0.1
+    ],
+    "finger_axis": [
+     -0.03,
+     1.0,
+     0.01
+    ],
+    "opening_after": 0.97,
+    "base_moved_before_cm": [
+     0.0,
+     0.0
+    ]
+   },
+   {
+    "t": 374,
+    "event": "end",
+    "fingertip_cm": [
+     24.6,
+     -45.1,
+     149.3
+    ],
+    "approach": [
+     0.1,
+     -1.0,
+     -0.0
+    ],
+    "finger_axis": [
+     0.98,
+     0.1,
+     -0.15
+    ],
+    "opening_after": 0.98,
+    "base_moved_before_cm": [
+     0.0,
+     -0.0
+    ]
+   }
+  ],
+  "plan_file": "demo_plans/OpenCabinet.json",
+  "verified": {
+   "success": true,
+   "steps": 1016,
+   "turns": 19
+  }
+ },
+ "note": "Two wall-cabinet doors with vertical bar handles. A door swings on its hinge, so a handle pulled straight back slips out of the fingers: pull along an ARC around the hinge, turning the hand with the door (rotate yaw about 22 deg per step) while moving back and towards the hinge side. Grasp the bar in its middle with the fingers forward (they close left-right). After one door is fully open, the hand ends up outside that door: release, slide down below the door, and only then move to the other door, otherwise the open door gets dragged closed. Driving the platform sideways brings the second door's arc into reach. This demonstration used 1016 of 1050 native steps, so there is little room for wasted moves.",
+ "frames": [
+  {
+   "label": "turn 1 (image: left overview camera before the turn)",
+   "image": "frames/turn01.png",
+   "state": "fingertips (forward 25, left 1, height 126) cm, approach (0.18, 0.06, -0.98), opening 0.51, work surface 92 cm",
+   "scene": "Two closed wall-cabinet doors above the counter with vertical bar handles near the middle, at about height 157 and forward ~40 (left door handle ~6 cm right of centre, right door handle ~14 cm right). Fingers point down at the start pose.",
+   "plan": "Move back towards the body and up towards handle height: there is no cabinet overhead close to the body.",
+   "commands": [
+    "move back 12",
+    "move up 20",
+    "move up 6"
+   ],
+   "effect": "move back 12: ok (reached); fingertips moved forward -11, left +0, up -0 cm | move up 20: ok (reached); fingertips moved forward +0, left -0, up +19 cm | move up 6: ok (reached); fingertips moved forward -0, left -0, up +5 cm"
+  },
+  {
+   "label": "turn 2 (image: left overview camera before the turn)",
+   "image": "frames/turn02.png",
+   "state": "fingertips (forward 14, left 1, height 150) cm, approach (0.20, 0.05, -0.98), opening 1.00, work surface 92 cm",
+   "scene": "Fingertips close to the body at about height 150.",
+   "plan": "Turn the fingers forward (they close left-right, so they can straddle a vertical bar).",
+   "commands": [
+    "point forward"
+   ],
+   "effect": "point forward: ok (reached); fingertips moved forward +0, left -0, up -1 cm"
+  },
+  {
+   "label": "turn 3",
+   "image": null,
+   "state": "fingertips (forward 14, left 1, height 149) cm, approach (1.00, 0.00, -0.06), opening 1.00, work surface 92 cm",
+   "scene": "Fingers forward, about 25 cm in front of the left door's handle.",
+   "plan": "Rise to the middle of the handle, line up with it and reach forward until the bar is between the fingers.",
+   "commands": [
+    "move up 8",
+    "move right 6",
+    "move forward 20",
+    "move forward 7"
+   ],
+   "effect": "move up 8: ok (reached); fingertips moved forward -0, left +0, up +7 cm | move right 6: ok (reached); fingertips moved forward -0, left -5, up +0 cm | move forward 20: ok (reached); fingertips moved forward +19, left +0, up -0 cm | move forward 7: ok (reached); fingertips moved forward +6, left +0, up -0 cm"
+  },
+  {
+   "label": "turn 4 (image: left overview camera before the turn)",
+   "image": "frames/turn04.png",
+   "state": "fingertips (forward 39, left -5, height 156) cm, approach (1.00, 0.00, -0.07), opening 1.00, work surface 92 cm",
+   "scene": "Wrist camera: the bar is centred between the open fingers.",
+   "plan": "Grasp the handle.",
+   "commands": [
+    "gripper close"
+   ],
+   "effect": "gripper close: ok (fingers stopped at opening 0.32: something stops them - an object between the fingers (grasped) or a finger pressing on a surface; check the wrist camera)"
+  },
+  {
+   "label": "turn 5",
+   "image": null,
+   "state": "fingertips (forward 39, left -6, height 156) cm, approach (1.00, 0.00, -0.07), opening 0.32, work surface 92 cm",
+   "scene": "Handle held (opening stopped at 0.32).",
+   "plan": "Pull the door along its swing around the hinge on its LEFT side: turn the hand with the door (yaw -22.5) and pull back and a little left.",
+   "commands": [
+    "rotate yaw -22.5",
+    "move back 13",
+    "move left 4"
+   ],
+   "effect": "rotate yaw -22.5: ok (reached); fingertips moved forward -0, left -1, up -0 cm | move back 13: ok (reached); fingertips moved forward -12, left +1, up -0 cm | move left 4: ok (reached); fingertips moved forward -0, left +3, up -0 cm"
+  },
+  {
+   "label": "turn 6",
+   "image": null,
+   "state": "fingertips (forward 26, left -2, height 156) cm, approach (0.95, -0.32, -0.04), opening 0.32, work surface 92 cm",
+   "scene": "Door about a quarter open, handle still held.",
+   "plan": "Continue the arc: turn with the door, pull back and left.",
+   "commands": [
+    "rotate yaw -22.5",
+    "move back 10",
+    "move left 9"
+   ],
+   "effect": "rotate yaw -22.5: ok (reached); fingertips moved forward +0, left -0, up +0 cm | move back 10: FAILED (only part of the way: fingertips moved forward -8.9, left +1.7, up -0.1 cm and turned 0 deg; remaining error 2.0 cm / 0 deg; cause: probably contact with an object or fixture) | move left 9: ok (reached); fingertips moved forward -1, left +8, up +0 cm"
+  },
+  {
+   "label": "turn 7",
+   "image": null,
+   "state": "fingertips (forward 17, left 7, height 156) cm, approach (0.79, -0.61, -0.01), opening 0.49, work surface 92 cm",
+   "scene": "Door about half open.",
+   "plan": "Continue the arc: the handle now moves more to the left than back.",
+   "commands": [
+    "rotate yaw -22.5",
+    "move back 6",
+    "move left 12"
+   ],
+   "effect": "rotate yaw -22.5: ok (reached); fingertips moved forward -0, left -1, up +0 cm | move back 6: ok (reached); fingertips moved forward -5, left +1, up -0 cm | move left 12: ok (reached); fingertips moved forward -1, left +12, up +0 cm"
+  },
+  {
+   "label": "turn 8",
+   "image": null,
+   "state": "fingertips (forward 10, left 19, height 156) cm, approach (0.48, -0.87, -0.03), opening 0.51, work surface 92 cm",
+   "scene": "Door about three quarters open; the handle is close to the robot's left side.",
+   "plan": "Last part of the arc: turn and move left until the door is fully open.",
+   "commands": [
+    "rotate yaw -22.5",
+    "move left 13"
+   ],
+   "effect": "rotate yaw -22.5: ok (reached); fingertips moved forward -1, left -0, up -0 cm | move left 13: FAILED (only part of the way: fingertips moved forward -1.2, left +14.1, up -0.0 cm and turned 3 deg; remaining error 1.7 cm / 3 deg; cause: probably contact with an object or fixture)"
+  },
+  {
+   "label": "turn 9 (image: left overview camera before the turn)",
+   "image": "frames/turn09.png",
+   "state": "fingertips (forward 8, left 33, height 156) cm, approach (0.09, -0.99, -0.07), opening 0.50, work surface 92 cm",
+   "scene": "Left door fully open (0.96). The hand is outside the open door and the door panel is between the hand and the second handle.",
+   "plan": "Release, then slide the fingers DOWN along the bar and below the bottom edge of the open door, so leaving does not drag the door closed.",
+   "commands": [
+    "gripper open",
+    "move down 20",
+    "move down 10"
+   ],
+   "effect": "gripper open: ok (gripper opened to 0.99) | move down 20: ok (reached); fingertips moved forward -0, left -0, up -19 cm | move down 10: ok (reached); fingertips moved forward -0, left -0, up -9 cm"
+  },
+  {
+   "label": "turn 10",
+   "image": null,
+   "state": "fingertips (forward 8, left 33, height 128) cm, approach (0.08, -0.99, -0.09), opening 1.00, work surface 92 cm",
+   "scene": "Hand below the doors, at about height 127.",
+   "plan": "Drive the platform 50 cm to the right so the right door and its hinge come in front of the robot (moving the arm sideways under the door would also work, but the arc of the second door would then be out of reach).",
+   "commands": [
+    "base right 50"
+   ],
+   "effect": "base right 50: ok (reached); platform moved forward -0, left -48 cm"
+  },
+  {
+   "label": "turn 11",
+   "image": null,
+   "state": "fingertips (forward 8, left 33, height 127) cm, approach (0.08, -0.99, -0.09), opening 1.00, work surface 92 cm",
+   "scene": "After driving right, the right door's handle is now ahead and to the left (robot-relative coordinates changed).",
+   "plan": "Rise to handle height and move a bit away from the body.",
+   "commands": [
+    "move up 20",
+    "move up 6",
+    "move forward 6"
+   ],
+   "effect": "move up 20: ok (reached); fingertips moved forward -0, left -0, up +19 cm | move up 6: ok (reached); fingertips moved forward -0, left -0, up +5 cm | move forward 6: ok (reached); fingertips moved forward +5, left +0, up +0 cm"
+  },
+  {
+   "label": "turn 12 (image: left overview camera before the turn)",
+   "image": "frames/turn12.png",
+   "state": "fingertips (forward 13, left 33, height 152) cm, approach (0.08, -0.99, -0.10), opening 1.00, work surface 92 cm",
+   "scene": "Fingers still turned from the first door.",
+   "plan": "Snap the fingers forward again.",
+   "commands": [
+    "point forward"
+   ],
+   "effect": "point forward: ok (reached); fingertips moved forward +0, left -1, up -0 cm"
+  },
+  {
+   "label": "turn 13",
+   "image": null,
+   "state": "fingertips (forward 13, left 32, height 151) cm, approach (1.00, 0.02, 0.01), opening 1.00, work surface 92 cm",
+   "scene": "Fingers forward, in front of the right door's handle.",
+   "plan": "Rise to the middle of the handle and reach forward until the bar is between the fingers.",
+   "commands": [
+    "move up 8",
+    "move left 1",
+    "move forward 20",
+    "move forward 9"
+   ],
+   "effect": "move up 8: ok (reached); fingertips moved forward +0, left -0, up +7 cm | move left 1: ok (reached); fingertips moved forward -0, left +0, up +0 cm | move forward 20: ok (reached); fingertips moved forward +19, left -0, up -0 cm | move forward 9: ok (reached); fingertips moved forward +8, left -0, up -0 cm"
+  },
+  {
+   "label": "turn 14",
+   "image": null,
+   "state": "fingertips (forward 41, left 32, height 159) cm, approach (1.00, 0.02, 0.01), opening 1.00, work surface 92 cm",
+   "scene": "Wrist camera: the bar is centred between the fingers.",
+   "plan": "Grasp the second handle.",
+   "commands": [
+    "gripper close"
+   ],
+   "effect": "gripper close: ok (fingers stopped at opening 0.27: something stops them - an object between the fingers (grasped) or a finger pressing on a surface; check the wrist camera)"
+  },
+  {
+   "label": "turn 15",
+   "image": null,
+   "state": "fingertips (forward 40, left 33, height 159) cm, approach (1.00, 0.02, 0.01), opening 0.27, work surface 92 cm",
+   "scene": "Handle held (opening ~0.2-0.3).",
+   "plan": "Pull along this door's swing around its hinge on the RIGHT side: turn with the door (yaw +22.5), pull back and a little right.",
+   "commands": [
+    "rotate yaw +22.5",
+    "move back 13",
+    "move right 4"
+   ],
+   "effect": "rotate yaw +22.5: ok (reached); fingertips moved forward -0, left +1, up +0 cm | move back 13: FAILED (only part of the way: fingertips moved forward -11.7, left -1.7, up -0.1 cm and turned 0 deg; remaining error 2.1 cm / 0 deg; cause: probably contact with an object or fixture) | move right 4: ok (reached); fingertips moved forward -1, left -3, up -0 cm"
+  },
+  {
+   "label": "turn 16",
+   "image": null,
+   "state": "fingertips (forward 27, left 30, height 159) cm, approach (0.94, 0.35, 0.03), opening 0.28, work surface 92 cm",
+   "scene": "Right door about a quarter open.",
+   "plan": "Continue the arc.",
+   "commands": [
+    "rotate yaw +22.5",
+    "move back 11",
+    "move right 9"
+   ],
+   "effect": "rotate yaw +22.5: ok (reached); fingertips moved forward -0, left +1, up -0 cm | move back 11: FAILED (only part of the way: fingertips moved forward -9.4, left -1.6, up -0.3 cm and turned 0 deg; remaining error 2.3 cm / 0 deg; cause: probably contact with an object or fixture) | move right 9: FAILED (only part of the way: fingertips moved forward -1.1, left -7.7, up -0.0 cm and turned 0 deg; remaining error 1.7 cm / 0 deg; cause: probably contact with an object or fixture)"
+  },
+  {
+   "label": "turn 17",
+   "image": null,
+   "state": "fingertips (forward 16, left 21, height 158) cm, approach (0.76, 0.65, 0.04), opening 0.35, work surface 92 cm",
+   "scene": "Right door about half open.",
+   "plan": "Continue the arc: more to the right than back.",
+   "commands": [
+    "rotate yaw +22.5",
+    "move back 6",
+    "move right 12"
+   ],
+   "effect": "rotate yaw +22.5: FAILED (only part of the way: fingertips moved forward -1.2, left +1.0, up +0.1 cm and turned 22 deg; remaining error 1.5 cm / 0 deg; cause: probably contact with an object or fixture) | move back 6: FAILED (only part of the way: fingertips moved forward -4.2, left -1.6, up -0.1 cm and turned 0 deg; remaining error 2.4 cm / 0 deg; cause: probably contact with an object or fixture) | move right 12: ok (reached); fingertips moved forward -1, left -11, up +0 cm"
+  },
+  {
+   "label": "turn 18",
+   "image": null,
+   "state": "fingertips (forward 10, left 10, height 159) cm, approach (0.45, 0.89, 0.04), opening 0.44, work surface 92 cm",
+   "scene": "Right door about three quarters open.",
+   "plan": "Last part of the arc until it is fully open; the task ends as soon as both doors are open.",
+   "commands": [
+    "rotate yaw +22.5",
+    "move back 1",
+    "move right 14"
+   ],
+   "effect": "rotate yaw +22.5: ok (reached); fingertips moved forward -1, left +0, up +0 cm | move back 1: ok (reached); fingertips moved forward +0, left +0, up +0 cm | move right 14: FAILED (only part of the way: fingertips moved forward -1.4, left -9.6, up +0.0 cm and turned 0 deg; remaining error 4.6 cm / 0 deg; cause: probably contact with an object or fixture; stopped early: task success)"
+  },
+  {
+   "label": "final state (image)",
+   "image": "frames/final.png",
+   "state": "fingertips (forward 7, left 0, height 159) cm, approach (0.09, 0.99, 0.04), opening 0.42, work surface 92 cm",
+   "effect": "task checker: SUCCESS"
+  }
+ ]
+}

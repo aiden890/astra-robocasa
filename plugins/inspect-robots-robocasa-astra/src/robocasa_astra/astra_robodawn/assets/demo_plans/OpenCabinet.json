@@ -1,0 +1,162 @@
+{
+ "task": "OpenCabinet",
+ "episode": 18,
+ "source_note": "Expert episode 18 (layout 57 / style 53, 'Open the cabinet doors.'). The expert grasped handle 1 at (41, -6, 156) with the fingers forward and later handle 2 at (42, -14, 158). The command plan below was written from these key events and the cabinet geometry of that scene and verified with the executor: both doors >= 0.9 (left 0.96, right 0.91) after 1016 steps.",
+ "note": "Two wall-cabinet doors with vertical bar handles. A door swings on its hinge, so a handle pulled straight back slips out of the fingers: pull along an ARC around the hinge, turning the hand with the door (rotate yaw about 22 deg per step) while moving back and towards the hinge side. Grasp the bar in its middle with the fingers forward (they close left-right). After one door is fully open, the hand ends up outside that door: release, slide down below the door, and only then move to the other door, otherwise the open door gets dragged closed. Driving the platform sideways brings the second door's arc into reach. This demonstration used 1016 of 1050 native steps, so there is little room for wasted moves.",
+ "turns": [
+  {
+   "scene": "Two closed wall-cabinet doors above the counter with vertical bar handles near the middle, at about height 157 and forward ~40 (left door handle ~6 cm right of centre, right door handle ~14 cm right). Fingers point down at the start pose.",
+   "plan": "Move back towards the body and up towards handle height: there is no cabinet overhead close to the body.",
+   "commands": [
+    "move back 12",
+    "move up 20",
+    "move up 6"
+   ]
+  },
+  {
+   "scene": "Fingertips close to the body at about height 150.",
+   "plan": "Turn the fingers forward (they close left-right, so they can straddle a vertical bar).",
+   "commands": [
+    "point forward"
+   ]
+  },
+  {
+   "scene": "Fingers forward, about 25 cm in front of the left door's handle.",
+   "plan": "Rise to the middle of the handle, line up with it and reach forward until the bar is between the fingers.",
+   "commands": [
+    "move up 8",
+    "move right 6",
+    "move forward 20",
+    "move forward 7"
+   ]
+  },
+  {
+   "scene": "Wrist camera: the bar is centred between the open fingers.",
+   "plan": "Grasp the handle.",
+   "commands": [
+    "gripper close"
+   ]
+  },
+  {
+   "scene": "Handle held (opening stopped at 0.32).",
+   "plan": "Pull the door along its swing around the hinge on its LEFT side: turn the hand with the door (yaw -22.5) and pull back and a little left.",
+   "commands": [
+    "rotate yaw -22.5",
+    "move back 13",
+    "move left 4"
+   ]
+  },
+  {
+   "scene": "Door about a quarter open, handle still held.",
+   "plan": "Continue the arc: turn with the door, pull back and left.",
+   "commands": [
+    "rotate yaw -22.5",
+    "move back 10",
+    "move left 9"
+   ]
+  },
+  {
+   "scene": "Door about half open.",
+   "plan": "Continue the arc: the handle now moves more to the left than back.",
+   "commands": [
+    "rotate yaw -22.5",
+    "move back 6",
+    "move left 12"
+   ]
+  },
+  {
+   "scene": "Door about three quarters open; the handle is close to the robot's left side.",
+   "plan": "Last part of the arc: turn and move left until the door is fully open.",
+   "commands": [
+    "rotate yaw -22.5",
+    "move left 13"
+   ]
+  },
+  {
+   "scene": "Left door fully open (0.96). The hand is outside the open door and the door panel is between the hand and the second handle.",
+   "plan": "Release, then slide the fingers DOWN along the bar and below the bottom edge of the open door, so leaving does not drag the door closed.",
+   "commands": [
+    "gripper open",
+    "move down 20",
+    "move down 10"
+   ]
+  },
+  {
+   "scene": "Hand below the doors, at about height 127.",
+   "plan": "Drive the platform 50 cm to the right so the right door and its hinge come in front of the robot (moving the arm sideways under the door would also work, but the arc of the second door would then be out of reach).",
+   "commands": [
+    "base right 50"
+   ]
+  },
+  {
+   "scene": "After driving right, the right door's handle is now ahead and to the left (robot-relative coordinates changed).",
+   "plan": "Rise to handle height and move a bit away from the body.",
+   "commands": [
+    "move up 20",
+    "move up 6",
+    "move forward 6"
+   ]
+  },
+  {
+   "scene": "Fingers still turned from the first door.",
+   "plan": "Snap the fingers forward again.",
+   "commands": [
+    "point forward"
+   ]
+  },
+  {
+   "scene": "Fingers forward, in front of the right door's handle.",
+   "plan": "Rise to the middle of the handle and reach forward until the bar is between the fingers.",
+   "commands": [
+    "move up 8",
+    "move left 1",
+    "move forward 20",
+    "move forward 9"
+   ]
+  },
+  {
+   "scene": "Wrist camera: the bar is centred between the fingers.",
+   "plan": "Grasp the second handle.",
+   "commands": [
+    "gripper close"
+   ]
+  },
+  {
+   "scene": "Handle held (opening ~0.2-0.3).",
+   "plan": "Pull along this door's swing around its hinge on the RIGHT side: turn with the door (yaw +22.5), pull back and a little right.",
+   "commands": [
+    "rotate yaw +22.5",
+    "move back 13",
+    "move right 4"
+   ]
+  },
+  {
+   "scene": "Right door about a quarter open.",
+   "plan": "Continue the arc.",
+   "commands": [
+    "rotate yaw +22.5",
+    "move back 11",
+    "move right 9"
+   ]
+  },
+  {
+   "scene": "Right door about half open.",
+   "plan": "Continue the arc: more to the right than back.",
+   "commands": [
+    "rotate yaw +22.5",
+    "move back 6",
+    "move right 12"
+   ]
+  },
+  {
+   "scene": "Right door about three quarters open.",
+   "plan": "Last part of the arc until it is fully open; the task ends as soon as both doors are open.",
+   "commands": [
+    "rotate yaw +22.5",
+    "move back 1",
+    "move right 14"
+   ]
+  }
+ ],
+ "budget": 1050
+}

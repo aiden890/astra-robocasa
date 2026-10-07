@@ -1,0 +1,66 @@
+# Robot / benchmark profile for RoboCasa PandaOmron (the "adaptation" artefact, cf. RoboDawn
+# harness/configs/robotwin2_profile.yaml). Nothing here is task specific. Reach figures were measured
+# with scripts/robocasa-astra/check_executor.py (P1, OpenCabinet layout 1, see context_test_docs/progress.md).
+robot: >-
+  a single 7-DoF Franka Panda arm with a two-finger parallel gripper (opens to about 8 cm), mounted on
+  a wheeled mobile platform in a simulated kitchen. The robot starts facing the fixture the task is about
+  (cabinet, sink, stove, coffee machine, ...), usually standing right against the counter.
+frame: >-
+  ROBOT frame, units are centimetres, and it moves with the robot: forward = the way the robot faces,
+  left = the robot's left, up = up. Positions are reported as (forward, left, height): forward/left are measured
+  from the centre of the robot platform, height is measured from the floor. The height of the work surface
+  (counter top) in front of the robot is given in CURRENT STATE. Kitchen counters are usually ~92 cm high,
+  wall cabinets start ~45 cm above the counter.
+workspace: >-
+  Measured fingertip reach with the platform still: with the fingers pointing down the fingertips reach about
+  forward 20..50 cm and left -55..+65 cm; with the fingers pointing forward (horizontal) they reach up to about
+  forward 90 cm. Heights from about the counter top up to ~150 cm. 'point forward' needs room for the wrist, which
+  sits ~15 cm behind the fingertips: do it with the fingertips at least ~35 cm forward (at the start they are at
+  ~25 cm, so move forward ~10 cm first), otherwise an arm joint reaches its limit. Close to the robot body the fingertips cannot
+  go much below the counter top (the elbow reaches its limit): to reach low, first move forward, away from the
+  body. Things on the far side of a deep counter or high up may require 'point forward'. The platform can drive
+  sideways and backwards; it cannot drive into a counter. Use base commands only when a target is clearly
+  out of reach of the arm.
+cameras: >-
+  Two overview cameras are mounted on the robot and look forward over its left and right shoulders. On both,
+  a thin grey 10 cm grid is drawn ON THE WORK SURFACE (its height is given in CURRENT STATE): F<n> labels give the distance
+  forward, L<n> labels the distance to the left (negative = right). A cyan circle marked 'tip' is the fingertip
+  centre; the dashed cyan line drops from it straight down to its shadow (small dot) on the work surface, so the
+  dot's grid position is the fingertips' forward/left position. A small legend shows the fwd (red), left
+  (green) and up (blue) directions. The wrist camera looks along the fingers: use it to check that the target
+  is centred between the fingers right before closing.
+gripper: >-
+  'fingertip' is the point between the two fingertips; all moves and rotations are about this point.
+  In the start pose and in every 'point' preset the fingers close LEFT-RIGHT (finger axis (0, 1, 0)), so they can
+  straddle a vertical handle from the front or an object from above; 'rotate' changes this.
+  'approach' is the unit vector (forward, left, up) the fingers point along, e.g. (0, 0, -1) = straight down,
+  (1, 0, 0) = straight forward. 'finger axis' is the direction along which the fingers close. 'opening' is
+  0 (closed) .. 1 (open). After 'gripper close' an opening clearly above 0.06 means an object is held; 0.00
+  means the fingers closed on nothing.
+tips:
+- >-
+  Plan with sub-goals: orient the gripper, move above / in front of the target, align using both overview
+  images (grid + tip shadow) and then the wrist camera, approach slowly, grasp, lift or pull, transport at a
+  safe height, place, release, move the gripper away.
+- >-
+  Each command is executed by a controller until it stops. If a command reports 'only part of the way' or
+  'did NOT move', read the stated cause: 'contact' means something blocks the hand or arm (e.g. the wrist under
+  a wall cabinet, a door edge, the counter); 'joint limit' means the posture cannot reach that pose - move
+  away from the body first, change the gripper orientation, or move the base. Do not repeat a blocked command
+  unchanged.
+- >-
+  With the fingers pointing down, the wrist sits ~15 cm above the fingertips: when working under wall cabinets
+  or inside a cabinet, prefer 'point forward' so the hand does not hit the cabinet.
+- >-
+  Use several commands per turn in free space; use one small command (1-3 cm) at a time when within 5 cm
+  of an object, and look at the result before continuing.
+- >-
+  After 'gripper close' check the reported opening and, after lifting, that the object visibly rose with the
+  gripper. If not, open, re-align (often 1-2 cm off) and retry.
+- >-
+  Many success checks require the gripper to be clearly away from the object at the end (often more than
+  25 cm): after releasing, move the gripper away (e.g. up and back) and keep acting until the episode ends.
+- >-
+  If you believe the goal is reached but the episode continues, it is not reached yet: look again at all
+  images, compare with the instruction (all doors fully open? object inside the container? machine started?)
+  and keep going. Never reply 'done' unless the goal is visibly achieved.

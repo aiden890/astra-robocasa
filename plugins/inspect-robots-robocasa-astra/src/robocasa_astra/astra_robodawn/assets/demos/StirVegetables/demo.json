@@ -1,0 +1,572 @@
+{
+ "kind": "task",
+ "task": "StirVegetables",
+ "instruction": "Put the carrot and eggplant in the pot. Retrieve the spatula and lightly stir the vegetables in the pot.",
+ "source": {
+  "dataset": "/data/code/robocasa/datasets/v1.0/pretrain/composite/StirVegetables/20250807/lerobot",
+  "episode": 83,
+  "layout_id": 30,
+  "style_id": 11,
+  "expert_key_events": [
+   {
+    "t": 0,
+    "event": "start",
+    "fingertip_cm": [
+     25.5,
+     -0.3,
+     128.7
+    ],
+    "approach": [
+     0.25,
+     0.06,
+     -0.97
+    ],
+    "finger_axis": [
+     -0.07,
+     1.0,
+     0.04
+    ],
+    "opening_after": 0.51,
+    "base_moved_before_cm": [
+     0.0,
+     0.0
+    ]
+   },
+   {
+    "t": 107,
+    "event": "close",
+    "fingertip_cm": [
+     39.0,
+     59.7,
+     93.4
+    ],
+    "approach": [
+     -0.02,
+     -0.13,
+     -0.99
+    ],
+    "finger_axis": [
+     -0.48,
+     0.87,
+     -0.1
+    ],
+    "opening_after": 0.53,
+    "base_moved_before_cm": [
+     0.0,
+     0.0
+    ]
+   },
+   {
+    "t": 246,
+    "event": "open",
+    "fingertip_cm": [
+     46.4,
+     -17.1,
+     94.6
+    ],
+    "approach": [
+     0.12,
+     0.26,
+     -0.96
+    ],
+    "finger_axis": [
+     -0.3,
+     0.93,
+     0.21
+    ],
+    "opening_after": 0.97,
+    "base_moved_before_cm": [
+     0.0,
+     0.0
+    ]
+   },
+   {
+    "t": 426,
+    "event": "close",
+    "fingertip_cm": [
+     49.6,
+     50.9,
+     94.6
+    ],
+    "approach": [
+     0.29,
+     0.35,
+     -0.89
+    ],
+    "finger_axis": [
+     -0.11,
+     0.94,
+     0.33
+    ],
+    "opening_after": 0.71,
+    "base_moved_before_cm": [
+     0.1,
+     0.1
+    ]
+   },
+   {
+    "t": 569,
+    "event": "open",
+    "fingertip_cm": [
+     39.0,
+     -14.6,
+     100.4
+    ],
+    "approach": [
+     0.3,
+     0.09,
+     -0.95
+    ],
+    "finger_axis": [
+     -0.18,
+     0.98,
+     0.04
+    ],
+    "opening_after": 0.97,
+    "base_moved_before_cm": [
+     0.1,
+     0.1
+    ]
+   },
+   {
+    "t": 742,
+    "event": "close",
+    "fingertip_cm": [
+     36.8,
+     60.9,
+     93.0
+    ],
+    "approach": [
+     -0.08,
+     0.01,
+     -1.0
+    ],
+    "finger_axis": [
+     0.6,
+     0.8,
+     -0.04
+    ],
+    "opening_after": 0.42,
+    "base_moved_before_cm": [
+     0.1,
+     0.1
+    ]
+   },
+   {
+    "t": 1057,
+    "event": "end",
+    "fingertip_cm": [
+     43.3,
+     -14.0,
+     119.4
+    ],
+    "approach": [
+     0.11,
+     0.94,
+     0.31
+    ],
+    "finger_axis": [
+     0.96,
+     -0.18,
+     0.21
+    ],
+    "opening_after": 0.34,
+    "base_moved_before_cm": [
+     0.1,
+     0.3
+    ]
+   }
+  ],
+  "plan_file": "demo_plans/StirVegetables.json",
+  "verified": {
+   "mode": "expert recording",
+   "executor_replay": false
+  }
+ },
+ "note": "A pot sits on a lit burner; two vegetables and a spatula lie on the counter beside the stove. The expert put both vegetables into the pot one at a time (grasp from above, lift, carry, drop in), then grasped the spatula, lifted it, turned the hand so the spatula pointed down into the pot, and moved it back and forth inside the pot so it touched and moved both vegetables for several steps. These commands are an approximate translation of a human recording, not re-executed.",
+ "frames": [
+  {
+   "label": "turn 1 (image: left overview camera at the start of the turn)",
+   "image": "frames/turn01.png",
+   "state": "fingertips (forward 25, left -0, height 129) cm, approach (0.25, 0.06, -0.97), opening 0.51, work surface 92 cm",
+   "scene": "Pot on the stove ahead-right (about forward 46, left -17); vegetables and spatula on the counter to the left (left ~50-60).",
+   "plan": "Move towards the first vegetable on the left.",
+   "commands": [
+    "move back 10",
+    "move left 19",
+    "move down 6"
+   ],
+   "effect": "in the recording the fingertips moved forward -10, left +19, up -6 cm; approach became (0.37, 0.10, -0.92); gripper opening 0.99"
+  },
+  {
+   "label": "turn 2",
+   "image": null,
+   "state": "fingertips (forward 15, left 19, height 122) cm, approach (0.37, 0.10, -0.92), opening 0.99, work surface 92 cm",
+   "scene": "(continuing the previous turn)",
+   "plan": "Continue: move towards the first vegetable on the left.",
+   "commands": [
+    "move left 20",
+    "move left 3",
+    "move down 9"
+   ],
+   "effect": "in the recording the fingertips moved forward +1, left +23, up -9 cm; approach became (0.38, 0.08, -0.92); gripper opening 1.00"
+  },
+  {
+   "label": "turn 3",
+   "image": null,
+   "state": "fingertips (forward 16, left 41, height 114) cm, approach (0.38, 0.08, -0.92), opening 0.99, work surface 92 cm",
+   "scene": "Above the counter, left side.",
+   "plan": "Reach the first vegetable and descend around it.",
+   "commands": [
+    "move forward 20",
+    "move forward 3",
+    "move left 19",
+    "move down 20"
+   ],
+   "effect": "in the recording the fingertips moved forward +23, left +19, up -20 cm; approach became (-0.02, -0.13, -0.99); gripper opening 0.53"
+  },
+  {
+   "label": "turn 4",
+   "image": null,
+   "state": "fingertips (forward 39, left 60, height 93) cm, approach (-0.02, -0.13, -0.99), opening 0.95, work surface 92 cm",
+   "scene": "First vegetable between the fingers.",
+   "plan": "Grasp it.",
+   "commands": [
+    "gripper close"
+   ],
+   "effect": "in the recording the fingertips moved forward +0, left +0, up -0 cm; approach became (-0.14, -0.14, -0.98); gripper opening 0.52"
+  },
+  {
+   "label": "turn 5 (image: left overview camera at the start of the turn)",
+   "image": "frames/turn05.png",
+   "state": "fingertips (forward 39, left 60, height 93) cm, approach (-0.14, -0.14, -0.98), opening 0.62, work surface 92 cm",
+   "scene": "First vegetable held.",
+   "plan": "Lift it and carry it right, towards the pot.",
+   "commands": [
+    "move up 7",
+    "move back 13",
+    "move right 10"
+   ],
+   "effect": "in the recording the fingertips moved forward -13, left -10, up +7 cm; approach became (-0.25, -0.28, -0.93); gripper opening 0.52"
+  },
+  {
+   "label": "turn 6",
+   "image": null,
+   "state": "fingertips (forward 26, left 50, height 100) cm, approach (-0.25, -0.28, -0.93), opening 0.52, work surface 92 cm",
+   "scene": "(continuing the previous turn)",
+   "plan": "Continue: lift it and carry it right, towards the pot.",
+   "commands": [
+    "move up 5",
+    "move back 8",
+    "move right 17"
+   ],
+   "effect": "in the recording the fingertips moved forward -8, left -17, up +5 cm; approach became (-0.27, -0.26, -0.92); gripper opening 0.51"
+  },
+  {
+   "label": "turn 7",
+   "image": null,
+   "state": "fingertips (forward 18, left 33, height 105) cm, approach (-0.27, -0.26, -0.92), opening 0.51, work surface 92 cm",
+   "scene": "(continuing the previous turn)",
+   "plan": "Continue: lift it and carry it right, towards the pot.",
+   "commands": [
+    "move up 9",
+    "move back 6",
+    "move right 20",
+    "move right 16"
+   ],
+   "effect": "in the recording the fingertips moved forward -6, left -36, up +9 cm; approach became (-0.03, -0.14, -0.99); gripper opening 0.51"
+  },
+  {
+   "label": "turn 8",
+   "image": null,
+   "state": "fingertips (forward 13, left -3, height 115) cm, approach (-0.03, -0.14, -0.99), opening 0.51, work surface 92 cm",
+   "scene": "Vegetable near the pot.",
+   "plan": "Move over the pot and lower it inside.",
+   "commands": [
+    "move forward 20",
+    "move forward 14",
+    "move right 15",
+    "move down 20"
+   ],
+   "effect": "in the recording the fingertips moved forward +34, left -15, up -20 cm; approach became (0.12, 0.26, -0.96); gripper opening 0.84"
+  },
+  {
+   "label": "turn 9",
+   "image": null,
+   "state": "fingertips (forward 46, left -17, height 95) cm, approach (0.12, 0.26, -0.96), opening 0.51, work surface 92 cm",
+   "scene": "Vegetable inside the pot.",
+   "plan": "Release it.",
+   "commands": [
+    "gripper open"
+   ],
+   "effect": "in the recording the fingertips moved forward -1, left +0, up +0 cm; approach became (0.11, 0.26, -0.96); gripper opening 0.98"
+  },
+  {
+   "label": "turn 10 (image: left overview camera at the start of the turn)",
+   "image": "frames/turn10.png",
+   "state": "fingertips (forward 46, left -17, height 95) cm, approach (0.11, 0.26, -0.96), opening 0.74, work surface 92 cm",
+   "scene": "First vegetable in the pot.",
+   "plan": "Go back to the counter for the second vegetable.",
+   "commands": [
+    "move up 16",
+    "move back 20",
+    "move back 4",
+    "move left 17"
+   ],
+   "effect": "in the recording the fingertips moved forward -24, left +17, up +16 cm; approach became (0.24, 0.15, -0.96); gripper opening 0.99"
+  },
+  {
+   "label": "turn 11",
+   "image": null,
+   "state": "fingertips (forward 22, left 0, height 111) cm, approach (0.24, 0.15, -0.96), opening 0.99, work surface 92 cm",
+   "scene": "(continuing the previous turn)",
+   "plan": "Continue: go back to the counter for the second vegetable.",
+   "commands": [
+    "move forward 9",
+    "move left 20",
+    "move left 16",
+    "move down 2"
+   ],
+   "effect": "in the recording the fingertips moved forward +9, left +36, up -2 cm; approach became (0.37, 0.30, -0.88); gripper opening 1.00"
+  },
+  {
+   "label": "turn 12",
+   "image": null,
+   "state": "fingertips (forward 31, left 37, height 109) cm, approach (0.37, 0.30, -0.88), opening 1.00, work surface 92 cm",
+   "scene": "Above the second vegetable.",
+   "plan": "Descend around it.",
+   "commands": [
+    "move forward 18",
+    "move left 14",
+    "move down 14"
+   ],
+   "effect": "in the recording the fingertips moved forward +18, left +14, up -14 cm; approach became (0.29, 0.35, -0.89); gripper opening 0.71"
+  },
+  {
+   "label": "turn 13",
+   "image": null,
+   "state": "fingertips (forward 50, left 51, height 95) cm, approach (0.29, 0.35, -0.89), opening 1.00, work surface 92 cm",
+   "scene": "Second vegetable between the fingers.",
+   "plan": "Grasp it.",
+   "commands": [
+    "gripper close"
+   ],
+   "effect": "in the recording the fingertips moved forward -0, left +0, up +0 cm; approach became (0.24, 0.34, -0.91); gripper opening 0.71"
+  },
+  {
+   "label": "turn 14",
+   "image": null,
+   "state": "fingertips (forward 49, left 51, height 95) cm, approach (0.24, 0.34, -0.91), opening 0.71, work surface 92 cm",
+   "scene": "Second vegetable held.",
+   "plan": "Carry it to the pot.",
+   "commands": [
+    "move up 13",
+    "move back 18",
+    "move right 20",
+    "move right 10"
+   ],
+   "effect": "in the recording the fingertips moved forward -18, left -30, up +13 cm; approach became (0.30, 0.10, -0.95); gripper opening 0.71"
+  },
+  {
+   "label": "turn 15",
+   "image": null,
+   "state": "fingertips (forward 31, left 21, height 108) cm, approach (0.30, 0.10, -0.95), opening 0.71, work surface 92 cm",
+   "scene": "(continuing the previous turn)",
+   "plan": "Continue: carry it to the pot.",
+   "commands": [
+    "move back 4",
+    "move right 20",
+    "move right 17"
+   ],
+   "effect": "in the recording the fingertips moved forward -4, left -37, up +1 cm; approach became (0.21, -0.16, -0.96); gripper opening 0.70"
+  },
+  {
+   "label": "turn 16 (image: left overview camera at the start of the turn)",
+   "image": "frames/turn16.png",
+   "state": "fingertips (forward 28, left -16, height 109) cm, approach (0.21, -0.16, -0.96), opening 0.70, work surface 92 cm",
+   "scene": "Vegetable above the pot.",
+   "plan": "Lower it into the pot.",
+   "commands": [
+    "move forward 11",
+    "move down 8"
+   ],
+   "effect": "in the recording the fingertips moved forward +11, left +1, up -8 cm; approach became (0.30, 0.09, -0.95); gripper opening 0.86"
+  },
+  {
+   "label": "turn 17",
+   "image": null,
+   "state": "fingertips (forward 39, left -15, height 100) cm, approach (0.30, 0.09, -0.95), opening 0.70, work surface 92 cm",
+   "scene": "Second vegetable in the pot.",
+   "plan": "Release it.",
+   "commands": [
+    "gripper open"
+   ],
+   "effect": "in the recording the fingertips moved forward +1, left -0, up -2 cm; approach became (0.25, 0.11, -0.96); gripper opening 0.98"
+  },
+  {
+   "label": "turn 18 (image: left overview camera at the start of the turn)",
+   "image": "frames/turn18.png",
+   "state": "fingertips (forward 40, left -15, height 98) cm, approach (0.25, 0.11, -0.96), opening 0.79, work surface 92 cm",
+   "scene": "Both vegetables in the pot.",
+   "plan": "Go to the spatula on the counter and descend around its handle.",
+   "commands": [
+    "point down",
+    "move up 12",
+    "move back 15",
+    "move left 9"
+   ],
+   "effect": "in the recording the fingertips moved forward -15, left +9, up +12 cm; approach became (0.03, 0.15, -0.99); gripper opening 0.99"
+  },
+  {
+   "label": "turn 19",
+   "image": null,
+   "state": "fingertips (forward 25, left -6, height 110) cm, approach (0.03, 0.15, -0.99), opening 0.99, work surface 92 cm",
+   "scene": "(continuing the previous turn)",
+   "plan": "Continue: go to the spatula on the counter and descend around its handle.",
+   "commands": [
+    "move back 5",
+    "move left 20",
+    "move left 5",
+    "move down 2"
+   ],
+   "effect": "in the recording the fingertips moved forward -5, left +25, up -2 cm; approach became (-0.04, 0.16, -0.99); gripper opening 1.00"
+  },
+  {
+   "label": "turn 20",
+   "image": null,
+   "state": "fingertips (forward 20, left 19, height 108) cm, approach (-0.04, 0.16, -0.99), opening 1.00, work surface 92 cm",
+   "scene": "(continuing the previous turn)",
+   "plan": "Continue: go to the spatula on the counter and descend around its handle.",
+   "commands": [
+    "move forward 7",
+    "move left 20",
+    "move left 5",
+    "move down 5"
+   ],
+   "effect": "in the recording the fingertips moved forward +7, left +25, up -5 cm; approach became (-0.02, 0.23, -0.97); gripper opening 1.00"
+  },
+  {
+   "label": "turn 21",
+   "image": null,
+   "state": "fingertips (forward 27, left 44, height 103) cm, approach (-0.02, 0.23, -0.97), opening 1.00, work surface 92 cm",
+   "scene": "(continuing the previous turn)",
+   "plan": "Continue: continue: go to the spatula on the counter and descend around its handle.",
+   "commands": [
+    "move forward 10",
+    "move left 17",
+    "move down 10"
+   ],
+   "effect": "in the recording the fingertips moved forward +10, left +17, up -10 cm; approach became (-0.08, 0.01, -1.00); gripper opening 0.45"
+  },
+  {
+   "label": "turn 22",
+   "image": null,
+   "state": "fingertips (forward 37, left 61, height 93) cm, approach (-0.08, 0.01, -1.00), opening 0.86, work surface 92 cm",
+   "scene": "Spatula handle between the fingers.",
+   "plan": "Grasp the spatula.",
+   "commands": [
+    "gripper close"
+   ],
+   "effect": "in the recording the fingertips moved forward -0, left +0, up -0 cm; approach became (-0.03, 0.02, -1.00); gripper opening 0.36"
+  },
+  {
+   "label": "turn 23",
+   "image": null,
+   "state": "fingertips (forward 37, left 61, height 93) cm, approach (-0.03, 0.02, -1.00), opening 0.52, work surface 92 cm",
+   "scene": "Spatula held (opening ~0.28).",
+   "plan": "Lift it and carry it towards the pot, rolling the hand so the spatula hangs down into the pot.",
+   "commands": [
+    "rotate roll +60",
+    "move up 9",
+    "move back 17",
+    "move right 18"
+   ],
+   "effect": "in the recording the fingertips moved forward -17, left -18, up +9 cm; approach became (-0.00, -0.09, -1.00); gripper opening 0.28"
+  },
+  {
+   "label": "turn 24",
+   "image": null,
+   "state": "fingertips (forward 20, left 43, height 102) cm, approach (-0.00, -0.09, -1.00), opening 0.29, work surface 92 cm",
+   "scene": "(continuing the previous turn)",
+   "plan": "Continue: lift it and carry it towards the pot, rolling the hand so the spatula hangs down into the pot.",
+   "commands": [
+    "move up 15",
+    "move back 12",
+    "move right 16"
+   ],
+   "effect": "in the recording the fingertips moved forward -12, left -16, up +15 cm; approach became (0.01, 0.23, -0.97); gripper opening 0.28"
+  },
+  {
+   "label": "turn 25",
+   "image": null,
+   "state": "fingertips (forward 8, left 27, height 117) cm, approach (0.01, 0.23, -0.97), opening 0.28, work surface 92 cm",
+   "scene": "(continuing the previous turn)",
+   "plan": "Continue: lift it and carry it towards the pot, rolling the hand so the spatula hangs down into the pot.",
+   "commands": [
+    "move up 15",
+    "move back 2",
+    "move right 20"
+   ],
+   "effect": "in the recording the fingertips moved forward -2, left -20, up +15 cm; approach became (0.07, 0.95, -0.32); gripper opening 0.28"
+  },
+  {
+   "label": "turn 26",
+   "image": null,
+   "state": "fingertips (forward 6, left 7, height 133) cm, approach (0.07, 0.95, -0.32), opening 0.28, work surface 92 cm",
+   "scene": "(continuing the previous turn)",
+   "plan": "Continue: continue: lift it and carry it towards the pot, rolling the hand so the spatula hangs down into the pot.",
+   "commands": [
+    "move up 4",
+    "move forward 8",
+    "move right 20",
+    "move right 1"
+   ],
+   "effect": "in the recording the fingertips moved forward +8, left -21, up +4 cm; approach became (0.32, 0.93, 0.17); gripper opening 0.29"
+  },
+  {
+   "label": "turn 27",
+   "image": null,
+   "state": "fingertips (forward 15, left -14, height 137) cm, approach (0.32, 0.93, 0.17), opening 0.28, work surface 92 cm",
+   "scene": "Spatula above the pot.",
+   "plan": "Lower the spatula into the pot among the vegetables.",
+   "commands": [
+    "rotate yaw +50",
+    "move forward 17",
+    "move right 4",
+    "move down 11"
+   ],
+   "effect": "in the recording the fingertips moved forward +17, left -4, up -11 cm; approach became (-0.35, 0.91, 0.24); gripper opening 0.28"
+  },
+  {
+   "label": "turn 28",
+   "image": null,
+   "state": "fingertips (forward 32, left -18, height 126) cm, approach (-0.35, 0.91, 0.24), opening 0.28, work surface 92 cm",
+   "scene": "Spatula blade among the vegetables in the pot.",
+   "plan": "Stir: push the vegetables with small moves while keeping the blade in the pot.",
+   "commands": [
+    "move forward 12",
+    "move right 6",
+    "move down 10"
+   ],
+   "effect": "in the recording the fingertips moved forward +12, left -6, up -10 cm; approach became (-0.02, 0.99, 0.12); gripper opening 0.36"
+  },
+  {
+   "label": "turn 29",
+   "image": null,
+   "state": "fingertips (forward 44, left -24, height 115) cm, approach (-0.02, 0.99, 0.12), opening 0.38, work surface 92 cm",
+   "scene": "Stirring.",
+   "plan": "Keep stirring with small side-to-side moves until the task completes.",
+   "commands": [
+    "move up 4",
+    "move left 10"
+   ],
+   "effect": "in the recording the fingertips moved forward -1, left +10, up +4 cm; approach became (0.11, 0.94, 0.31); gripper opening 0.34"
+  },
+  {
+   "label": "final state of the recording (image)",
+   "image": "frames/final.png",
+   "state": "fingertips (forward 43, left -14, height 119) cm, approach (0.11, 0.94, 0.31), opening 0.34, work surface 92 cm",
+   "effect": "the recorded episode ended with the task checker reporting success"
+  }
+ ]
+}

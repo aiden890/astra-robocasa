@@ -1,0 +1,101 @@
+{
+ "kind": "primer",
+ "task": "primer",
+ "instruction": "(none: this primer only shows what each command does)",
+ "source": {
+  "task": "PickPlaceCounterToSink",
+  "layout": 11,
+  "style": 11,
+  "seed": 771101,
+  "instruction_of_scene": "Pick the chicken drumstick from the counter and place it in the sink.",
+  "built_by": "robocasa_astra.astra_robodawn.demo_builder primer",
+  "note": "executed with the real executor; not an evaluation scene (evaluation uses layout/style 1)"
+ },
+ "note": "Each step shows the image BEFORE the commands, then their measured effect.",
+ "frames": [
+  {
+   "label": "primer step 1 (image: left overview camera before the step)",
+   "image": "frames/step1.png",
+   "state": "fingertips (forward 25, left -0, height 130) cm, approach (0.28, 0.06, -0.96), opening 0.51, work surface 92 cm",
+   "plan": "move: translate the fingertips; the cyan tip circle and its shadow dot move over the grid",
+   "commands": [
+    "move up 10",
+    "move forward 10"
+   ],
+   "effect": "move up 10: ok (reached); fingertips moved forward +0, left -0, up +9 cm | move forward 10: ok (reached); fingertips moved forward +9, left +0, up -0 cm"
+  },
+  {
+   "label": "primer step 2 (image: left overview camera before the step)",
+   "image": "frames/step2.png",
+   "state": "fingertips (forward 34, left -0, height 139) cm, approach (0.28, 0.06, -0.96), opening 0.99, work surface 92 cm",
+   "plan": "move left: positive left is the robot's left; the L labels of the grid increase to the left",
+   "commands": [
+    "move left 15"
+   ],
+   "effect": "move left 15: ok (reached); fingertips moved forward -0, left +14, up -0 cm"
+  },
+  {
+   "label": "primer step 3 (image: left overview camera before the step)",
+   "image": "frames/step3.png",
+   "state": "fingertips (forward 34, left 14, height 139) cm, approach (0.29, 0.06, -0.96), opening 1.00, work surface 92 cm",
+   "plan": "rotate yaw: turns the gripper about the vertical axis through the fingertips (the finger axis turns, the fingertip position stays)",
+   "commands": [
+    "rotate yaw 30"
+   ],
+   "effect": "rotate yaw +30: ok (reached); fingertips moved forward +0, left -0, up +0 cm"
+  },
+  {
+   "label": "primer step 4 (image: left overview camera before the step)",
+   "image": "frames/step4.png",
+   "state": "fingertips (forward 34, left 14, height 139) cm, approach (0.23, 0.19, -0.96), opening 1.00, work surface 92 cm",
+   "plan": "point forward: the fingers turn to point straight forward (approach becomes (1, 0, 0)); the fingertip position stays",
+   "commands": [
+    "point forward"
+   ],
+   "effect": "point forward: ok (reached); fingertips moved forward -0, left -0, up -1 cm"
+  },
+  {
+   "label": "primer step 5 (image: left overview camera before the step)",
+   "image": "frames/step5.png",
+   "state": "fingertips (forward 34, left 14, height 138) cm, approach (1.00, 0.00, -0.08), opening 1.00, work surface 92 cm",
+   "plan": "point down then move down: approach becomes (0, 0, -1); descend towards the counter",
+   "commands": [
+    "point down",
+    "move down 15"
+   ],
+   "effect": "point down: ok (reached); fingertips moved forward +0, left -0, up +0 cm | move down 15: ok (reached); fingertips moved forward -0, left -0, up -14 cm"
+  },
+  {
+   "label": "primer step 6 (image: left overview camera before the step)",
+   "image": "frames/step6.png",
+   "state": "fingertips (forward 34, left 13, height 125) cm, approach (0.07, 0.00, -1.00), opening 1.00, work surface 92 cm",
+   "plan": "gripper close on nothing: the opening drops to 0.00, meaning nothing is held; then open again",
+   "commands": [
+    "gripper close",
+    "gripper open"
+   ],
+   "effect": "gripper close: ok (fingers closed fully: nothing between them) | gripper open: ok (gripper opened to 0.98)"
+  },
+  {
+   "label": "primer step 7 (image: left overview camera before the step)",
+   "image": "frames/step7.png",
+   "state": "fingertips (forward 34, left 13, height 125) cm, approach (0.07, 0.00, -1.00), opening 0.98, work surface 92 cm",
+   "plan": "base: the whole platform drives; fingertip coordinates are robot-relative so they barely change, but the scene shifts in the images",
+   "commands": [
+    "base right 20"
+   ],
+   "effect": "base right 20: ok (reached); platform moved forward +0, left -18 cm"
+  },
+  {
+   "label": "primer step 8 (image: left overview camera before the step)",
+   "image": "frames/step8.png",
+   "state": "fingertips (forward 34, left 13, height 125) cm, approach (0.06, 0.01, -1.00), opening 0.99, work surface 92 cm",
+   "plan": "a blocked command: the fingertips cannot go through the counter, so the second move stops part of the way and the result says why",
+   "commands": [
+    "move down 20",
+    "move down 20"
+   ],
+   "effect": "move down 20: ok (reached); fingertips moved forward -0, left -0, up -19 cm | move down 20: FAILED (only part of the way: fingertips moved forward +0.2, left +0.1, up -15.4 cm and turned 6 deg; remaining error 4.6 cm / 6 deg; cause: probably contact with an object or fixture)"
+  }
+ ]
+}

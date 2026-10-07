@@ -1,0 +1,77 @@
+{
+ "task": "PickPlaceSinkToCounter",
+ "episode": 32,
+ "budget": 900,
+ "source_note": "Expert episode 32 (layout 40 / style 17, onion -> plate). Expert grasped at fingertips (47, 5, 74) with fingers down and released at (26, 46, 94). The plan below follows these key events; verified with the executor: success after 347 steps.",
+ "note": "The object lies in the sink basin, below the counter; the plate (container) is on the counter beside the sink. Grasp from above around the object's middle height, lift clear of the counter, transport in short steps, lower until just above the plate, release, then move the gripper more than 25 cm away. A first attempt that grasped 3 cm above the middle dropped the object during a fast 20 cm sideways move.",
+ "turns": [
+  {
+   "scene": "An onion lies in the sink basin straight ahead (about forward 44, left -1); the sink bottom is ~20 cm below the counter top. The plate is on the counter to the left (about forward 30, left 48).",
+   "plan": "Point the fingers down and move out over the object.",
+   "commands": [
+    "point down",
+    "move forward 19"
+   ]
+  },
+  {
+   "scene": "Fingertips above the object, high above the sink.",
+   "plan": "Descend into the sink until the fingertips are at the object's middle height (grasp around its centre, not its top).",
+   "commands": [
+    "move down 20",
+    "move down 20",
+    "move down 16"
+   ]
+  },
+  {
+   "scene": "Wrist camera: the object is centred between the open fingers.",
+   "plan": "Grasp.",
+   "commands": [
+    "gripper close"
+   ]
+  },
+  {
+   "scene": "Object held (opening stopped at 0.86).",
+   "plan": "Lift it well above the counter top before moving sideways.",
+   "commands": [
+    "move up 20",
+    "move up 15"
+   ]
+  },
+  {
+   "scene": "Object lifted to about height 108.",
+   "plan": "Carry it towards the plate in 10 cm steps so it does not slip: a little back and to the left.",
+   "commands": [
+    "move back 7",
+    "move left 10",
+    "move left 10",
+    "move left 10"
+   ]
+  },
+  {
+   "scene": "Object halfway to the plate.",
+   "plan": "Finish the transport until the object is above the plate centre.",
+   "commands": [
+    "move back 6",
+    "move left 10",
+    "move left 8"
+   ]
+  },
+  {
+   "scene": "Object above the plate.",
+   "plan": "Lower it until it is just above the plate, then release.",
+   "commands": [
+    "move down 12",
+    "gripper open"
+   ]
+  },
+  {
+   "scene": "Object resting on the plate, gripper open.",
+   "plan": "Move the gripper well away (the check requires more than 25 cm between gripper and object): up and back.",
+   "commands": [
+    "move up 20",
+    "move up 10",
+    "move back 15"
+   ]
+  }
+ ]
+}

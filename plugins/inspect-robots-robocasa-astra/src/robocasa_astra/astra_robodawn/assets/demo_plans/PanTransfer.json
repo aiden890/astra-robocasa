@@ -1,0 +1,109 @@
+{
+ "task": "PanTransfer",
+ "episode": 24,
+ "mode": "expert",
+ "source_note": "Expert episode 24 (layout 9 / style 9; target split, not the evaluation kitchen layout 1). Pan lifting and tilting were not re-executed with the executor; this is the expert recording with translated commands.",
+ "note": "A pan with vegetables sits on the stove; a plate is on the counter to the side. The expert grasped the pan HANDLE from above (fingers down), lifted the pan, carried it over the plate, ROLLED the hand (~70 deg) to tip the vegetables onto the plate, rolled back, put the pan back on a burner, released and moved away. The robot must never touch the food itself. These commands are an approximate translation of a human recording, not re-executed.",
+ "turns": [
+  {
+   "t_start": 0,
+   "t_end": 45,
+   "scene": "Pan on the stove ahead with its handle towards the robot, about forward 48 at height ~97; plate on the counter to the right.",
+   "plan": "Move out over the pan handle with the fingers down.",
+   "image": true,
+   "pre": [
+    "point down"
+   ]
+  },
+  {
+   "t_start": 45,
+   "t_end": 72,
+   "scene": "Fingertips above the handle.",
+   "plan": "Descend onto the handle.",
+   "image": false,
+   "pre": []
+  },
+  {
+   "t_start": 72,
+   "t_end": 85,
+   "scene": "Handle between the fingers.",
+   "plan": "Grasp the handle.",
+   "commands": [
+    "gripper close"
+   ],
+   "image": false
+  },
+  {
+   "t_start": 85,
+   "t_end": 119,
+   "scene": "Pan held (opening ~0.23).",
+   "plan": "Lift the pan clear of the stove and carry it towards the plate (right, closer to the robot).",
+   "image": true,
+   "pre": []
+  },
+  {
+   "t_start": 119,
+   "t_end": 169,
+   "scene": "Pan between stove and plate.",
+   "plan": "Continue right until the pan is over the plate and start tilting.",
+   "image": false,
+   "pre": [
+    "rotate roll -30"
+   ]
+  },
+  {
+   "t_start": 169,
+   "t_end": 195,
+   "scene": "Pan over the plate, slightly tilted.",
+   "plan": "Tilt further so the vegetables slide onto the plate.",
+   "image": true,
+   "pre": [
+    "rotate roll -40"
+   ]
+  },
+  {
+   "t_start": 195,
+   "t_end": 261,
+   "scene": "Vegetables on the plate.",
+   "plan": "Tilt the pan back level and lift it.",
+   "image": false,
+   "pre": [
+    "rotate roll +45"
+   ]
+  },
+  {
+   "t_start": 261,
+   "t_end": 285,
+   "scene": "Empty pan level, between plate and stove.",
+   "plan": "Carry the pan back over the stove.",
+   "image": true,
+   "pre": []
+  },
+  {
+   "t_start": 285,
+   "t_end": 313,
+   "scene": "Pan above a burner.",
+   "plan": "Set the pan down on the burner.",
+   "image": false,
+   "pre": []
+  },
+  {
+   "t_start": 313,
+   "t_end": 320,
+   "scene": "Pan on the burner.",
+   "plan": "Release the handle.",
+   "commands": [
+    "gripper open"
+   ],
+   "image": false
+  },
+  {
+   "t_start": 320,
+   "t_end": 363,
+   "scene": "Pan released.",
+   "plan": "Move the gripper up and away from the pan.",
+   "image": false,
+   "pre": []
+  }
+ ]
+}

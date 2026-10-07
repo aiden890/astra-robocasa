@@ -1,0 +1,121 @@
+{
+ "task": "PrepareCoffee",
+ "episode": 36,
+ "mode": "expert",
+ "source_note": "Expert episode 36 (layout 16 / style 60). The executor could not reproduce the mug-handle grasp and release reliably (the handle is a C-shaped loop; a finger ends up inside the loop), so this demonstration is the expert recording itself with commands written as an approximate translation.",
+ "note": "The mug stands in an open wall cabinet; the coffee machine sits on the counter below it. The expert grasped the mug by its HANDLE with the fingers forward (opening ~0.2), pulled it out, lowered it in front of the machine, slid it under the dispenser, released and backed off, then pressed the start button on the machine's front with the fingertips and moved away. Success needs: mug under the dispenser, gripper >25 cm from the mug, machine started, gripper >15 cm from the button. These commands are an approximate translation of a human recording, not re-executed.",
+ "turns": [
+  {
+   "t_start": 0,
+   "t_end": 36,
+   "scene": "Mug inside the open wall cabinet ahead, at about height 152; coffee machine on the counter below.",
+   "plan": "Raise the hand and tilt the fingers forward.",
+   "image": true,
+   "pre": [
+    "point down45"
+   ]
+  },
+  {
+   "t_start": 36,
+   "t_end": 60,
+   "scene": "Fingers half-forward, near the body at height ~142.",
+   "plan": "Turn the fingers fully forward and rise to the mug's height.",
+   "image": false,
+   "pre": [
+    "point forward"
+   ]
+  },
+  {
+   "t_start": 60,
+   "t_end": 128,
+   "scene": "Fingers forward at height ~153, in front of the cabinet.",
+   "plan": "Reach into the cabinet so the mug's handle sits between the fingers.",
+   "image": true,
+   "pre": []
+  },
+  {
+   "t_start": 128,
+   "t_end": 140,
+   "scene": "Handle between the fingers.",
+   "plan": "Grasp the handle.",
+   "commands": [
+    "gripper close"
+   ],
+   "image": false
+  },
+  {
+   "t_start": 140,
+   "t_end": 217,
+   "scene": "Mug held by its handle (opening ~0.17).",
+   "plan": "Pull the mug straight out of the cabinet and slightly down.",
+   "image": true,
+   "pre": [
+    "rotate yaw -20"
+   ]
+  },
+  {
+   "t_start": 217,
+   "t_end": 305,
+   "scene": "Mug out of the cabinet, close to the robot.",
+   "plan": "Lower the mug towards the machine's height, turning the hand.",
+   "image": false,
+   "pre": [
+    "rotate yaw -25"
+   ]
+  },
+  {
+   "t_start": 305,
+   "t_end": 430,
+   "scene": "Mug held low in front of the coffee machine.",
+   "plan": "Slide the mug forward under the dispenser and set it down.",
+   "image": true,
+   "pre": []
+  },
+  {
+   "t_start": 430,
+   "t_end": 440,
+   "scene": "Mug under the dispenser.",
+   "plan": "Release the handle.",
+   "commands": [
+    "gripper open"
+   ],
+   "image": false
+  },
+  {
+   "t_start": 440,
+   "t_end": 493,
+   "scene": "Mug placed, gripper open around the handle.",
+   "plan": "Back the fingers out of the handle gently.",
+   "image": false,
+   "pre": []
+  },
+  {
+   "t_start": 493,
+   "t_end": 629,
+   "scene": "Gripper free of the mug.",
+   "plan": "Rise to the height of the start button and turn the fingers forward again.",
+   "image": true,
+   "pre": [
+    "rotate yaw +25"
+   ]
+  },
+  {
+   "t_start": 629,
+   "t_end": 751,
+   "scene": "Fingertips in front of the machine's start button.",
+   "plan": "Push the button with the fingertips.",
+   "image": false,
+   "pre": [
+    "rotate yaw +15"
+   ]
+  },
+  {
+   "t_start": 751,
+   "t_end": 784,
+   "scene": "Button pressed: the machine is on.",
+   "plan": "Move away from the button and the mug.",
+   "image": false,
+   "pre": []
+  }
+ ]
+}

@@ -1,0 +1,315 @@
+{
+ "kind": "task",
+ "task": "PanTransfer",
+ "instruction": "Pick up the pan and dump the vegetables in it onto the plate. Then return the pan to the stove.",
+ "source": {
+  "dataset": "/data/code/robocasa/datasets/v1.0/target/composite/PanTransfer/20250817/lerobot",
+  "episode": 24,
+  "layout_id": 9,
+  "style_id": 9,
+  "expert_key_events": [
+   {
+    "t": 0,
+    "event": "start",
+    "fingertip_cm": [
+     25.3,
+     0.7,
+     128.4
+    ],
+    "approach": [
+     0.21,
+     0.0,
+     -0.98
+    ],
+    "finger_axis": [
+     -0.12,
+     0.99,
+     -0.02
+    ],
+    "opening_after": 0.51,
+    "base_moved_before_cm": [
+     0.0,
+     0.0
+    ]
+   },
+   {
+    "t": 72,
+    "event": "close",
+    "fingertip_cm": [
+     47.7,
+     2.9,
+     96.7
+    ],
+    "approach": [
+     -0.11,
+     0.16,
+     -0.98
+    ],
+    "finger_axis": [
+     -0.14,
+     0.98,
+     0.17
+    ],
+    "opening_after": 0.23,
+    "base_moved_before_cm": [
+     0.0,
+     -0.0
+    ]
+   },
+   {
+    "t": 313,
+    "event": "open",
+    "fingertip_cm": [
+     60.3,
+     -14.7,
+     96.2
+    ],
+    "approach": [
+     -0.11,
+     -0.08,
+     -0.99
+    ],
+    "finger_axis": [
+     -0.92,
+     0.38,
+     0.07
+    ],
+    "opening_after": 0.97,
+    "base_moved_before_cm": [
+     0.0,
+     -0.0
+    ]
+   },
+   {
+    "t": 363,
+    "event": "end",
+    "fingertip_cm": [
+     27.2,
+     -12.6,
+     129.4
+    ],
+    "approach": [
+     0.68,
+     -0.04,
+     -0.73
+    ],
+    "finger_axis": [
+     -0.67,
+     0.37,
+     -0.64
+    ],
+    "opening_after": 0.99,
+    "base_moved_before_cm": [
+     -0.0,
+     -0.0
+    ]
+   }
+  ],
+  "plan_file": "demo_plans/PanTransfer.json",
+  "verified": {
+   "mode": "expert recording",
+   "executor_replay": false
+  }
+ },
+ "note": "A pan with vegetables sits on the stove; a plate is on the counter to the side. The expert grasped the pan HANDLE from above (fingers down), lifted the pan, carried it over the plate, ROLLED the hand (~70 deg) to tip the vegetables onto the plate, rolled back, put the pan back on a burner, released and moved away. The robot must never touch the food itself. These commands are an approximate translation of a human recording, not re-executed.",
+ "frames": [
+  {
+   "label": "turn 1 (image: left overview camera at the start of the turn)",
+   "image": "frames/turn01.png",
+   "state": "fingertips (forward 25, left 1, height 128) cm, approach (0.21, 0.00, -0.98), opening 0.51, work surface 95 cm",
+   "scene": "Pan on the stove ahead with its handle towards the robot, about forward 48 at height ~97; plate on the counter to the right.",
+   "plan": "Move out over the pan handle with the fingers down.",
+   "commands": [
+    "point down",
+    "move forward 8",
+    "move down 18"
+   ],
+   "effect": "in the recording the fingertips moved forward +8, left +1, up -18 cm; approach became (0.11, -0.01, -0.99); gripper opening 0.99"
+  },
+  {
+   "label": "turn 2",
+   "image": null,
+   "state": "fingertips (forward 33, left 2, height 111) cm, approach (0.11, -0.01, -0.99), opening 0.98, work surface 95 cm",
+   "scene": "(continuing the previous turn)",
+   "plan": "Continue: move out over the pan handle with the fingers down.",
+   "commands": [
+    "move forward 14",
+    "move left 2",
+    "move down 15"
+   ],
+   "effect": "in the recording the fingertips moved forward +14, left +2, up -15 cm; approach became (-0.25, 0.01, -0.97); gripper opening 0.99"
+  },
+  {
+   "label": "turn 3",
+   "image": null,
+   "state": "fingertips (forward 47, left 4, height 96) cm, approach (-0.25, 0.01, -0.97), opening 0.99, work surface 95 cm",
+   "scene": "Fingertips above the handle.",
+   "plan": "Descend onto the handle.",
+   "commands": [],
+   "effect": "in the recording the fingertips moved forward +1, left -1, up +1 cm; approach became (-0.11, 0.16, -0.98); gripper opening 0.23"
+  },
+  {
+   "label": "turn 4",
+   "image": null,
+   "state": "fingertips (forward 48, left 3, height 97) cm, approach (-0.11, 0.16, -0.98), opening 0.99, work surface 95 cm",
+   "scene": "Handle between the fingers.",
+   "plan": "Grasp the handle.",
+   "commands": [
+    "gripper close"
+   ],
+   "effect": "in the recording the fingertips moved forward +0, left -0, up +0 cm; approach became (-0.08, 0.15, -0.99); gripper opening 0.23"
+  },
+  {
+   "label": "turn 5 (image: left overview camera at the start of the turn)",
+   "image": "frames/turn05.png",
+   "state": "fingertips (forward 48, left 2, height 97) cm, approach (-0.08, 0.15, -0.99), opening 0.23, work surface 95 cm",
+   "scene": "Pan held (opening ~0.23).",
+   "plan": "Lift the pan clear of the stove and carry it towards the plate (right, closer to the robot).",
+   "commands": [
+    "move up 11",
+    "move back 14",
+    "move right 12"
+   ],
+   "effect": "in the recording the fingertips moved forward -14, left -12, up +11 cm; approach became (-0.08, 0.14, -0.99); gripper opening 0.23"
+  },
+  {
+   "label": "turn 6",
+   "image": null,
+   "state": "fingertips (forward 34, left -10, height 108) cm, approach (-0.08, 0.14, -0.99), opening 0.23, work surface 95 cm",
+   "scene": "(continuing the previous turn)",
+   "plan": "Continue: lift the pan clear of the stove and carry it towards the plate (right, closer to the robot).",
+   "commands": [
+    "move up 4",
+    "move back 15",
+    "move right 18"
+   ],
+   "effect": "in the recording the fingertips moved forward -15, left -18, up +4 cm; approach became (0.03, 0.09, -1.00); gripper opening 0.23"
+  },
+  {
+   "label": "turn 7",
+   "image": null,
+   "state": "fingertips (forward 19, left -28, height 113) cm, approach (0.03, 0.09, -1.00), opening 0.23, work surface 95 cm",
+   "scene": "Pan between stove and plate.",
+   "plan": "Continue right until the pan is over the plate and start tilting.",
+   "commands": [
+    "rotate roll -30",
+    "move back 2",
+    "move right 20",
+    "move down 3"
+   ],
+   "effect": "in the recording the fingertips moved forward -2, left -20, up -3 cm; approach became (-0.06, -0.03, -1.00); gripper opening 0.23"
+  },
+  {
+   "label": "turn 8",
+   "image": null,
+   "state": "fingertips (forward 17, left -48, height 110) cm, approach (-0.06, -0.03, -1.00), opening 0.23, work surface 95 cm",
+   "scene": "(continuing the previous turn)",
+   "plan": "Continue: continue right until the pan is over the plate and start tilting.",
+   "commands": [
+    "move back 3",
+    "move right 17"
+   ],
+   "effect": "in the recording the fingertips moved forward -3, left -17, up -1 cm; approach became (0.04, -0.51, -0.86); gripper opening 0.23"
+  },
+  {
+   "label": "turn 9 (image: left overview camera at the start of the turn)",
+   "image": "frames/turn09.png",
+   "state": "fingertips (forward 14, left -65, height 109) cm, approach (0.04, -0.51, -0.86), opening 0.23, work surface 95 cm",
+   "scene": "Pan over the plate, slightly tilted.",
+   "plan": "Tilt further so the vegetables slide onto the plate.",
+   "commands": [
+    "rotate roll -40",
+    "move back 2",
+    "move right 6",
+    "move down 2"
+   ],
+   "effect": "in the recording the fingertips moved forward -2, left -6, up -2 cm; approach became (0.26, -0.94, -0.21); gripper opening 0.23"
+  },
+  {
+   "label": "turn 10",
+   "image": null,
+   "state": "fingertips (forward 11, left -71, height 108) cm, approach (0.26, -0.94, -0.21), opening 0.23, work surface 95 cm",
+   "scene": "Vegetables on the plate.",
+   "plan": "Tilt the pan back level and lift it.",
+   "commands": [
+    "rotate roll +45",
+    "move up 12",
+    "move forward 7",
+    "move left 4"
+   ],
+   "effect": "in the recording the fingertips moved forward +7, left +4, up +12 cm; approach became (0.35, -0.88, -0.33); gripper opening 0.23"
+  },
+  {
+   "label": "turn 11",
+   "image": null,
+   "state": "fingertips (forward 18, left -67, height 119) cm, approach (0.35, -0.88, -0.33), opening 0.23, work surface 95 cm",
+   "scene": "(continuing the previous turn)",
+   "plan": "Continue: tilt the pan back level and lift it.",
+   "commands": [
+    "move up 7",
+    "move forward 2",
+    "move left 17"
+   ],
+   "effect": "in the recording the fingertips moved forward +2, left +17, up +7 cm; approach became (0.00, -0.33, -0.95); gripper opening 0.23"
+  },
+  {
+   "label": "turn 12 (image: left overview camera at the start of the turn)",
+   "image": "frames/turn12.png",
+   "state": "fingertips (forward 20, left -49, height 126) cm, approach (0.00, -0.33, -0.95), opening 0.23, work surface 95 cm",
+   "scene": "Empty pan level, between plate and stove.",
+   "plan": "Carry the pan back over the stove.",
+   "commands": [
+    "move forward 18",
+    "move left 20",
+    "move left 8",
+    "move down 13"
+   ],
+   "effect": "in the recording the fingertips moved forward +18, left +28, up -13 cm; approach became (-0.14, -0.00, -0.99); gripper opening 0.23"
+  },
+  {
+   "label": "turn 13",
+   "image": null,
+   "state": "fingertips (forward 38, left -22, height 113) cm, approach (-0.14, -0.00, -0.99), opening 0.23, work surface 95 cm",
+   "scene": "Pan above a burner.",
+   "plan": "Set the pan down on the burner.",
+   "commands": [
+    "move forward 20",
+    "move forward 2",
+    "move left 7",
+    "move down 17"
+   ],
+   "effect": "in the recording the fingertips moved forward +22, left +7, up -17 cm; approach became (-0.11, -0.08, -0.99); gripper opening 0.83"
+  },
+  {
+   "label": "turn 14",
+   "image": null,
+   "state": "fingertips (forward 60, left -15, height 96) cm, approach (-0.11, -0.08, -0.99), opening 0.32, work surface 95 cm",
+   "scene": "Pan on the burner.",
+   "plan": "Release the handle.",
+   "commands": [
+    "gripper open"
+   ],
+   "effect": "in the recording the fingertips moved forward +1, left +1, up +0 cm; approach became (-0.12, -0.06, -0.99); gripper opening 0.97"
+  },
+  {
+   "label": "turn 15",
+   "image": null,
+   "state": "fingertips (forward 61, left -14, height 96) cm, approach (-0.12, -0.06, -0.99), opening 0.54, work surface 95 cm",
+   "scene": "Pan released.",
+   "plan": "Move the gripper up and away from the pan.",
+   "commands": [
+    "move up 20",
+    "move up 13",
+    "move back 20",
+    "move back 14"
+   ],
+   "effect": "in the recording the fingertips moved forward -34, left +1, up +33 cm; approach became (0.68, -0.04, -0.73); gripper opening 0.99"
+  },
+  {
+   "label": "final state of the recording (image)",
+   "image": "frames/final.png",
+   "state": "fingertips (forward 27, left -13, height 129) cm, approach (0.68, -0.04, -0.73), opening 0.99, work surface 95 cm",
+   "effect": "the recorded episode ended with the task checker reporting success"
+  }
+ ]
+}

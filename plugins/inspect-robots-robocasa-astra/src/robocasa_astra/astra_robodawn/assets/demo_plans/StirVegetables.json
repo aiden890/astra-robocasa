@@ -1,0 +1,169 @@
+{
+ "task": "StirVegetables",
+ "episode": 83,
+ "mode": "expert",
+ "source_note": "Expert episode 83 (layout 30 / style 11). Spatula grasping and stirring were not re-executed with the executor; this is the expert recording with translated commands.",
+ "note": "A pot sits on a lit burner; two vegetables and a spatula lie on the counter beside the stove. The expert put both vegetables into the pot one at a time (grasp from above, lift, carry, drop in), then grasped the spatula, lifted it, turned the hand so the spatula pointed down into the pot, and moved it back and forth inside the pot so it touched and moved both vegetables for several steps. These commands are an approximate translation of a human recording, not re-executed.",
+ "turns": [
+  {
+   "t_start": 0,
+   "t_end": 49,
+   "scene": "Pot on the stove ahead-right (about forward 46, left -17); vegetables and spatula on the counter to the left (left ~50-60).",
+   "plan": "Move towards the first vegetable on the left.",
+   "image": true,
+   "pre": []
+  },
+  {
+   "t_start": 49,
+   "t_end": 107,
+   "scene": "Above the counter, left side.",
+   "plan": "Reach the first vegetable and descend around it.",
+   "image": false,
+   "pre": []
+  },
+  {
+   "t_start": 107,
+   "t_end": 115,
+   "scene": "First vegetable between the fingers.",
+   "plan": "Grasp it.",
+   "commands": [
+    "gripper close"
+   ],
+   "image": false
+  },
+  {
+   "t_start": 115,
+   "t_end": 181,
+   "scene": "First vegetable held.",
+   "plan": "Lift it and carry it right, towards the pot.",
+   "image": true,
+   "pre": []
+  },
+  {
+   "t_start": 181,
+   "t_end": 246,
+   "scene": "Vegetable near the pot.",
+   "plan": "Move over the pot and lower it inside.",
+   "image": false,
+   "pre": []
+  },
+  {
+   "t_start": 246,
+   "t_end": 255,
+   "scene": "Vegetable inside the pot.",
+   "plan": "Release it.",
+   "commands": [
+    "gripper open"
+   ],
+   "image": false
+  },
+  {
+   "t_start": 255,
+   "t_end": 353,
+   "scene": "First vegetable in the pot.",
+   "plan": "Go back to the counter for the second vegetable.",
+   "image": true,
+   "pre": []
+  },
+  {
+   "t_start": 353,
+   "t_end": 426,
+   "scene": "Above the second vegetable.",
+   "plan": "Descend around it.",
+   "image": false,
+   "pre": []
+  },
+  {
+   "t_start": 426,
+   "t_end": 435,
+   "scene": "Second vegetable between the fingers.",
+   "plan": "Grasp it.",
+   "commands": [
+    "gripper close"
+   ],
+   "image": false
+  },
+  {
+   "t_start": 435,
+   "t_end": 514,
+   "scene": "Second vegetable held.",
+   "plan": "Carry it to the pot.",
+   "image": false,
+   "pre": []
+  },
+  {
+   "t_start": 514,
+   "t_end": 569,
+   "scene": "Vegetable above the pot.",
+   "plan": "Lower it into the pot.",
+   "image": true,
+   "pre": []
+  },
+  {
+   "t_start": 569,
+   "t_end": 578,
+   "scene": "Second vegetable in the pot.",
+   "plan": "Release it.",
+   "commands": [
+    "gripper open"
+   ],
+   "image": false
+  },
+  {
+   "t_start": 578,
+   "t_end": 742,
+   "scene": "Both vegetables in the pot.",
+   "plan": "Go to the spatula on the counter and descend around its handle.",
+   "image": true,
+   "pre": [
+    "point down"
+   ]
+  },
+  {
+   "t_start": 742,
+   "t_end": 750,
+   "scene": "Spatula handle between the fingers.",
+   "plan": "Grasp the spatula.",
+   "commands": [
+    "gripper close"
+   ],
+   "image": false
+  },
+  {
+   "t_start": 750,
+   "t_end": 865,
+   "scene": "Spatula held (opening ~0.28).",
+   "plan": "Lift it and carry it towards the pot, rolling the hand so the spatula hangs down into the pot.",
+   "image": true,
+   "pre": [
+    "rotate roll +60"
+   ]
+  },
+  {
+   "t_start": 865,
+   "t_end": 926,
+   "scene": "Spatula above the pot.",
+   "plan": "Lower the spatula into the pot among the vegetables.",
+   "image": false,
+   "pre": [
+    "rotate yaw +50"
+   ]
+  },
+  {
+   "t_start": 926,
+   "t_end": 1029,
+   "scene": "Spatula blade among the vegetables in the pot.",
+   "plan": "Stir: push the vegetables with small moves while keeping the blade in the pot.",
+   "image": true,
+   "pre": []
+  },
+  {
+   "t_start": 1029,
+   "t_end": 1057,
+   "scene": "Stirring.",
+   "plan": "Keep stirring with small side-to-side moves until the task completes.",
+   "image": false,
+   "pre": []
+  }
+ ]
+}

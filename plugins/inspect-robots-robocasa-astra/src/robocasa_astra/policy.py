@@ -12,11 +12,22 @@ from PIL import Image
 from inspect_robots.policy import PolicyConfig, PolicyInfo
 from inspect_robots.types import Action, ActionChunk
 
+# Fixed by the experiment protocol; deliberately not configurable.
+REASONING_EFFORT = "low"
+
 
 class CodexPolicy:
     """Attach images to official codex exec; persist every prompt, output and timing."""
 
-    def __init__(self, embodiment, output, executable, codex_home, model="gpt-6-astra", noop=False):
+    def __init__(
+        self,
+        embodiment,
+        output,
+        executable,
+        codex_home,
+        model="gpt-6-astra",
+        noop=False,
+    ):
         self.info = PolicyInfo(
             name="codex-" + model, action_space=embodiment.info.action_space, checkpoint=model
         )
@@ -103,6 +114,7 @@ class CodexPolicy:
             command = [
                 self.executable,
                 "exec",
+                "--strict-config",
                 "--skip-git-repo-check",
                 "--ephemeral",
                 "-s",
@@ -110,7 +122,7 @@ class CodexPolicy:
                 "-m",
                 self.model,
                 "-c",
-                'model_reasoning_effort="low"',
+                f'model_reasoning_effort="{REASONING_EFFORT}"',
                 "-c",
                 "project_doc_max_bytes=0",
                 "-c",
@@ -181,6 +193,7 @@ class CodexPolicy:
             json.dumps(
                 {
                     "model": self.model,
+                    "effort": REASONING_EFFORT,
                     "subscription_auth": not self.noop,
                     "seconds": seconds,
                     "response": value,

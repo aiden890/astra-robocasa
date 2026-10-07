@@ -1,0 +1,224 @@
+{
+ "kind": "task",
+ "task": "PickPlaceSinkToCounter",
+ "instruction": "Pick the onion from the sink and place it on the plate located on the counter.",
+ "source": {
+  "dataset": "/data/code/robocasa/datasets/v1.0/pretrain/atomic/PickPlaceSinkToCounter/20250819/lerobot",
+  "episode": 32,
+  "layout_id": 40,
+  "style_id": 17,
+  "expert_key_events": [
+   {
+    "t": 0,
+    "event": "start",
+    "fingertip_cm": [
+     25.2,
+     -1.1,
+     128.4
+    ],
+    "approach": [
+     0.24,
+     0.06,
+     -0.97
+    ],
+    "finger_axis": [
+     -0.05,
+     1.0,
+     0.05
+    ],
+    "opening_after": 0.51,
+    "base_moved_before_cm": [
+     0.0,
+     0.0
+    ]
+   },
+   {
+    "t": 115,
+    "event": "close",
+    "fingertip_cm": [
+     47.2,
+     5.3,
+     73.7
+    ],
+    "approach": [
+     -0.01,
+     -0.02,
+     -1.0
+    ],
+    "finger_axis": [
+     -0.12,
+     0.99,
+     -0.02
+    ],
+    "opening_after": 0.9,
+    "base_moved_before_cm": [
+     -0.0,
+     0.0
+    ]
+   },
+   {
+    "t": 195,
+    "event": "open",
+    "fingertip_cm": [
+     25.9,
+     46.0,
+     93.7
+    ],
+    "approach": [
+     0.18,
+     0.19,
+     -0.97
+    ],
+    "finger_axis": [
+     -0.08,
+     0.98,
+     0.18
+    ],
+    "opening_after": 0.98,
+    "base_moved_before_cm": [
+     -0.1,
+     -0.1
+    ]
+   },
+   {
+    "t": 239,
+    "event": "end",
+    "fingertip_cm": [
+     13.0,
+     21.5,
+     130.2
+    ],
+    "approach": [
+     0.44,
+     0.45,
+     -0.78
+    ],
+    "finger_axis": [
+     -0.05,
+     0.88,
+     0.47
+    ],
+    "opening_after": 1.0,
+    "base_moved_before_cm": [
+     -0.1,
+     -0.3
+    ]
+   }
+  ],
+  "plan_file": "demo_plans/PickPlaceSinkToCounter.json",
+  "verified": {
+   "success": true,
+   "steps": 347,
+   "turns": 9
+  }
+ },
+ "note": "The object lies in the sink basin, below the counter; the plate (container) is on the counter beside the sink. Grasp from above around the object's middle height, lift clear of the counter, transport in short steps, lower until just above the plate, release, then move the gripper more than 25 cm away. A first attempt that grasped 3 cm above the middle dropped the object during a fast 20 cm sideways move.",
+ "frames": [
+  {
+   "label": "turn 1 (image: left overview camera before the turn)",
+   "image": "frames/turn01.png",
+   "state": "fingertips (forward 25, left -1, height 129) cm, approach (0.25, 0.04, -0.97), opening 0.51, work surface 92 cm",
+   "scene": "An onion lies in the sink basin straight ahead (about forward 44, left -1); the sink bottom is ~20 cm below the counter top. The plate is on the counter to the left (about forward 30, left 48).",
+   "plan": "Point the fingers down and move out over the object.",
+   "commands": [
+    "point down",
+    "move forward 19"
+   ],
+   "effect": "point down: ok (reached); fingertips moved forward -0, left +0, up -1 cm | move forward 19: ok (reached); fingertips moved forward +18, left -0, up -0 cm"
+  },
+  {
+   "label": "turn 2",
+   "image": null,
+   "state": "fingertips (forward 43, left -1, height 128) cm, approach (0.08, 0.00, -1.00), opening 0.99, work surface 92 cm",
+   "scene": "Fingertips above the object, high above the sink.",
+   "plan": "Descend into the sink until the fingertips are at the object's middle height (grasp around its centre, not its top).",
+   "commands": [
+    "move down 20",
+    "move down 20",
+    "move down 16"
+   ],
+   "effect": "move down 20: ok (reached); fingertips moved forward -0, left +0, up -19 cm | move down 20: ok (reached); fingertips moved forward -0, left +0, up -19 cm | move down 16: ok (reached); fingertips moved forward -0, left +0, up -15 cm"
+  },
+  {
+   "label": "turn 3 (image: left overview camera before the turn)",
+   "image": "frames/turn03.png",
+   "state": "fingertips (forward 43, left -1, height 74) cm, approach (0.09, 0.00, -1.00), opening 1.00, work surface 92 cm",
+   "scene": "Wrist camera: the object is centred between the open fingers.",
+   "plan": "Grasp.",
+   "commands": [
+    "gripper close"
+   ],
+   "effect": "gripper close: ok (fingers stopped at opening 0.86: something stops them - an object between the fingers (grasped) or a finger pressing on a surface; check the wrist camera)"
+  },
+  {
+   "label": "turn 4",
+   "image": null,
+   "state": "fingertips (forward 43, left -1, height 74) cm, approach (0.10, 0.00, -1.00), opening 0.86, work surface 92 cm",
+   "scene": "Object held (opening stopped at 0.86).",
+   "plan": "Lift it well above the counter top before moving sideways.",
+   "commands": [
+    "move up 20",
+    "move up 15"
+   ],
+   "effect": "move up 20: ok (reached); fingertips moved forward -0, left -0, up +19 cm | move up 15: ok (reached); fingertips moved forward -0, left -0, up +14 cm"
+  },
+  {
+   "label": "turn 5",
+   "image": null,
+   "state": "fingertips (forward 42, left -1, height 108) cm, approach (0.10, 0.00, -0.99), opening 0.86, work surface 92 cm",
+   "scene": "Object lifted to about height 108.",
+   "plan": "Carry it towards the plate in 10 cm steps so it does not slip: a little back and to the left.",
+   "commands": [
+    "move back 7",
+    "move left 10",
+    "move left 10",
+    "move left 10"
+   ],
+   "effect": "move back 7: ok (reached); fingertips moved forward -6, left +0, up +0 cm | move left 10: ok (reached); fingertips moved forward -0, left +9, up -0 cm | move left 10: ok (reached); fingertips moved forward -0, left +9, up -0 cm | move left 10: ok (reached); fingertips moved forward -0, left +9, up -0 cm"
+  },
+  {
+   "label": "turn 6",
+   "image": null,
+   "state": "fingertips (forward 36, left 26, height 108) cm, approach (0.10, 0.00, -0.99), opening 0.85, work surface 92 cm",
+   "scene": "Object halfway to the plate.",
+   "plan": "Finish the transport until the object is above the plate centre.",
+   "commands": [
+    "move back 6",
+    "move left 10",
+    "move left 8"
+   ],
+   "effect": "move back 6: ok (reached); fingertips moved forward -5, left +0, up +0 cm | move left 10: ok (reached); fingertips moved forward +0, left +9, up +0 cm | move left 8: ok (reached); fingertips moved forward -0, left +7, up -0 cm"
+  },
+  {
+   "label": "turn 7 (image: left overview camera before the turn)",
+   "image": "frames/turn07.png",
+   "state": "fingertips (forward 31, left 43, height 108) cm, approach (0.09, -0.00, -1.00), opening 0.85, work surface 92 cm",
+   "scene": "Object above the plate.",
+   "plan": "Lower it until it is just above the plate, then release.",
+   "commands": [
+    "move down 12",
+    "gripper open"
+   ],
+   "effect": "move down 12: ok (reached); fingertips moved forward -0, left -0, up -12 cm | gripper open: ok (gripper opened to 0.86)"
+  },
+  {
+   "label": "turn 8",
+   "image": null,
+   "state": "fingertips (forward 31, left 43, height 96) cm, approach (0.11, 0.01, -0.99), opening 0.86, work surface 92 cm",
+   "scene": "Object resting on the plate, gripper open.",
+   "plan": "Move the gripper well away (the check requires more than 25 cm between gripper and object): up and back.",
+   "commands": [
+    "move up 20",
+    "move up 10",
+    "move back 15"
+   ],
+   "effect": "move up 20: ok (reached); fingertips moved forward -0, left -0, up +19 cm | move up 10: FAILED (only part of the way: fingertips moved forward -0.0, left -0.1, up +5.0 cm and turned 0 deg; remaining error 5.0 cm / 0 deg; cause: probably contact with an object or fixture; stopped early: task success) | move back 15: FAILED (not executed: task success)"
+  },
+  {
+   "label": "final state (image)",
+   "image": "frames/final.png",
+   "state": "fingertips (forward 31, left 42, height 120) cm, approach (0.11, 0.01, -0.99), opening 0.99, work surface 92 cm",
+   "effect": "task checker: SUCCESS"
+  }
+ ]
+}
