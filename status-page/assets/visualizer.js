@@ -1,7 +1,7 @@
 "use strict";
 const el = id => document.getElementById(id);
 const conditions = {rgb:"RGB only",color:"RGB + depth image",pixel:"RGB + pixel Z",grid:"RGB + 16×16 grid Z"};
-let records = [], outputIndex = {}, selected = null, calls = [], generation = 0, limit = 20, inputIndex = {}, inputKey = "", previousStep = -1, seenQueries = new Set();
+let records = [], outputIndex = {}, selected = null, calls = [], generation = 0, limit = 20, inputIndex = {}, inputKey = "", previousStep = -1, seenQueries = new Set(), queryImageKey = "";
 const token = x => Number.isInteger(x) ? x.toLocaleString() : "미확인";
 const clock = x => Number.isFinite(x) ? Math.floor(x/60)+":"+String(Math.floor(x%60)).padStart(2,"0") : "0:00";
 const status = r => r.user_assessment === "failed" || r.status === "user-stopped" ? "실패" : r.task_success === true || r.success === true ? "성공" : r.task_success === false || r.success === false ? "미성공" : ({complete:"완료",error:"오류",running:"진행 중"}[r.status] || r.status || "미확인");
@@ -56,7 +56,7 @@ async function selectVideo(row) {
   const savedTime=continuing?el("video").currentTime:0,savedPaused=continuing?el("video").paused:false,savedCall=continuing?el("call").value:"auto";
   if(row.live_clip&&row.visualization_data){try{const response=await fetch(new URL("playback.json",sameOriginPath(row.visualization_data)),{cache:"no-store"});if(response.ok){const playback=await response.json();row={...row,video:playback.video,video_start_step:0,cumulative_live:true,cumulative_version:playback.version,available_end_step:playback.end_step}}}catch(e){}}
   if(current!==generation)return;
-  selected=row;calls=[];previousStep=Math.floor(savedTime*(row.control_hz||20));if(!continuing)seenQueries=new Set();
+  selected=row;calls=[];queryImageKey="";el("query-images").replaceChildren();previousStep=Math.floor(savedTime*(row.control_hz||20));if(!continuing)seenQueries=new Set();
   el("depth-video").pause();
   el("depth-player").hidden=row.condition!=='color';
   el('pixel-query-panel').hidden=!['pixel','grid'].includes(row.condition);
@@ -149,11 +149,32 @@ function renderQuerySummary(row){
   el('query-rows').replaceChildren();
   el('query-position').textContent=row?row.call+' · 관측 스텝 '+row.step+' · 이 조회 결과는 다음 조회까지 유지됩니다.':'';
   el('query-empty').textContent=row?'원본 조회 요청과 환경 답변입니다. 빨간 좌표는 아래 모델 입력 이미지에서 확인할 수 있습니다.':'이 재생 위치까지 픽셀 조회 기록이 없습니다.';
-  for(const q of row?.response.queries||[]){
+  for(const [index,q] of (row?.response.queries||[]).entries()){
     const answer=(row.query_answers||[]).find(a=>a.camera===q.camera&&a.observation_id===q.observation_id&&a.pixel_uv?.[0]===q.u&&a.pixel_uv?.[1]===q.v);
     const tr=document.createElement('tr');
-    for(const value of [q.camera,'('+q.u+', '+q.v+')',Number.isFinite(answer?.pixel_depth_m)?(answer.pixel_depth_m*100).toFixed(2)+' cm ('+answer.pixel_depth_m.toFixed(4)+' m)':answer?.error||'답변 미확인']){const td=document.createElement('td');td.textContent=value;tr.append(td);}
+    for(const value of [(index+1)+'. '+q.camera,'('+q.u+', '+q.v+')',Number.isFinite(answer?.pixel_depth_m)?(answer.pixel_depth_m*100).toFixed(2)+' cm ('+answer.pixel_depth_m.toFixed(4)+' m)':answer?.error||'답변 미확인']){const td=document.createElement('td');td.textContent=value;tr.append(td);}
     el('query-rows').append(tr);
+  }
+  renderQueryImages(row);
+}
+function renderQueryImages(row){
+  const key=selected.id+':'+(row?.call||'none');if(queryImageKey===key)return;queryImageKey=key;
+  el('query-images').replaceChildren();if(!row)return;
+  const requests=row.response.queries||[],images=inputIndex[row.call]||row.input_images||[];
+  for(const item of images.filter(item=>item.kind!=='depth'&&requests.some(q=>q.camera===item.camera.split(' (')[0]&&(!item.observation_id||q.observation_id===item.observation_id)))){
+    const figure=document.createElement('figure'),caption=document.createElement('figcaption'),canvas=document.createElement('canvas'),img=new Image();
+    caption.textContent=item.camera+' · 조회 당시 스텝 '+row.step+' · 번호는 위 표와 동일';figure.append(caption,canvas);el('query-images').append(figure);
+    img.onload=()=>{
+      canvas.width=img.naturalWidth;canvas.height=img.naturalHeight;const ctx=canvas.getContext('2d');ctx.drawImage(img,0,0);ctx.font='bold 12px sans-serif';
+      requests.forEach((q,index)=>{if(q.camera!==item.camera.split(' (')[0]||(item.observation_id&&q.observation_id!==item.observation_id)||q.u==null)return;
+        const a=(row.query_answers||[]).find(a=>a.camera===q.camera&&a.observation_id===q.observation_id&&a.pixel_uv?.[0]===q.u&&a.pixel_uv?.[1]===q.v);
+        const color=['#ff5466','#51e4ff','#ffe066','#a78bfa'][index%4];ctx.strokeStyle=color;ctx.fillStyle=color;ctx.lineWidth=2;ctx.beginPath();ctx.arc(q.u,q.v,Math.max(5,q.radius||0),0,2*Math.PI);ctx.stroke();
+        ctx.beginPath();ctx.moveTo(q.u-8,q.v);ctx.lineTo(q.u+8,q.v);ctx.moveTo(q.u,q.v-8);ctx.lineTo(q.u,q.v+8);ctx.stroke();
+        const text=(index+1)+': '+(Number.isFinite(a?.pixel_depth_m)?(a.pixel_depth_m*100).toFixed(2)+' cm':'Z ?');
+        const width=ctx.measureText(text).width+8,x=Math.max(0,Math.min(q.u+10,canvas.width-width)),y=Math.max(15,Math.min(q.v-10-index%2*16,canvas.height-3));
+        ctx.fillStyle='rgba(0,0,0,0.85)';ctx.fillRect(x,y-13,width,17);ctx.fillStyle=color;ctx.fillText(text,x+4,y);
+      });
+    };img.src=sameOriginPath(item.url);
   }
 }
 function syncDepth(){

@@ -23,3 +23,4 @@ article{min-height:0;overflow-y:auto;overscroll-behavior:contain}
 }
 
 #pixel-query-panel{margin:16px 0;padding:18px;background:var(--surface);border:1px solid var(--accent);border-radius:10px}.query-table{width:100%;border-collapse:collapse;font-size:14px}.query-table th,.query-table td{text-align:left;padding:8px;border-bottom:1px solid var(--line)}
+#query-images{margin-top:12px;grid-template-columns:repeat(auto-fit,minmax(220px,360px));justify-content:start}
