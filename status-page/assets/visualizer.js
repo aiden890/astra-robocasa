@@ -6,7 +6,11 @@ const token = x => Number.isInteger(x) ? x.toLocaleString() : "미확인";
 const clock = x => Number.isFinite(x) ? Math.floor(x/60)+":"+String(Math.floor(x%60)).padStart(2,"0") : "0:00";
 const status = r => r.user_assessment === "failed" || r.status === "user-stopped" ? "실패" : r.task_success === true || r.success === true ? "성공" : r.task_success === false || r.success === false ? "미성공" : ({complete:"완료",error:"오류",running:"진행 중"}[r.status] || r.status || "미확인");
 const model = r => r.model || "모델 미기록";
-const condition = r => conditions[r.condition] || r.type || "조건 미기록";
+const condition = r => {
+  const label=conditions[r.condition] || r.type || "조건 미기록";
+  const history=r.collection?.startsWith("history-five-task-")&&r.id.match(/-h([0-5])$/);
+  return history?label+" · 과거 "+history[1]+"초":label;
+};
 function sameOriginPath(path) {
   if (!path) return null;
   const url = new URL(path, location.origin+"/");
