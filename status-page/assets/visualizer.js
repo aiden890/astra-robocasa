@@ -113,6 +113,7 @@ function showOutput() {
   el("query-box").open=true;
   renderInputs(row,requests);
   el("source-note").textContent=selected.cumulative_live?"처음부터 누적된 실제 20fps 영상입니다. 인코더에 저장된 스텝 "+selected.available_end_step+"까지 재생할 수 있으며, 저장 중인 최신 프레임은 다음 갱신에 추가됩니다. 새 영상이 추가돼도 재생 위치를 유지합니다.":selected.live_clip?"현재 행동의 실제 프레임으로 만든 최신 20fps 영상입니다. 완료 후 전체 영상으로 바뀝니다.":selected.timeline_note||"원본 response.json · receipt.json · native 관측 스텝 기준";
+  if(selected.video_capture_gap)el("source-note").textContent="재개 시 행동별 영상 연결에 누락 구간이 있어 검증된 스텝 "+selected.video_capture_gap.last_verified_step+"까지 재생합니다. 모델 조회·답변 기록은 계속 갱신됩니다. 완료 후 전체 녹화 영상으로 교체합니다.";
   el("seek-call").disabled=!manual;
 }
 function syncDepth(){
@@ -136,7 +137,8 @@ function renderInputs(row,requests) {
     const figure=document.createElement("figure"),label=document.createElement("figcaption"),canvas=document.createElement("canvas"),img=new Image();
     label.textContent=item.camera+" · "+(item.kind==="depth"?"Depth 입력":"RGB 입력");figure.append(label,canvas);el("input-images").append(figure);
     img.onload=()=>{canvas.width=img.naturalWidth;canvas.height=img.naturalHeight;const ctx=canvas.getContext("2d");ctx.drawImage(img,0,0);ctx.strokeStyle="#ff384f";ctx.fillStyle="#ff384f";ctx.lineWidth=2;
-      requests.filter(q=>q.camera===item.camera).forEach(q=>{if(q.kind==="pixel"||q.u!=null){ctx.beginPath();ctx.arc(q.u,q.v,Math.max(4,q.radius||0),0,Math.PI*2);ctx.stroke();ctx.fillText("("+q.u+","+q.v+")",Math.min(q.u+6,canvas.width-65),Math.max(12,q.v-6))}});
+      const camera=item.camera.split(" (")[0];
+      requests.filter(q=>q.camera===camera&&(!item.observation_id||q.observation_id===item.observation_id)).forEach(q=>{if(q.kind==="pixel"||q.u!=null){ctx.beginPath();ctx.arc(q.u,q.v,Math.max(4,q.radius||0),0,Math.PI*2);ctx.stroke();ctx.fillText("("+q.u+","+q.v+")",Math.min(q.u+6,canvas.width-65),Math.max(12,q.v-6))}});
     };img.src=sameOriginPath(item.url);
   }
 }

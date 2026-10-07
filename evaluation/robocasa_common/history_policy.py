@@ -83,8 +83,11 @@ class HistoryPolicy(PairedLivePolicy):
             segments = self.output.parent / "live-segments"
             segments.mkdir(exist_ok=True)
             segment = segments / f"{metadata['start_step']:07d}.mp4"
-            if not segment.exists():
+            marker = segment.with_suffix(".json")
+            previous = json.loads(marker.read_text()) if marker.exists() else {}
+            if previous.get("version") != metadata["version"]:
                 shutil.copy2(self.output.parent / "live.mp4", segment)
+                atomic_json(marker, metadata)
         folder = self.snapshots / f"step-{step:07d}"
         folder.mkdir(exist_ok=True)
         files, scales = [], {}

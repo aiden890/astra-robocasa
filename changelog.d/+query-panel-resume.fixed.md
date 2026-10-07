@@ -1,0 +1,1 @@
+Keep historical trial query records accessible when action clips have a capture gap, and mark pixel query coordinates only on the matching camera and observation. Replace resumed clips sharing a start step when a fuller recording becomes available.

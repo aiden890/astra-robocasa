@@ -139,11 +139,13 @@ def publish(root, job, result, active):
         )
         writer.send(None)
         last = 0
+        gap = None
         try:
             writer.send(initial)
             for segment in segments:
                 if int(segment.stem) != last:
-                    raise ValueError("Cumulative segments have a gap or duplicate action")
+                    gap = {"last_verified_step": last, "next_segment_step": int(segment.stem)}
+                    break  # Publish the verified prefix and keep query evidence accessible.
                 reader = imageio_ffmpeg.read_frames(str(segment))
                 metadata = next(reader)
                 if metadata["fps"] != 20:
@@ -165,6 +167,7 @@ def publish(root, job, result, active):
                 "end_step": last,
                 "frames": last + 1,
                 "fps": 20,
+                "capture_gap": gap,
             },
         )
     normal = valid_evaluation(result)
@@ -243,6 +246,9 @@ def publish(root, job, result, active):
         "video_start_step": 0,
         "live_version": version,
         "description": f"과거 {job['history_seconds']}초 관측 · {job['condition']}",
+        "video_capture_gap": json.loads((dest / "playback.json").read_text()).get("capture_gap")
+        if (dest / "playback.json").exists()
+        else None,
     }
 
 
