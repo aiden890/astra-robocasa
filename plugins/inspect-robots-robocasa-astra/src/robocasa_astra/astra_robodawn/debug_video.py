@@ -23,7 +23,7 @@ from PIL import Image, ImageDraw, ImageFont
 FPS = 20
 WIDTH = 1280
 TOP_HEIGHT = 426  # three 256 px cameras scaled to the full width
-PANEL_HEIGHT = 474
+PANEL_HEIGHT = 478  # 426 + 478 = 904, divisible by the encoder macro block (8)
 CAPTION_HEIGHT = 22  # caption bar of video.mp4 (recorder.CAPTION_HEIGHT)
 FONT_DIR = Path("/usr/share/fonts/truetype/dejavu")
 
@@ -271,31 +271,40 @@ class Renderer:
                                              quality=7, macro_block_size=8, output_params=["-pix_fmt", "yuv420p"])
         writer.send(None)
         clock = {"reason": 0.0, "motion": 0.0, "think_elapsed": 0.0}
+        frame_buf = np.zeros((TOP_HEIGHT + PANEL_HEIGHT, WIDTH, 3), np.uint8)
+
+        def send(top: Image.Image | None, panel_img: Image.Image | None) -> None:
+            if top is not None:
+                frame_buf[:TOP_HEIGHT] = np.asarray(top)
+            if panel_img is not None:
+                frame_buf[TOP_HEIGHT:] = np.asarray(panel_img)
+            writer.send(frame_buf)
+
         last = None
         step = 0
         for turn in self.turns:
             if realtime and turn.model_s > 0:
+                # The picture is frozen while the model reasons: redraw the panel once per second only.
                 panel = self._base_panel(turn, "think")
-                still = self._model_inputs(turn) or (self._camera(last) if last is not None else None)
+                still = self._model_inputs(turn) or (self._camera(last) if last is not None else Image.new("RGB", (WIDTH, TOP_HEIGHT), BG))
                 n = max(int(round(turn.model_s * FPS)), 1)
+                frame_buf[:TOP_HEIGHT] = np.asarray(still)
                 for i in range(n):
-                    clock["think_elapsed"] = (i + 1) / FPS
-                    canvas = Image.new("RGB", (WIDTH, TOP_HEIGHT + PANEL_HEIGHT), BG)
-                    if still is not None:
-                        canvas.paste(still, (0, 0))
-                    canvas.paste(self._dynamic(panel, turn, "think", step, {**clock, "reason": clock["reason"] + clock["think_elapsed"]}, None),
-                                 (0, TOP_HEIGHT))
-                    writer.send(np.ascontiguousarray(np.asarray(canvas)))
+                    if i % FPS == 0 or i == n - 1:
+                        clock["think_elapsed"] = (i + 1) / FPS
+                        dyn = self._dynamic(panel, turn, "think", step,
+                                            {**clock, "reason": clock["reason"] + clock["think_elapsed"]}, None)
+                        frame_buf[TOP_HEIGHT:] = np.asarray(dyn)
+                    writer.send(frame_buf)
             clock["reason"] += turn.model_s
             panel = self._base_panel(turn, "act")
             if turn.steps == 0:
-                canvas = Image.new("RGB", (WIDTH, TOP_HEIGHT + PANEL_HEIGHT), BG)
-                if last is not None:
-                    canvas.paste(self._camera(last), (0, 0))
-                canvas.paste(self._dynamic(panel, turn, "act", step, clock, None), (0, TOP_HEIGHT))
+                top = self._camera(last) if last is not None else Image.new("RGB", (WIDTH, TOP_HEIGHT), BG)
+                dyn = self._dynamic(panel, turn, "act", step, clock, None)
                 for _ in range(FPS // 2):  # hold half a second so zero-step turns stay visible
-                    writer.send(np.ascontiguousarray(np.asarray(canvas)))
+                    send(top, dyn)
                 continue
+            dyn, dyn_key = None, None
             for _ in range(turn.steps):
                 frame = next(source, None)
                 if frame is None:
@@ -303,10 +312,13 @@ class Renderer:
                 last = frame
                 step += 1
                 clock["motion"] += 1.0 / FPS
-                canvas = Image.new("RGB", (WIDTH, TOP_HEIGHT + PANEL_HEIGHT), BG)
-                canvas.paste(self._camera(frame), (0, 0))
-                canvas.paste(self._dynamic(panel, turn, "act", step, clock, self._command_at(turn, step)), (0, TOP_HEIGHT))
-                writer.send(np.ascontiguousarray(np.asarray(canvas)))
+                current = self._command_at(turn, step)
+                key = (current, (step - turn.first_step) // 5)  # refresh the panel every 0.25 s or on a new command
+                if key != dyn_key:
+                    dyn, dyn_key = self._dynamic(panel, turn, "act", step, clock, current), key
+                    frame_buf[TOP_HEIGHT:] = np.asarray(dyn)
+                frame_buf[:TOP_HEIGHT] = np.asarray(self._camera(frame))
+                writer.send(frame_buf)
         writer.close()
         reader.close()
         return out
@@ -319,11 +331,20 @@ def main() -> None:
     parser.add_argument("run_dir")
     parser.add_argument("--only", choices=["sim", "realtime"])
     args = parser.parse_args()
-    renderer = Renderer(Path(args.run_dir))
-    for realtime in (False, True):
-        if args.only and args.only != ("realtime" if realtime else "sim"):
-            continue
-        print(renderer.render(realtime))
+    versions = [v for v in ("sim", "realtime") if not args.only or args.only == v]
+    if len(versions) == 1:
+        print(Renderer(Path(args.run_dir)).render(versions[0] == "realtime"))
+        return
+    from concurrent.futures import ProcessPoolExecutor
+
+    with ProcessPoolExecutor(max_workers=2) as pool:  # the two versions render in parallel
+        for path in pool.map(_render_one, [(args.run_dir, v == "realtime") for v in versions]):
+            print(path)
+
+
+def _render_one(job: tuple) -> Path:
+    run_dir, realtime = job
+    return Renderer(Path(run_dir)).render(realtime)
 
 
 if __name__ == "__main__":
