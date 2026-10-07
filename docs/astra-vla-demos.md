@@ -7,7 +7,8 @@ Every real `gpt-6-astra` run of the VLA-output variant: one chunk of 16 x 12-D R
 |---|---|---|---|---|---|---|---|---|---|---|
 | 1 | ? | OpenCabinet | scene 0 (OpenCabinet-8106356) | 1 | fail (interrupted) | 11 | 176/1800 | 71.6 cr / $2.86 | 4.4 min | [debug_sim.mp4](../runs/vla12/V1-OpenCabinet-scene0-1shot/debug_sim.mp4) · [video.mp4](../runs/vla12/V1-OpenCabinet-scene0-1shot/video.mp4) |
 | 2 | ? | OpenCabinet | scene 0 (OpenCabinet-8106356) | 1 | SUCCESS (success) | 39 | 620/1800 | 216.3 cr / $8.65 | 15.4 min | [debug_sim.mp4](../runs/vla12/V2-OpenCabinet-scene0-1shot/debug_sim.mp4) · [video.mp4](../runs/vla12/V2-OpenCabinet-scene0-1shot/video.mp4) |
-| 3 | ? | PrepareCoffee | scene 0 (PrepareCoffee-8806552) | 1 | interrupted (no summary) | - | - | - | - | - |
+| 3 | ? | PrepareCoffee | scene 0 (PrepareCoffee-8806552) | 1 | fail (max_turns) | 112 | 1792/1800 | 444.1 cr / $17.76 | 53.7 min | [debug_sim.mp4](../runs/vla12/V3-PrepareCoffee-scene0-1shot/debug_sim.mp4) · [video.mp4](../runs/vla12/V3-PrepareCoffee-scene0-1shot/video.mp4) |
+| 4 | ? | PickPlaceSinkToCounter | scene 0 (PickPlaceSinkToCounter-8410431) | 1 | interrupted (no summary) | 81 | - | - | - | [video.mp4](../runs/vla12/V4-PickPlaceSinkToCounter-scene0-1shot/video.mp4) |
 
 ## Run details
 
@@ -33,9 +34,19 @@ Every real `gpt-6-astra` run of the VLA-output variant: one chunk of 16 x 12-D R
 
 ### 3. `V3-PrepareCoffee-scene0-1shot`
 
-- Result: interrupted (no summary); turns -; native steps -; wall time -
+- Result: fail (max_turns); turns 112; native steps 1792/1800; wall time 53.7 min
 - Settings: task PrepareCoffee, scene 0 (PrepareCoffee-8806552), 1-shot, step budget 1800, max turns 112, model gpt-6-astra (effort low), Codex codex-cli 0.159.2, git 302fb5a
 - Prompt: system prompt md5 `24aecfed`; in-context demos: primer, PrepareCoffee
-- Tokens: input 0 (cached 0), output 0; spend -
-- Videos: -
+- Tokens: input 2,866,772 (cached 1,636,736), output 76,511; spend 444.1 cr / $17.76
+- Videos: debug (sim time): [debug_sim.mp4](../runs/vla12/V3-PrepareCoffee-scene0-1shot/debug_sim.mp4) · raw cameras: [video.mp4](../runs/vla12/V3-PrepareCoffee-scene0-1shot/video.mp4)
 - Run directory: `runs/vla12/V3-PrepareCoffee-scene0-1shot` (trace.jsonl, calls/, turns/, replay/)
+- Note: Fail: 112-turn cap (1792 / 1800 steps), PrepareCoffee scene 0, VLA output. Grasped the mug handle in the cabinet by turn 12 (opening ~0.2) and pulled it out - the skill runs on PrepareCoffee never got this far reliably. Then ~80 turns trying to lower the mug to the drip tray close to the robot: arm joint limits and contacts kept blocking the descent (it tried wrist turns, withdrawing, a base move, torso); released at ~turn 95 not under the dispenser, tried the button, regrasped. 444.1 estimated credits; weekly meter 12% -> 32% (V4 ran in parallel from 11:49, so this includes part of V4).
+
+### 4. `V4-PickPlaceSinkToCounter-scene0-1shot`
+
+- Result: interrupted (no summary); turns 81; native steps -; wall time -
+- Settings: task PickPlaceSinkToCounter, scene 0 (PickPlaceSinkToCounter-8410431), 1-shot, step budget 1800, max turns 112, model gpt-6-astra (effort low), Codex codex-cli 0.159.2, git 7e82d0e
+- Prompt: system prompt md5 `483d2cd8`; in-context demos: primer, PickPlaceSinkToCounter
+- Tokens: input 0 (cached 0), output 0; spend -
+- Videos: raw cameras: [video.mp4](../runs/vla12/V4-PickPlaceSinkToCounter-scene0-1shot/video.mp4)
+- Run directory: `runs/vla12/V4-PickPlaceSinkToCounter-scene0-1shot` (trace.jsonl, calls/, turns/, replay/)
