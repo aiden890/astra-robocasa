@@ -18,6 +18,7 @@ Phases: P4 = first run (OpenCabinet 0-shot); P6 = five tasks, 1-shot, layout 1/s
 | 10 | P7 | PanTransfer | scene 0 (PanTransfer-8991090) | 1 | fail (step_budget) | 43 | 1800/1800 | 110.7 cr / $4.43 | 12.3 min | [debug_sim.mp4](../runs/robodawn/P7-PanTransfer-scene0-1shot/debug_sim.mp4) · [debug_realtime.mp4](../runs/robodawn/P7-PanTransfer-scene0-1shot/debug_realtime.mp4) · [video.mp4](../runs/robodawn/P7-PanTransfer-scene0-1shot/video.mp4) |
 | 11 | P7 | StirVegetables | scene 0 (StirVegetables-8135354) | 1 | fail (step_budget) | 56 | 2400/2400 | 158.3 cr / $6.33 | 15.1 min | [debug_sim.mp4](../runs/robodawn/P7-StirVegetables-scene0-1shot/debug_sim.mp4) · [video.mp4](../runs/robodawn/P7-StirVegetables-scene0-1shot/video.mp4) |
 | 12 | P8 | OpenCabinet | scene 0 (OpenCabinet-8106356) | 1 | interrupted (no summary) | 17 | - | - | - | [video.mp4](../runs/robodawn/P8-OpenCabinet-scene0-budget3600-1shot/video.mp4) |
+| 13 | P9 | OpenCabinet | scene 0 (OpenCabinet-8106356) | 1 | fail (step_budget) | 45 | 1800/1800 | 132.5 cr / $5.30 | 14.5 min | [debug_sim.mp4](../runs/robodawn/P9-OpenCabinet-scene0-1shot/debug_sim.mp4) · [video.mp4](../runs/robodawn/P9-OpenCabinet-scene0-1shot/video.mp4) |
 
 ## Run details
 
@@ -136,3 +137,13 @@ Phases: P4 = first run (OpenCabinet 0-shot); P6 = five tasks, 1-shot, layout 1/s
 - Videos: raw cameras: [video.mp4](../runs/robodawn/P8-OpenCabinet-scene0-budget3600-1shot/video.mp4)
 - Run directory: `runs/robodawn/P8-OpenCabinet-scene0-budget3600-1shot` (trace.jsonl, calls/, turns/, replay/)
 - Note: Stopped deliberately at turn 17 to check a suspected success-check bug (none found); the 3600-step budget option was then removed.
+
+### 13. `P9-OpenCabinet-scene0-1shot`
+
+- Result: fail (step_budget); turns 45; native steps 1800/1800; wall time 14.5 min
+- Settings: task OpenCabinet, scene 0 (OpenCabinet-8106356), 1-shot, step budget 1800, max turns 45, model gpt-6-astra (effort low), Codex codex-cli 0.159.2, git 7cda940
+- Prompt: system prompt md5 `c59dba13`; in-context demos: primer, OpenCabinet
+- Tokens: input 679,322 (cached 220,032), output 9,725; spend 132.5 cr / $5.30
+- Videos: debug (sim time): [debug_sim.mp4](../runs/robodawn/P9-OpenCabinet-scene0-1shot/debug_sim.mp4) · raw cameras: [video.mp4](../runs/robodawn/P9-OpenCabinet-scene0-1shot/video.mp4)
+- Run directory: `runs/robodawn/P9-OpenCabinet-scene0-1shot` (trace.jsonl, calls/, turns/, replay/)
+- Note: New end-condition wording (swing to the stop, do not touch an opened door). Fail at the 1800-step budget, 45 turns, 132.5 credits. Left door opened in about 10 turns (by step ~600); the right door cost ~1100 steps on repeated grasp slips and regrasps (turns 16-45) and was only starting its swing when the budget ran out. The model did not re-touch the left door. Door values not measured (no replay).

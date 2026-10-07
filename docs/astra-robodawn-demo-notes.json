@@ -1,10 +1,11 @@
 {
- "P4-OpenCabinet-0shot-s771001": "Right door reached 0.87, left 0.0. Pulling straight back made the handle slip ~8 times; the last two arc-shaped pulls opened the door fastest.",
- "P6-OpenCabinet-1shot-s771001": "Copied the demonstration's first commands (with its numbers); they were blocked in this kitchen and failed commands cost 30-76 steps each, so only 12 turns fit. Right door 0.55.",
- "P6-PickPlaceSinkToCounter-1shot-s771001": "Reached the milk carton in the sink but two grasps closed on nothing; a third grasp came in the last turn.",
- "P6-PrepareCoffee-1shot-s771001": "Grasped the mug by its handle (opening 0.24, as in the demo) and took it out of the cabinet; it did not end under the dispenser and the start button was never touched.",
- "P6-PanTransfer-1shot-s771001": "Grasped the pan handle on the 4th try, carried it over the plate and rolled it ~75 deg, then dropped the pan; the vegetable never reached the plate.",
- "P6-StirVegetables-1shot-s771001": "About 8 grasp/slip cycles on the first vegetable; lifted the spatula only in the last turns; 0/2 vegetables in the pot.",
- "P7-OpenCabinet-scene0-1shot": "Near success: at step 1359 the left door was 0.882 (79 deg) and the right 0.992 - the left door was 1.8 points short of the 0.90 threshold. The model then judged the RIGHT door unfinished and pushed it back to 0.125. Checker and target cabinet verified by replay (no bug).",
- "P8-OpenCabinet-scene0-budget3600-1shot": "Stopped deliberately at turn 17 to check a suspected success-check bug (none found); the 3600-step budget option was then removed."
+  "P4-OpenCabinet-0shot-s771001": "Right door reached 0.87, left 0.0. Pulling straight back made the handle slip ~8 times; the last two arc-shaped pulls opened the door fastest.",
+  "P6-OpenCabinet-1shot-s771001": "Copied the demonstration's first commands (with its numbers); they were blocked in this kitchen and failed commands cost 30-76 steps each, so only 12 turns fit. Right door 0.55.",
+  "P6-PickPlaceSinkToCounter-1shot-s771001": "Reached the milk carton in the sink but two grasps closed on nothing; a third grasp came in the last turn.",
+  "P6-PrepareCoffee-1shot-s771001": "Grasped the mug by its handle (opening 0.24, as in the demo) and took it out of the cabinet; it did not end under the dispenser and the start button was never touched.",
+  "P6-PanTransfer-1shot-s771001": "Grasped the pan handle on the 4th try, carried it over the plate and rolled it ~75 deg, then dropped the pan; the vegetable never reached the plate.",
+  "P6-StirVegetables-1shot-s771001": "About 8 grasp/slip cycles on the first vegetable; lifted the spatula only in the last turns; 0/2 vegetables in the pot.",
+  "P7-OpenCabinet-scene0-1shot": "Near success: at step 1359 the left door was 0.882 (79 deg) and the right 0.992 - the left door was 1.8 points short of the 0.90 threshold. The model then judged the RIGHT door unfinished and pushed it back to 0.125. Checker and target cabinet verified by replay (no bug).",
+  "P8-OpenCabinet-scene0-budget3600-1shot": "Stopped deliberately at turn 17 to check a suspected success-check bug (none found); the 3600-step budget option was then removed.",
+  "P9-OpenCabinet-scene0-1shot": "New end-condition wording (swing to the stop, do not touch an opened door). Fail at the 1800-step budget, 45 turns, 132.5 credits. Left door opened in about 10 turns (by step ~600); the right door cost ~1100 steps on repeated grasp slips and regrasps (turns 16-45) and was only starting its swing when the budget ran out. The model did not re-touch the left door. Door values not measured (no replay)."
 }

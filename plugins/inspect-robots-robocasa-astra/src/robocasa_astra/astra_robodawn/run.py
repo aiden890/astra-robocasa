@@ -31,8 +31,9 @@ from .sim_client import SimClient
 REPO = Path(__file__).resolve().parents[5]
 LEDGER = REPO / "runs" / "astra_ledger.jsonl"
 # P4: 1 + P6: 5 (scene-less, layout 1 / style 1) + P7: 5 (common scene 0 with success conditions)
-# + P8: 1 (OpenCabinet scene 0 with a 3600-step budget; stopped at turn 17, budget option since removed).
-ASTRA_RUN_LIMIT = 12
+# + P8: 1 (OpenCabinet scene 0 with a 3600-step budget; stopped at turn 17, budget option since removed)
+# + P9: 1 (OpenCabinet scene 0 with the "open to the stop, do not touch an opened door" success wording).
+ASTRA_RUN_LIMIT = 13
 SCENE_INDEX = Path(__file__).resolve().parent / "assets" / "scenes.json"
 STEPS_PER_TURN_CAP = 40  # max turns = horizon // 40 for common scenes (45 for 1800 steps, 60 for 2400)
 

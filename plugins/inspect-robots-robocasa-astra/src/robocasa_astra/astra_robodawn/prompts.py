@@ -45,9 +45,12 @@ RESPONSE_SCHEMA = {
 # after every simulation step; the episode ends the moment every listed condition holds at the same time.
 SUCCESS_CONDITIONS = {
     "OpenCabinet": (
-        "EVERY door of the target cabinet must be open to at least 90% of its full opening range at the same time "
-        "(for a double-door cabinet: BOTH doors). A partly opened door does not count.",
-        "every door of the cabinet >= 90% open"),
+        "Open EACH door of the target cabinet ALL THE WAY: keep swinging it until it stops at its hinge limit "
+        "(about 90 deg, the door panel perpendicular to the cabinet front). The checker needs every door at >= 90% of "
+        "that limit at the same time (for a double-door cabinet: BOTH doors); a door that only LOOKS open (about 80 "
+        "deg) still fails, so always finish the swing to the stop. Once a door is fully open, do NOT touch it again: "
+        "moving the gripper or arm near an open door can push it partly closed.",
+        "every door swung open to its stop (>= 90%); do not touch an already opened door"),
     "PickPlaceSinkToCounter": (
         "(1) the object rests ON / IN the container (plate) on the counter: touching it and with its centre "
         "horizontally within 70% of the container's radius from the container centre; (2) the container still "
