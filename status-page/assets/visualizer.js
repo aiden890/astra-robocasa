@@ -1,7 +1,7 @@
 "use strict";
 const el = id => document.getElementById(id);
 const conditions = {rgb:"RGB only",color:"RGB + depth image",pixel:"RGB + pixel Z",grid:"RGB + 16×16 grid Z"};
-let records = [], outputIndex = {}, selected = null, calls = [], generation = 0, limit = 20, inputIndex = {}, inputKey = "";
+let records = [], outputIndex = {}, selected = null, calls = [], generation = 0, limit = 20, inputIndex = {}, inputKey = "", previousStep = -1, seenQueries = new Set();
 const token = x => Number.isInteger(x) ? x.toLocaleString() : "미확인";
 const clock = x => Number.isFinite(x) ? Math.floor(x/60)+":"+String(Math.floor(x%60)).padStart(2,"0") : "0:00";
 const status = r => r.user_assessment === "failed" || r.status === "user-stopped" ? "실패" : r.task_success === true || r.success === true ? "성공" : r.task_success === false || r.success === false ? "미성공" : ({complete:"완료",error:"오류",running:"진행 중"}[r.status] || r.status || "미확인");
@@ -56,9 +56,10 @@ async function selectVideo(row) {
   const savedTime=continuing?el("video").currentTime:0,savedPaused=continuing?el("video").paused:false,savedCall=continuing?el("call").value:"auto";
   if(row.live_clip&&row.visualization_data){try{const response=await fetch(new URL("playback.json",sameOriginPath(row.visualization_data)),{cache:"no-store"});if(response.ok){const playback=await response.json();row={...row,video:playback.video,video_start_step:0,cumulative_live:true,cumulative_version:playback.version,available_end_step:playback.end_step}}}catch(e){}}
   if(current!==generation)return;
-  selected=row;calls=[];
+  selected=row;calls=[];previousStep=Math.floor(savedTime*(row.control_hz||20));if(!continuing)seenQueries=new Set();
   el("depth-video").pause();
-  el("depth-player").hidden=!['color','pixel','grid'].includes(row.condition);
+  el("depth-player").hidden=row.condition!=='color';
+  el('pixel-query-panel').hidden=!['pixel','grid'].includes(row.condition);
   if(row.depth_video){
     const depthURL=new URL(sameOriginPath(row.depth_video));depthURL.searchParams.set('v',String(row.depth_version));
     el("depth-video").src=depthURL.href;el("depth-video").load();
@@ -95,6 +96,13 @@ function showOutput() {
   const video=el("video"),step=(selected?.video_start_step||0)+Math.floor((video.currentTime+1e-6)*(selected?.control_hz||selected?.fps||20));
   el("position").textContent=clock(video.currentTime)+" / "+clock(video.duration)+" · native 스텝 "+step;
   if(!calls.length)return;
+  if(selected.condition==='pixel'&&el('pause-query').checked&&!video.paused&&el('call').value==='auto'){
+    const crossed=calls.find(c=>c.step>previousStep&&c.step<=step&&(c.response.queries||[]).length&&!seenQueries.has(c.call));
+    if(crossed){seenQueries.add(crossed.call);video.pause();video.currentTime=Math.max(0,crossed.step-(selected.video_start_step||0))/(selected.control_hz||20);el('call').value=crossed.call;}
+  }
+  previousStep=step;
+  const latestQuery=[...calls].reverse().find(c=>c.step<=step&&(c.response.queries||[]).length);
+  renderQuerySummary(el('call').value!=='auto'?calls.find(c=>c.call===el('call').value&&(c.response.queries||[]).length)||latestQuery:latestQuery);
   const manual=el("call").value!=="auto";
   const row=manual?calls.find(c=>c.call===el("call").value):[...calls].reverse().find(c=>c.step<=step&&!(c.response.queries||[]).length);
   el("sync-state").textContent=manual?"호출 직접 선택":"영상과 동기화";
@@ -116,9 +124,20 @@ function showOutput() {
   if(selected.video_capture_gap)el("source-note").textContent="재개 시 행동별 영상 연결에 누락 구간이 있어 검증된 스텝 "+selected.video_capture_gap.last_verified_step+"까지 재생합니다. 모델 조회·답변 기록은 계속 갱신됩니다. 완료 후 전체 녹화 영상으로 교체합니다.";
   el("seek-call").disabled=!manual;
 }
+function renderQuerySummary(row){
+  el('query-rows').replaceChildren();
+  el('query-position').textContent=row?row.call+' · 관측 스텝 '+row.step+' · 이 조회 결과는 다음 조회까지 유지됩니다.':'';
+  el('query-empty').textContent=row?'원본 조회 요청과 환경 답변입니다. 빨간 좌표는 아래 모델 입력 이미지에서 확인할 수 있습니다.':'이 재생 위치까지 픽셀 조회 기록이 없습니다.';
+  for(const q of row?.response.queries||[]){
+    const answer=(row.query_answers||[]).find(a=>a.camera===q.camera&&a.observation_id===q.observation_id&&a.pixel_uv?.[0]===q.u&&a.pixel_uv?.[1]===q.v);
+    const tr=document.createElement('tr');
+    for(const value of [q.camera,'('+q.u+', '+q.v+')',Number.isFinite(answer?.pixel_depth_m)?(answer.pixel_depth_m*100).toFixed(2)+' cm ('+answer.pixel_depth_m.toFixed(4)+' m)':answer?.error||'답변 미확인']){const td=document.createElement('td');td.textContent=value;tr.append(td);}
+    el('query-rows').append(tr);
+  }
+}
 function syncDepth(){
   const depth=el('depth-video'),rgb=el('video');
-  if(!selected?.depth_video||!Number.isFinite(depth.duration))return;
+  if(selected?.condition!=='color'||!selected?.depth_video||!Number.isFinite(depth.duration))return;
   const step=(selected.video_start_step||0)+rgb.currentTime*(selected.control_hz||20);
   const offset=(step-selected.depth_start_step)/(selected.control_hz||20);
   const available=offset>=0&&step<=selected.depth_end_step;
@@ -164,9 +183,9 @@ async function loadLibrary() {
 ["search","task","model","condition","result","with-output"].forEach(id=>el(id).addEventListener(id==="search"?"input":"change",()=>{limit=20;renderList()}));
 el("more").addEventListener("click",()=>{limit+=20;renderList()});
 el("video").addEventListener("timeupdate",showOutput);el("video").addEventListener("loadedmetadata",showOutput);el("video").addEventListener("seeked",showOutput);
-el("video").addEventListener("play",syncDepth);el("video").addEventListener("pause",syncDepth);el("depth-video").addEventListener("loadedmetadata",syncDepth);
+el("video").addEventListener("play",()=>{el("call").value="auto";previousStep=Math.floor(el("video").currentTime*(selected?.control_hz||20));syncDepth();});el("video").addEventListener("pause",syncDepth);el("depth-video").addEventListener("loadedmetadata",syncDepth);
 el("video").addEventListener("error",()=>{el("video-error").hidden=false;el("video-error").textContent="영상을 불러오지 못했습니다. 파일 또는 연결 상태를 확인해 주세요."});
 el("speed").addEventListener("change",()=>el("video").playbackRate=Number(el("speed").value));
-el("call").addEventListener("change",showOutput);
+el("call").addEventListener("change",()=>{if(el("call").value!=="auto")el("video").pause();showOutput();});
 el("seek-call").addEventListener("click",()=>{const row=calls.find(c=>c.call===el("call").value);if(row){el("video").currentTime=Math.max(0,row.step-(selected.video_start_step||0))/(selected.control_hz||20);el("call").value="auto";showOutput()}});
 loadLibrary();setInterval(loadLibrary,5000);
