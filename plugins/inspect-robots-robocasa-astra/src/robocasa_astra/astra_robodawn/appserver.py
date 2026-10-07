@@ -26,6 +26,7 @@ import time
 from collections import deque
 from pathlib import Path
 
+from .cost import add_usage
 from .codex import CAPACITY_MARKERS, MAX_ATTEMPTS, MODEL, REASONING_EFFORT, CallResult, ModelCallError, write_input
 
 CALL_TIMEOUT_S = 300
@@ -165,7 +166,7 @@ class AppServerCaller:
         thread = self.rpc("thread/start", thread_params)
         thread_id = thread["thread"]["id"]
         out = {"thread_id": thread_id, "resolved_model": thread.get("model"), "usage": {}, "reasoning": [],
-               "messages": [], "errors": [], "status": None}
+               "messages": [], "errors": [], "warnings": [], "status": None}
         reply = self.rpc("turn/start", {**turn_params, "threadId": thread_id, "input": wire_input(parts)})
         turn_id = reply["turn"]["id"]
         deadline = time.monotonic() + CALL_TIMEOUT_S
@@ -185,7 +186,9 @@ class AppServerCaller:
                 elif item.get("type") in TOOL_ITEMS:
                     out["errors"].append(f"unexpected tool item {item['type']}")
             elif method == "error":
-                out["errors"].append(params.get("error", {}).get("message", ""))
+                # willRetry: a transient connection problem the server recovers from itself ("Reconnecting... 2/5")
+                key = "warnings" if params.get("willRetry") else "errors"
+                out[key].append(params.get("error", {}).get("message", ""))
             elif "id" in message and "method" in message:
                 out["errors"].append(f"server request denied: {method}")
             elif method == "turn/completed" and params.get("turn", {}).get("id") == turn_id:
@@ -217,7 +220,8 @@ class AppServerCaller:
                 finally:
                     self.log = None
             record.update(seconds=round(time.monotonic() - t0, 2), status=out["status"], usage=out["usage"],
-                          errors=out["errors"], thread_id=out.get("thread_id"), resolved_model=out.get("resolved_model"))
+                          errors=out["errors"], warnings=out.get("warnings", []), thread_id=out.get("thread_id"),
+                          resolved_model=out.get("resolved_model"))
             attempts.append(record)
             if out["status"] == "completed" and out["text"] and not out["errors"]:
                 (folder / "response.json").write_text(out["text"])
@@ -233,7 +237,11 @@ class AppServerCaller:
                 continue
             break
         (folder / "attempts.json").write_text(json.dumps(attempts, indent=1))
-        raise ModelCallError(f"no final answer after {len(attempts)} attempt(s); see {folder}")
+        error = ModelCallError(f"no final answer after {len(attempts)} attempt(s); see {folder}")
+        error.usage = {}  # discarded answers are still billed: the loop adds this to the episode total
+        for record in attempts:
+            add_usage(error.usage, record["usage"])
+        raise error
 
     def _write_record(self, folder: Path, result: CallResult) -> None:
         (folder / "call.json").write_text(json.dumps({

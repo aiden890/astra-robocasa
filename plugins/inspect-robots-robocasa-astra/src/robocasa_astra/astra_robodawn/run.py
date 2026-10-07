@@ -25,7 +25,7 @@ from pathlib import Path
 
 from .appserver import AppServerCaller
 from .codex import MODEL, REASONING_EFFORT, CodexCaller
-from .loop import EpisodeConfig, run_episode
+from .loop import EpisodeConfig, partial_summary, run_episode
 from .prompts import PROFILE_PATH, RESPONSE_SCHEMA, demo_parts, demos_for, load_profile, parts_text, system_prompt
 from .scripted import ScriptedCaller
 from .sim_client import SimClient
@@ -157,6 +157,9 @@ def main() -> None:
         if hasattr(caller, "close"):
             caller.close()
         closing = sim.close()
+        if "task" not in summary:  # stopped early (e.g. Ctrl-C): rebuild what the trace recorded
+            summary = partial_summary(run_dir, cfg, "interrupted", closing.get("steps_used", 0),
+                                      bool(closing.get("task_success")))
         summary["simulator"] = closing
         summary["run_dir"] = str(run_dir)
         (run_dir / "summary.json").write_text(json.dumps(summary, indent=1))

@@ -42,7 +42,7 @@ def main() -> None:
         scene = config.get("scene")
         scene_text = f"scene {scene} ({config['scene_info']['scene_id']})" if scene is not None else f"native seed {config.get('seed')}"
         if summary:
-            result = f"{'SUCCESS' if summary['success'] else 'fail'} ({summary['finished_reason']})"
+            result = f"{'SUCCESS' if summary.get('success') else 'fail'} ({summary.get('finished_reason', '?')})"
             steps = f"{summary['steps_used']}/{summary['step_budget']}"
             cost = summary["cost"]
             usage = summary["usage"]

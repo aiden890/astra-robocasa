@@ -79,7 +79,8 @@ def run_episode(sim, caller, cfg: EpisodeConfig, run_dir: Path, demo_parts: list
             reply = caller.call(parts, run_dir / "calls" / f"turn{turn:03d}")
         except ModelCallError as exc:
             failures += 1
-            record.update(error=str(exc))
+            add_usage(usage_total, getattr(exc, "usage", {}))
+            record.update(error=str(exc), usage=getattr(exc, "usage", {}), cost=estimate(getattr(exc, "usage", {})))
             trace_file.write(json.dumps(record) + "\n")
             trace_file.flush()
             if failures >= cfg.failure_limit:
@@ -154,3 +155,16 @@ def run_episode(sim, caller, cfg: EpisodeConfig, run_dir: Path, demo_parts: list
         "usage": usage_total, "cost": estimate(usage_total), "config": asdict(cfg),
     }
     return summary
+
+
+def partial_summary(run_dir: Path, cfg: EpisodeConfig, reason: str, steps_used: int, success: bool) -> dict:
+    """Summary of an episode that ended early (interrupted), rebuilt from ``trace.jsonl``."""
+    usage: dict = {}
+    trace = Path(run_dir) / "trace.jsonl"
+    records = [json.loads(line) for line in trace.read_text().splitlines()] if trace.exists() else []
+    for record in records:
+        add_usage(usage, record.get("usage") or {})
+    return {"task": cfg.task, "seed": cfg.seed, "shots": cfg.shots, "success": success, "finished_reason": reason,
+            "turns": len(records), "steps_used": steps_used, "step_budget": cfg.budget, "max_turns": cfg.max_turns,
+            "wall_seconds": records[-1]["time"] if records else 0.0, "usage": usage, "cost": estimate(usage),
+            "config": asdict(cfg)}

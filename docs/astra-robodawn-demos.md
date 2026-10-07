@@ -19,6 +19,7 @@ Phases: P4 = first run (OpenCabinet 0-shot); P6 = five tasks, 1-shot, layout 1/s
 | 11 | P7 | StirVegetables | scene 0 (StirVegetables-8135354) | 1 | fail (step_budget) | 56 | 2400/2400 | 158.3 cr / $6.33 | 15.1 min | [debug_sim.mp4](../runs/robodawn/P7-StirVegetables-scene0-1shot/debug_sim.mp4) · [video.mp4](../runs/robodawn/P7-StirVegetables-scene0-1shot/video.mp4) |
 | 12 | P8 | OpenCabinet | scene 0 (OpenCabinet-8106356) | 1 | interrupted (no summary) | 17 | - | - | - | [video.mp4](../runs/robodawn/P8-OpenCabinet-scene0-budget3600-1shot/video.mp4) |
 | 13 | P9 | OpenCabinet | scene 0 (OpenCabinet-8106356) | 1 | fail (step_budget) | 45 | 1800/1800 | 132.5 cr / $5.30 | 14.5 min | [debug_sim.mp4](../runs/robodawn/P9-OpenCabinet-scene0-1shot/debug_sim.mp4) · [video.mp4](../runs/robodawn/P9-OpenCabinet-scene0-1shot/video.mp4) |
+| 14 | P10 | PrepareCoffee | scene 0 (PrepareCoffee-8806552) | 1 | fail (stopped by user (reconnect-warning bug discarded answers)) | 14 | 404/3600 | 37.0 cr / $1.48 | 3.8 min | [debug_sim.mp4](../runs/robodawn/P10-PrepareCoffee-scene0-budget3600-1shot/debug_sim.mp4) · [video.mp4](../runs/robodawn/P10-PrepareCoffee-scene0-budget3600-1shot/video.mp4) |
 
 ## Run details
 
@@ -147,3 +148,13 @@ Phases: P4 = first run (OpenCabinet 0-shot); P6 = five tasks, 1-shot, layout 1/s
 - Videos: debug (sim time): [debug_sim.mp4](../runs/robodawn/P9-OpenCabinet-scene0-1shot/debug_sim.mp4) · raw cameras: [video.mp4](../runs/robodawn/P9-OpenCabinet-scene0-1shot/video.mp4)
 - Run directory: `runs/robodawn/P9-OpenCabinet-scene0-1shot` (trace.jsonl, calls/, turns/, replay/)
 - Note: New end-condition wording (swing to the stop, do not touch an opened door). Fail at the 1800-step budget, 45 turns, 132.5 credits. Measured by replay: left door max 0.886 (step 510), then stayed at 0.88 to the end; the model released it short of the 0.90 threshold and never returned. Right door max 0.195 (steps 958 and 1727): repeated grasp slips and regrasps from turn 16 on; final 0.09. No step had either door >= 0.90.
+
+### 14. `P10-PrepareCoffee-scene0-budget3600-1shot`
+
+- Result: fail (stopped by user (reconnect-warning bug discarded answers)); turns 14; native steps 404/3600; wall time 3.8 min
+- Settings: task PrepareCoffee, scene 0 (PrepareCoffee-8806552), 1-shot, step budget 3600, max turns 90, model gpt-6-astra (effort low), Codex codex-cli 0.159.2, git 039f682
+- Prompt: system prompt md5 `b4723b73`; in-context demos: primer, PrepareCoffee
+- Tokens: input 176,529 (cached 47,872), output 2,906; spend 37.0 cr / $1.48
+- Videos: debug (sim time): [debug_sim.mp4](../runs/robodawn/P10-PrepareCoffee-scene0-budget3600-1shot/debug_sim.mp4) · raw cameras: [video.mp4](../runs/robodawn/P10-PrepareCoffee-scene0-budget3600-1shot/video.mp4)
+- Run directory: `runs/robodawn/P10-PrepareCoffee-scene0-budget3600-1shot` (trace.jsonl, calls/, turns/, replay/)
+- Note: First run with the RoboDawn-style interleaved few-shot (codex app-server), coffee-stream wording, 3600-step budget. Stopped by the user at turn 14 / step 404 (not a task result): 4 of 14 answers were discarded by a client bug that treated Codex's transient 'Reconnecting... n/5' notices (WebSocket 403, then HTTPS fallback) as errors; fixed afterwards. Weekly subscription meter 42% -> 43% during the run.

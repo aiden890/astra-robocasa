@@ -181,6 +181,8 @@ for line in sys.stdin:
     elif m == "turn/start":
         log.write(json.dumps({"turn": req["params"]}) + "\\n"); log.flush()
         # notifications before the RPC result, as the real server may send them
+        send({"method": "error", "params": {"threadId": "t1", "turnId": "u1", "willRetry": True,
+              "error": {"message": "Reconnecting... 2/5"}}})
         send({"method": "item/completed", "params": {"threadId": "t1", "turnId": "u1",
               "item": {"type": "reasoning", "id": "r", "summary": ["look at the handle"]}}})
         send({"method": "item/completed", "params": {"threadId": "t1", "turnId": "u1",
@@ -221,4 +223,5 @@ def test_appserver_caller_sends_ordered_parts_and_records(tmp_path):
     assert turn["input"][1]["url"].startswith("data:image/png;base64,")
     assert json.loads((folder / "input.json").read_text())[1]["path"] == str(png)
     assert "data:image" not in (folder / "events.jsonl").read_text()
-    assert json.loads((folder / "call.json").read_text())["caller"] == "codex app-server"
+    call = json.loads((folder / "call.json").read_text())
+    assert call["caller"] == "codex app-server" and call["attempts"][0]["warnings"] == ["Reconnecting... 2/5"]
