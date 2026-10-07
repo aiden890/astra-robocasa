@@ -48,7 +48,7 @@ function clearOutput(message) {
   el("reason").textContent=message;inputKey="";el("input-images").replaceChildren();el("input-note").textContent="";
   ["input-token","output-token","cache-token","total-token"].forEach(id=>el(id).textContent="—");
   ["action","queries","repeat","call-meta","source-note"].forEach(id=>el(id).textContent="");
-  el("action-phase").textContent="연결된 호출 없음";el("seek-call").disabled=true;
+  el("action-legend").hidden=true;el("action-phase").textContent="연결된 호출 없음";el("seek-call").disabled=true;
 }
 async function selectVideo(row) {
   const current=++generation;
@@ -114,6 +114,7 @@ function showOutput() {
   el("action-phase").textContent=query?"거리 조회 · 로봇 정지 · 행동 값은 미적용":"시뮬레이터에 적용하는 행동";
   el("repeat").textContent=query?"":row.response.repeat+" native 스텝 반복";
   el("action").textContent=JSON.stringify(row.response.action,null,2)+(query?"\n거리 조회 응답: 이 벡터는 로봇에 적용하지 않습니다.":"");
+  renderActionLegend(row.response.action,query);
   const group=calls.filter(c=>c.step===row.step);
   const requests=group.flatMap(c=>c.response.queries||[]);
   const answers=row.query_answers?.length?row.query_answers:group.flatMap(c=>c.query_answers||[]);
@@ -123,6 +124,26 @@ function showOutput() {
   el("source-note").textContent=selected.cumulative_live?"처음부터 누적된 실제 20fps 영상입니다. 인코더에 저장된 스텝 "+selected.available_end_step+"까지 재생할 수 있으며, 저장 중인 최신 프레임은 다음 갱신에 추가됩니다. 새 영상이 추가돼도 재생 위치를 유지합니다.":selected.live_clip?"현재 행동의 실제 프레임으로 만든 최신 20fps 영상입니다. 완료 후 전체 영상으로 바뀝니다.":selected.timeline_note||"원본 response.json · receipt.json · native 관측 스텝 기준";
   if(selected.video_capture_gap)el("source-note").textContent="재개 시 행동별 영상 연결에 누락 구간이 있어 검증된 스텝 "+selected.video_capture_gap.last_verified_step+"까지 재생합니다. 모델 조회·답변 기록은 계속 갱신됩니다. 완료 후 전체 녹화 영상으로 교체합니다.";
   el("seek-call").disabled=!manual;
+}
+function renderActionLegend(action,query){
+  const supported=selected?.robot==='PandaOmron'&&Array.isArray(action)&&action.length===12;
+  el('action-legend').hidden=!supported;el('action-components').replaceChildren();if(!supported)return;
+  const meanings=[
+    '손끝 이동 Δx · 로봇 베이스 좌표계 X축',
+    '손끝 이동 Δy · 로봇 베이스 좌표계 Y축',
+    '손끝 이동 Δz · 로봇 베이스 좌표계 Z축 (양수: 위)',
+    '손끝 회전 Δrx · X축 회전벡터 성분',
+    '손끝 회전 Δry · Y축 회전벡터 성분',
+    '손끝 회전 Δrz · Z축 회전벡터 성분',
+    '그리퍼 · +1 닫기 / −1 열기 / 0 개폐 목표 변화 없음',
+    '이동 베이스 · 전후 방향 속도 입력',
+    '이동 베이스 · 좌우 방향 속도 입력',
+    '이동 베이스 · 수직축 회전(yaw) 속도 입력',
+    '몸통 높이 관절 · JOINT_POSITION 입력',
+    '모드 · ≤0: 현재 팔 위치 기준 / >0: 이동 베이스 추종용 팔 목표 기준'
+  ];
+  meanings.forEach((meaning,i)=>{const tr=document.createElement('tr');for(const value of [(i+1)+'번 / ['+i+']',String(action[i]),meaning]){const td=document.createElement('td');td.textContent=value;tr.append(td);}el('action-components').append(tr);});
+  el('action-controller-note').textContent='PandaOmron · HYBRID_MOBILE_BASE / OSC_POSE · 이동 1.0은 목표 변화 0.05m, 회전 1.0은 0.5rad로 스케일됩니다. 실제 이동량은 물리·충돌에 따라 달라집니다. 회전은 Euler 각도가 아닌 회전벡터입니다. repeat만큼 20Hz에서 반복 적용합니다.'+(query?' 이 호출은 거리 조회이므로 모든 행동 성분과 repeat는 미적용입니다.':'');
 }
 function renderQuerySummary(row){
   el('query-rows').replaceChildren();
