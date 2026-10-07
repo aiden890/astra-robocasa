@@ -36,6 +36,7 @@ class CallResult:
     reasoning: list[str]
     seconds: float
     attempts: list[dict] = field(default_factory=list)
+    weekly: dict | None = None  # subscription weekly-limit snapshot after the call (app-server only)
 
 
 def parse_events(lines: list[str]) -> dict:

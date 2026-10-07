@@ -35,8 +35,9 @@ LEDGER = REPO / "runs" / "astra_ledger.jsonl"
 # P4: 1 + P6: 5 (scene-less, layout 1 / style 1) + P7: 5 (common scene 0 with success conditions)
 # + P8: 1 (OpenCabinet scene 0 with a 3600-step budget; stopped at turn 17, budget option since removed)
 # + P9: 1 (OpenCabinet scene 0 with the "open to the stop, do not touch an opened door" success wording)
-# + P10: 1 (PrepareCoffee scene 0, RoboDawn-style interleaved few-shot, "a coffee stream shows the button worked").
-ASTRA_RUN_LIMIT = 14
+# + P10: 1 (PrepareCoffee scene 0, RoboDawn-style interleaved few-shot, "a coffee stream shows the button worked";
+#   stopped at turn 14 because of the reconnect-notice bug) + P11: 1 (PrepareCoffee scene 1, 2400 steps).
+ASTRA_RUN_LIMIT = 15
 SCENE_INDEX = Path(__file__).resolve().parent / "assets" / "scenes.json"
 STEPS_PER_TURN_CAP = 40  # max turns = horizon // 40 for common scenes (45 for 1800 steps, 60 for 2400)
 
@@ -63,6 +64,17 @@ def _git_commit() -> str:
 
 def _ledger_count() -> int:
     return len(LEDGER.read_text().splitlines()) if LEDGER.exists() else 0
+
+
+def _weekly(caller, run_dir: Path) -> dict | None:
+    """Subscription weekly-usage snapshot (app-server caller only; no model call); None if unavailable."""
+    if not hasattr(caller, "weekly_snapshot"):
+        return None
+    try:
+        return caller.weekly_snapshot(run_dir / "appserver.stderr.log")
+    except Exception as exc:  # noqa: BLE001 - informational only, never stops a run
+        print(f"weekly usage snapshot failed: {exc}", file=sys.stderr)
+        return None
 
 
 def main() -> None:
@@ -151,9 +163,11 @@ def main() -> None:
 
     sim = SimClient(args.task, cfg.budget, run_dir, python=args.python, scene_dir=scene_dir)
     summary = {}
+    weekly = {"start": _weekly(caller, run_dir)}
     try:
         summary = run_episode(sim, caller, cfg, run_dir, demos_block)
     finally:
+        weekly["end"] = _weekly(caller, run_dir)
         if hasattr(caller, "close"):
             caller.close()
         closing = sim.close()
@@ -161,6 +175,10 @@ def main() -> None:
             summary = partial_summary(run_dir, cfg, "interrupted", closing.get("steps_used", 0),
                                       bool(closing.get("task_success")))
         summary["simulator"] = closing
+        if weekly["start"] and weekly["end"]:
+            weekly["delta_percent"] = weekly["end"]["used_percent"] - weekly["start"]["used_percent"]
+            weekly["note"] = "the meter has 1% resolution; other use of the same account in this window also counts"
+        summary["weekly_usage"] = weekly
         summary["run_dir"] = str(run_dir)
         (run_dir / "summary.json").write_text(json.dumps(summary, indent=1))
     print(json.dumps({k: summary.get(k) for k in ("task", "success", "finished_reason", "turns", "steps_used",

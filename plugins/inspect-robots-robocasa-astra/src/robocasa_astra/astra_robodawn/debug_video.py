@@ -63,6 +63,7 @@ class Turn:
     error: str = ""
     failed: bool = False
     cum_usage: dict = field(default_factory=dict)
+    weekly: int | None = None  # subscription weekly usage (%) after this turn's call, when logged
 
     @property
     def steps(self) -> int:
@@ -89,6 +90,7 @@ def load_turns(run: Path) -> list[Turn]:
             reply=rec.get("response", {}) or {}, results=results, usage=usage, model_s=float(model_s),
             exec_wall_s=exec_wall, error=rec.get("error", ""),
             failed=bool(rec.get("error")) or any(not r.get("ok") for r in results), cum_usage=dict(cum),
+            weekly=(rec.get("weekly") or {}).get("used_percent"),
         ))
         prev_end = end
     return turns
@@ -202,6 +204,12 @@ class Renderer:
         credits = (max(turn.cum_usage["input_tokens"] - turn.cum_usage["cached_input_tokens"], 0) * 250
                    + turn.cum_usage["cached_input_tokens"] * 25 + turn.cum_usage["output_tokens"] * 1250) / 1e6
         lines.append((f"credits so far  {credits:6.1f}  (~${credits * 0.04:.2f} API)", FG))
+        start = ((self.summary.get("weekly_usage") or {}).get("start") or {}).get("used_percent")
+        if start is None:
+            start = next((t.weekly for t in self.turns if t.weekly is not None), None)
+        if turn.weekly is not None:
+            lines += [("", FG), ("WEEKLY LIMIT (subscription meter)", HEAD),
+                      (f"used now {turn.weekly:3d}%   run start {start}%   this run +{turn.weekly - start}%", FG)]
         if phase == "think":
             lines.insert(1, (f">> MODEL THINKING {clock['think_elapsed']:5.1f} / {turn.model_s:.1f} s", ACCENT))
         for text, color in lines:

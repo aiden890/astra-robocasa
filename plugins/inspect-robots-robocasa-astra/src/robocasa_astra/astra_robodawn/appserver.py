@@ -65,6 +65,15 @@ def usage_from(breakdown: dict) -> dict:
             "reasoning_output_tokens": breakdown.get("reasoningOutputTokens", 0)}
 
 
+def weekly_from(rate_limits: dict) -> dict | None:
+    """The subscription's weekly window from a ``RateLimitSnapshot``: used percent (integer) and reset time."""
+    for window in (rate_limits.get("primary"), rate_limits.get("secondary")):
+        if window and window.get("windowDurationMins") == 10080:
+            return {"used_percent": window["usedPercent"], "resets_at": window.get("resetsAt"),
+                    "observed_at": round(time.time(), 1)}
+    return None
+
+
 class AppServerCaller:
     """Calls ``codex app-server`` for one turn; see the module docstring for what is recorded."""
 
@@ -79,6 +88,7 @@ class AppServerCaller:
         self.proc = None
         self.serial = 0
         self.log = None  # events of the current call are appended here
+        self.weekly: dict | None = None  # latest subscription weekly-limit snapshot (see weekly_snapshot)
 
     def argv(self) -> list[str]:
         return [self.executable, "app-server", "--strict-config", "-c", 'model_provider="openai"',
@@ -133,6 +143,8 @@ class AppServerCaller:
             raise ConnectionError("codex app-server exited")
         if self.log:
             self.log.write(json.dumps(_elide(message)) + "\n")
+        if message.get("method") == "account/rateLimits/updated":
+            self.weekly = weekly_from(message["params"].get("rateLimits") or {}) or self.weekly
         if "method" in message and "id" in message:  # server-initiated request (approval, tool input): deny
             self._send({"id": message["id"], "error": {"code": -32601, "message": "denied: the robot controller has no tools"}})
         return message
@@ -149,6 +161,16 @@ class AppServerCaller:
                     raise RuntimeError(f"{method} failed: {json.dumps(message['error'])}")
                 return message["result"]
             self.pending.append(message)
+
+    def weekly_snapshot(self, stderr_path: Path) -> dict | None:
+        """Read the weekly usage now (``account/rateLimits/read``; no model call). Used at episode start and end."""
+        if self.proc is None or self.proc.poll() is not None:
+            self._start(stderr_path)
+        reply = self.rpc("account/rateLimits/read", {})
+        snapshot = weekly_from(reply.get("rateLimits") or {})
+        if snapshot:
+            self.weekly = snapshot
+        return snapshot
 
     # -- one decision ---------------------------------------------------------------------------
     def _turn(self, parts: list[dict], folder: Path, suffix: str) -> dict:
@@ -225,7 +247,8 @@ class AppServerCaller:
             attempts.append(record)
             if out["status"] == "completed" and out["text"] and not out["errors"]:
                 (folder / "response.json").write_text(out["text"])
-                result = CallResult(out["text"], out["usage"], out["reasoning"], round(time.monotonic() - start, 2), attempts)
+                result = CallResult(out["text"], out["usage"], out["reasoning"], round(time.monotonic() - start, 2), attempts,
+                                    weekly=self.weekly)
                 self._write_record(folder, result)
                 return result
             error_text = " ".join(out["errors"])
@@ -248,4 +271,5 @@ class AppServerCaller:
             "caller": "codex app-server", "model": self.model, "reasoning_effort": REASONING_EFFORT,
             "reasoning_summary_requested": True, "seconds": result.seconds, "usage": result.usage,
             "reasoning": result.reasoning, "final_text": result.text, "attempts": result.attempts,
+            "weekly_usage_after": result.weekly,
         }, indent=1))

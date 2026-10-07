@@ -81,6 +81,7 @@ def run_episode(sim, caller, cfg: EpisodeConfig, run_dir: Path, demo_parts: list
             failures += 1
             add_usage(usage_total, getattr(exc, "usage", {}))
             record.update(error=str(exc), usage=getattr(exc, "usage", {}), cost=estimate(getattr(exc, "usage", {})))
+            record["weekly"] = getattr(caller, "weekly", None)
             trace_file.write(json.dumps(record) + "\n")
             trace_file.flush()
             if failures >= cfg.failure_limit:
@@ -91,7 +92,7 @@ def run_episode(sim, caller, cfg: EpisodeConfig, run_dir: Path, demo_parts: list
             continue
         t_reply = time.time()
         add_usage(usage_total, reply.usage)
-        record.update(usage=reply.usage, cost=estimate(reply.usage), latency_s=reply.seconds,
+        record.update(usage=reply.usage, cost=estimate(reply.usage), latency_s=reply.seconds, weekly=reply.weekly,
                       reasoning=reply.reasoning, reply_text=reply.text)
         try:
             parsed = json.loads(reply.text)
