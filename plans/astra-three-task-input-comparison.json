@@ -1,0 +1,137 @@
+{
+  "name": "three-task-vla-input-comparison",
+  "status": "prepared-not-started",
+  "model": "gpt-6-astra",
+  "robot": "PandaOmron",
+  "control_hz": 20,
+  "action_chunk": 16,
+  "model_response_timeout_s": null,
+  "wall_timeout_s": null,
+  "attempt_budget": 3000,
+  "query_rounds_per_observation": 4,
+  "max_queries_per_round": 32,
+  "native_success": "all native task conditions; stop immediately on success",
+  "policy_host": "Lab-desktop",
+  "native_host": "Spark2",
+  "media_storage": "Lab-desktop only",
+  "comparison": "A vs B; A vs C; not cumulative",
+  "common_context": {
+    "current_rgb_cameras": 3,
+    "text_history_turns": 12,
+    "memory_prompt_words": 120,
+    "memory_code_char_limit": 2500,
+    "grasp_fact": true,
+    "past_video_input": false
+  },
+  "conditions": {
+    "A": {
+      "name": "basic",
+      "owner": "규리",
+      "condition": "rgb",
+      "shots": 0
+    },
+    "B": {
+      "name": "few-shot",
+      "owner": "규리",
+      "condition": "rgb",
+      "shots": 1
+    },
+    "C": {
+      "name": "integrated-depth",
+      "owner": "민경호",
+      "condition": "hybrid",
+      "shots": 0,
+      "depth_image": true,
+      "pixel_z_query": true,
+      "query_optional": true
+    }
+  },
+  "fixed_baseline_requirements": [
+    "Use exactly the same A scene index, model effort, primer choice, profile and control settings across conditions.",
+    "Use evaluation scenes separate from the B success demonstration."
+  ],
+  "baseline_agreement": {
+    "effort": "must match 규리 A; not yet confirmed",
+    "primer": "must match 규리 A; not yet confirmed",
+    "scene_selection": "proposed scene 0 for each task; not finalized",
+    "repetitions": "not finalized"
+  },
+  "proposed_scenes": [
+    {
+      "scene": 0,
+      "scene_id": "PrepareCoffee-8806552",
+      "folder": "scenes/PrepareCoffee-8806552",
+      "rollout_seed": 8806552,
+      "simulator_seed": 253125551,
+      "horizon": 1800,
+      "layout_id": 1,
+      "style_id": 1,
+      "instruction": "Pick the mug from the cabinet, place it under the coffee machine dispenser, and press the start button.",
+      "manifest_sha256": "aa10fb405907eb4ed8d40e69cac5f78e46dc90d670af228097944389d85a5c67",
+      "build_state_exact": true,
+      "build_initial_images_exact": true
+    },
+    {
+      "scene": 0,
+      "scene_id": "PickPlaceSinkToCounter-8410431",
+      "folder": "scenes/PickPlaceSinkToCounter-8410431",
+      "rollout_seed": 8410431,
+      "simulator_seed": 853169788,
+      "horizon": 1800,
+      "layout_id": 1,
+      "style_id": 1,
+      "instruction": "Pick the fish from the sink and place it on the plate located on the counter.",
+      "manifest_sha256": "8a46bb3ca989a64d008ccf1ac763549c97793ea718cd7cce9f510158b7e84495",
+      "build_state_exact": true,
+      "build_initial_images_exact": true
+    },
+    {
+      "scene": 0,
+      "scene_id": "StirVegetables-8135354",
+      "folder": "scenes/StirVegetables-8135354",
+      "rollout_seed": 8135354,
+      "simulator_seed": 753441189,
+      "horizon": 2400,
+      "layout_id": 1,
+      "style_id": 1,
+      "instruction": "Put the squash and sweet potato in the pot. Retrieve the spatula and lightly stir the vegetables in the pot.",
+      "manifest_sha256": "07773a42585da4657e321a6c5199f3feadcc674af3326223463a21c4e128b384",
+      "build_state_exact": true,
+      "build_initial_images_exact": false
+    }
+  ],
+  "readiness": {
+    "hybrid_input_code": "prepared",
+    "research_note": "updated",
+    "paid_calls_started": 0,
+    "tests_run_this_change": false,
+    "spark2_transport": "pending: current VLA uses host-local Unix socket worker",
+    "lab_media_mount": "pending: existing Spark2 container has no Lab storage mount",
+    "ready_for_model_runs": false
+  },
+  "preserve": [
+    "all prior experiments",
+    "active workers",
+    "original prompts/events/receipts/token counts/checkpoints"
+  ],
+  "run_flags": {
+    "A": [
+      "--condition",
+      "rgb",
+      "--shots",
+      "0"
+    ],
+    "B": [
+      "--condition",
+      "rgb",
+      "--shots",
+      "1"
+    ],
+    "C": [
+      "--condition",
+      "hybrid",
+      "--shots",
+      "0"
+    ]
+  }
+}

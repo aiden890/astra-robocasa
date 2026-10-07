@@ -149,7 +149,7 @@ def run_episode(
                         break
                     if (
                         "actions" in parsed
-                        or condition not in ("pixel", "grid")
+                        or condition not in ("pixel", "grid", "hybrid")
                         or round_number >= QUERY_ROUNDS
                     ):
                         raise ValueError("invalid query round or simultaneous actions/queries")

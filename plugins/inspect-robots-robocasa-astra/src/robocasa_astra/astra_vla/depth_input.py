@@ -15,20 +15,21 @@ from ..depth import normalize_depth_buffer, preview_depth, validate_depth
 from ..depth_query import query_depth
 from .prompts import RESPONSE_SCHEMA, image_part, text_part
 
-CONDITIONS = ("rgb", "color", "pixel", "grid")
+CONDITIONS = ("rgb", "color", "pixel", "grid", "hybrid")
 QUERY_ROUNDS = 4
 
 
 def response_schema(condition: str) -> dict:
-    """Queries and actions are mutually exclusive; RGB/image conditions only allow actions."""
+    """Queries and actions are mutually exclusive; hybrid enables images and pixel queries."""
     schema = copy.deepcopy(RESPONSE_SCHEMA)
-    if condition in ("pixel", "grid"):
+    query_kind = "pixel" if condition == "hybrid" else condition
+    if condition in ("pixel", "grid", "hybrid"):
         fields = {
             "observation_id": {"type": "string"},
             "camera": {"type": "string"},
-            "kind": {"type": "string", "enum": [condition]},
+            "kind": {"type": "string", "enum": [query_kind]},
         }
-        if condition == "pixel":
+        if query_kind == "pixel":
             fields.update(
                 {
                     "u": {"type": "integer"},
@@ -61,22 +62,40 @@ def instructions(condition: str) -> str:
     """Describe only the enabled condition, without exposing depth to RGB-only requests."""
     if condition == "rgb":
         return ""
+    image_note = (
+        "DEPTH IMAGES: aligned grayscale camera Z; near is white, far is "
+        "black. Each image has its own metre scale."
+    )
     if condition == "color":
-        return (
-            "DEPTH IMAGES: aligned grayscale camera Z; near is white, far is "
-            "black. Each image has its own metre scale."
-        )
-    return (
-        f"DEPTH QUERY: instead of actions, return queries (kind={condition}), "
-        "using the current observation_id "
-        "and camera name. Coordinates (u,v) use top-left origin and the "
-        "matching RGB resolution; Z is optical-axis "
-        "distance in metres, not Euclidean range. Pixel queries require "
-        "u,v,radius (0..4); grid queries require "
-        "cell_id r00c00..r15c15 on a 16x16 partition. At most four query "
-        "rounds per observation, then return actions. "
+        return image_note
+    kind = "pixel" if condition == "hybrid" else condition
+    query_note = (
+        f"DEPTH QUERY: instead of actions, return queries (kind={kind}), "
+        "using the current observation_id and camera name. Coordinates (u,v) "
+        "use top-left origin and the matching RGB resolution; Z is optical-axis "
+        "distance in metres, not Euclidean range. "
+    )
+    query_note += (
+        "Pixel queries require u,v,radius (0..4). "
+        if kind == "pixel"
+        else "Grid queries require cell_id r00c00..r15c15 on a 16x16 partition. "
+    )
+    query_note += (
+        "At most four query rounds per observation, then return actions. "
         "A query does not advance physics. Do not return queries and actions together."
     )
+    if condition == "hybrid":
+        return (
+            image_note
+            + "\n\n"
+            + query_note
+            + (
+                " Both inputs are available together: use the depth images for spatial "
+                "context and optionally query precise pixel Z from the same observation. "
+                "A pixel query does not replace or remove the depth images."
+            )
+        )
+    return query_note
 
 
 def render_depths(env, views: list[dict]) -> dict[str, np.ndarray]:
@@ -119,7 +138,7 @@ def extra_parts(obs: dict, folder: Path, condition: str) -> list[dict]:
             + json.dumps([v["name"] for v in obs["views"]])
         )
     ]
-    if condition == "color":
+    if condition in ("color", "hybrid"):
         folder.mkdir(parents=True, exist_ok=True)
         for view in obs["depth_views"]:
             path = folder / f"{view['name']}-depth.png"
@@ -133,6 +152,7 @@ def extra_parts(obs: dict, folder: Path, condition: str) -> list[dict]:
 
 def answer_queries(depths: dict, requests: list, observation_id: str, condition: str) -> list[dict]:
     """Validate every query before returning any answers or advancing an action."""
-    if condition not in ("pixel", "grid") or not 1 <= len(requests) <= 32:
+    if condition not in ("pixel", "grid", "hybrid") or not 1 <= len(requests) <= 32:
         raise ValueError("depth query unavailable or invalid batch size")
-    return [query_depth(depths, request, observation_id, {condition}) for request in requests]
+    kind = "pixel" if condition == "hybrid" else condition
+    return [query_depth(depths, request, observation_id, {kind}) for request in requests]

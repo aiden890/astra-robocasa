@@ -112,7 +112,7 @@ class ChunkServer(Server):
             }
         )
         reply["observation_id"] = self.observation_id
-        if self.condition == "color":
+        if self.condition in ("color", "hybrid"):
             attach_previews(reply, self.depths)
         return reply
 
@@ -217,7 +217,9 @@ def main() -> None:
     parser.add_argument(
         "--scene-dir", help="common frozen scene folder to restore (exact initial state)"
     )
-    parser.add_argument("--condition", choices=("rgb", "color", "pixel", "grid"), default="rgb")
+    parser.add_argument(
+        "--condition", choices=("rgb", "color", "pixel", "grid", "hybrid"), default="rgb"
+    )
     parser.add_argument("--socket")
     args = parser.parse_args()
     protocol = sys.stdout
