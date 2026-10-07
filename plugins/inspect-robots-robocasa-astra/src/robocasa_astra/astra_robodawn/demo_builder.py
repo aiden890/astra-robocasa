@@ -161,6 +161,11 @@ def object_effect(env, pose) -> str:
         data = env.sim.data
         obj = data.body_xpos[ids["obj"]]
         parts.append(f"{env.get_obj_lang('obj')} " + where(rel(obj)))
+        lowest = lowest_point(env, "obj")
+        if lowest is not None:
+            counter = surface_height(env, pose.base, pose.base_rot)
+            gap = (lowest - counter) * 100
+            parts.append(f"its lowest point is {abs(gap):.0f} cm {'above' if gap >= 0 else 'below'} the counter top")
         if "container" in ids:
             cont = data.body_xpos[ids["container"]]
             parts.append(f"{env.get_obj_lang('obj')} centre {np.linalg.norm((obj - cont)[:2]) * 100:.0f} cm "
@@ -173,6 +178,36 @@ def _did_nothing(r: dict) -> bool:
     moved = r.get("moved_cm") or r.get("base_moved_cm") or [0.0]
     turned = r.get("turned_deg", r.get("base_turned_deg", 0.0)) or 0.0
     return float(np.linalg.norm(moved)) < 1.0 and abs(turned) < 3.0
+
+
+def lowest_point(env, name: str) -> float | None:
+    """World height (m) of the object's lowest point, from its collision geoms (mesh vertices, else box corners).
+
+    Bounding boxes are too loose for this: the object's bbox region and MuJoCo's per-geom ``geom_aabb`` both put a
+    fish lying on a plate about 5 cm "below" the counter top, while its mesh vertices are 2 cm above it.
+    """
+    model, data = env.sim.model, env.sim.data
+    raw = getattr(model, "_model", model)
+    try:
+        root = env.obj_body_id[name]
+    except (KeyError, AttributeError):
+        return None
+    signs = np.array([[x, y, z] for x in (-1, 1) for y in (-1, 1) for z in (-1, 1)], dtype=float)
+    lowest = np.inf
+    for g in range(model.ngeom):
+        body = model.geom_bodyid[g]
+        while body not in (0, root):
+            body = model.body_parentid[body]
+        if body != root or (model.geom_contype[g] == 0 and model.geom_conaffinity[g] == 0):
+            continue  # not this object, or a visual-only geom
+        rot = data.geom_xmat[g].reshape(3, 3)
+        if model.geom_type[g] == 7:  # mesh
+            start, count = raw.mesh_vertadr[model.geom_dataid[g]], raw.mesh_vertnum[model.geom_dataid[g]]
+            local = raw.mesh_vert[start:start + count]
+        else:
+            local = model.geom_aabb[g][:3] + signs * model.geom_aabb[g][3:]
+        lowest = min(lowest, float((data.geom_xpos[g] + local @ rot.T)[:, 2].min()))
+    return None if lowest == np.inf else lowest
 
 
 def split_results(results: list[dict]) -> tuple[list[str], list[str]]:
@@ -325,6 +360,8 @@ def build_task_demo(task: str, out: Path, dry: bool = False) -> dict:
     env = make_env_from_ep_meta(task, episode.ep_meta)
     executor = Executor(env, step_budget=plan.get("budget", 100000))
     frames = []
+    camera = plan.get("camera", OVERVIEW_CAMERAS[0])  # the overview camera that shows the task objects best
+    view_name = "right overview camera" if camera.endswith("right") else "left overview camera"
     shown = pick_image_turns(plan["turns"], MAX_DEMO_IMAGES - 1)
     if not dry:
         (out / "frames").mkdir(parents=True, exist_ok=True)
@@ -333,7 +370,7 @@ def build_task_demo(task: str, out: Path, dry: bool = False) -> dict:
         surface = surface_height(env, pose.base, pose.base_rot)
         image = None
         if i - 1 in shown and not dry:
-            img = annotate(env, OVERVIEW_CAMERAS[0], pose.tip, pose.base, pose.base_rot, surface)
+            img = annotate(env, camera, pose.tip, pose.base, pose.base_rot, surface)
             image = f"frames/turn{i:02d}.png"
             img.resize((DEMO_IMAGE_SIZE, DEMO_IMAGE_SIZE)).save(out / image)
         before = executor.state()
@@ -343,7 +380,7 @@ def build_task_demo(task: str, out: Path, dry: bool = False) -> dict:
         moved = np.array(executor.state()["fingertip_cm"]) - tip_before
         relative = object_effect(env, executor.pose())
         effect = (relative + "; " if relative else "") + f"fingertips moved forward {moved[0]:+.0f}, left {moved[1]:+.0f}, up {moved[2]:+.0f} cm"
-        frames.append({"label": f"turn {i}" + (" (image: left overview camera before the turn)" if image else ""),
+        frames.append({"label": f"turn {i}" + (f" (image: {view_name} before the turn)" if image else ""),
                        "image": image, "state": _state_line(before, surface * 100), "scene": turn.get("scene", ""),
                        "plan": turn["plan"], "commands": ok, "failed": failed, "effect": effect,
                        "command_results": _effect(results)})
@@ -353,7 +390,7 @@ def build_task_demo(task: str, out: Path, dry: bool = False) -> dict:
     pose = executor.pose()
     surface = surface_height(env, pose.base, pose.base_rot)
     if not dry:
-        img = annotate(env, OVERVIEW_CAMERAS[0], pose.tip, pose.base, pose.base_rot, surface)
+        img = annotate(env, camera, pose.tip, pose.base, pose.base_rot, surface)
         img.resize((DEMO_IMAGE_SIZE, DEMO_IMAGE_SIZE)).save(out / "frames" / "final.png")
         final_effect = object_effect(env, pose)
         frames.append({"label": "final state (image)", "image": "frames/final.png",

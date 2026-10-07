@@ -1,77 +1,100 @@
 {
  "task": "PickPlaceSinkToCounter",
- "episode": 32,
- "budget": 900,
- "source_note": "Expert episode 32 (layout 40 / style 17, onion -> plate). Expert grasped at fingertips (47, 5, 74) with fingers down and released at (26, 46, 94). The plan below follows these key events; verified with the executor: success after 347 steps.",
- "note": "The object lies in the sink basin, below the counter; the plate (container) is on the counter beside the sink. Grasp from above around the object's middle height, lift clear of the counter, transport in short steps, lower until just above the plate, release, then move the gripper more than 25 cm away. A first attempt that grasped 3 cm above the middle dropped the object during a fast 20 cm sideways move.",
+ "episode": 29,
+ "source_note": "Expert episode 29 (layout 15 / style 28, 'Pick the fish from the sink and place it on the plate located on the counter.'). The expert grasped the fish across its middle at fingertip height ~77 and lifted it to ~111-117 cm (20-25 cm above the counter) before carrying it to the plate. The command plan below follows that and was verified with the executor.",
+ "note": "The object (a fish, about 20 cm long) lies in the sink basin, below the counter top; the plate is on the counter to the right of the sink. Long objects: grasp across the MIDDLE of the body with the fingers pointing down (the fingers close left-right, across the fish), at the body's own height (descend until the fingertips touch it). The order matters: FIRST lift straight up (a little back, away from the faucet) until the object's LOWEST point is well above the counter top and the sink rim (here the fingertips went to ~114 cm, 22 cm above the counter), THEN carry it sideways at that height in 10 cm steps until it is above the plate centre, THEN lower it onto the plate, release, and lift the gripper away (more than 25 cm from the object). Moving sideways while the object is still low drags it against the sink wall and pulls it out of the fingers.",
  "turns": [
   {
-   "scene": "An onion lies in the sink basin straight ahead (about forward 44, left -1); the sink bottom is ~20 cm below the counter top. The plate is on the counter to the left (about forward 30, left 48).",
-   "plan": "Point the fingers down and move out over the object.",
+   "scene": "Fish lying in the sink basin, about 30 cm right of the fingertips and 28 cm further forward; plate on the counter far to the right.",
+   "plan": "Point the fingers down and move right until the fingertips are above the fish's line.",
    "commands": [
     "point down",
-    "move forward 19"
+    "move right 20",
+    "move right 10"
    ]
   },
   {
-   "scene": "Fingertips above the object, high above the sink.",
-   "plan": "Descend into the sink until the fingertips are at the object's middle height (grasp around its centre, not its top).",
+   "scene": "Fingertips above the sink, right of centre, behind the fish.",
+   "plan": "Move forward until the fingertips are above the middle of the fish.",
+   "commands": [
+    "move forward 20",
+    "move forward 10"
+   ]
+  },
+  {
+   "scene": "Fingertips about 52 cm above the fish's middle.",
+   "plan": "Descend into the sink towards the fish.",
    "commands": [
     "move down 20",
-    "move down 20",
-    "move down 16"
+    "move down 20"
    ]
   },
   {
-   "scene": "Wrist camera: the object is centred between the open fingers.",
-   "plan": "Grasp.",
+   "scene": "Fingertips just above the fish's middle, fingers open across its body.",
+   "plan": "Descend until the fingertips touch the fish (the move stops on contact).",
+   "commands": [
+    "move down 13",
+    "move down 6"
+   ]
+  },
+  {
+   "scene": "Fingers around the middle of the fish.",
+   "plan": "Grasp it across the body.",
    "commands": [
     "gripper close"
    ]
   },
   {
-   "scene": "Object held (opening stopped at 0.86).",
-   "plan": "Lift it well above the counter top before moving sideways.",
+   "scene": "Fish held across its middle (opening 0.64: something is between the fingers).",
+   "plan": "Lift STRAIGHT UP first, a little back away from the faucet, until the whole fish is well above the counter top.",
    "commands": [
+    "move back 5",
     "move up 20",
-    "move up 15"
+    "move up 20"
+   ],
+   "image": true
+  },
+  {
+   "scene": "Fish held high above the sink, its lowest point well above the counter top.",
+   "plan": "Only now carry it sideways towards the plate, at this height, in 10 cm steps.",
+   "commands": [
+    "move back 12",
+    "move right 10",
+    "move right 10"
+   ],
+   "image": true
+  },
+  {
+   "scene": "Fish above the counter, between the sink and the plate.",
+   "plan": "Finish the sideways carry until the fish is above the plate centre.",
+   "commands": [
+    "move right 10",
+    "move right 8"
    ]
   },
   {
-   "scene": "Object lifted to about height 108.",
-   "plan": "Carry it towards the plate in 10 cm steps so it does not slip: a little back and to the left.",
+   "scene": "Fish held above the middle of the plate.",
+   "plan": "Lower it until it rests on the plate (the move stops on contact).",
    "commands": [
-    "move back 7",
-    "move left 10",
-    "move left 10",
-    "move left 10"
-   ]
+    "move down 20"
+   ],
+   "image": true
   },
   {
-   "scene": "Object halfway to the plate.",
-   "plan": "Finish the transport until the object is above the plate centre.",
+   "scene": "Fish lying on the plate, still held.",
+   "plan": "Release.",
    "commands": [
-    "move back 6",
-    "move left 10",
-    "move left 8"
-   ]
-  },
-  {
-   "scene": "Object above the plate.",
-   "plan": "Lower it until it is just above the plate, then release.",
-   "commands": [
-    "move down 12",
     "gripper open"
    ]
   },
   {
-   "scene": "Object resting on the plate, gripper open.",
-   "plan": "Move the gripper well away (the check requires more than 25 cm between gripper and object): up and back.",
+   "scene": "Fish released on the plate.",
+   "plan": "Move the gripper well away: straight up (the check needs more than 25 cm between gripper and object).",
    "commands": [
     "move up 20",
-    "move up 10",
-    "move back 15"
+    "move up 10"
    ]
   }
- ]
+ ],
+ "camera": "robot0_agentview_right"
 }

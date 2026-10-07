@@ -58,6 +58,16 @@ tips:
   After 'gripper close' check the reported opening and, after lifting, that the object visibly rose with the
   gripper. If not, open, re-align (often 1-2 cm off) and retry.
 - >-
+  Carrying a held object, in this order: (1) FIRST lift straight up until the object's LOWEST point - not the
+  fingertips - is clearly above every rim and edge on the way (sink rim, counter edge, shelf); a long object
+  held near one end hangs 10-20 cm below the fingertips. (2) THEN move sideways at that height, one direction per
+  command and at most 10 cm per command. (3) Lower it only when it is above the target. Never combine a sideways
+  and a downward move in the same turn while holding something, and if the opening drops towards 0.00 while
+  carrying, the object has slipped out.
+- >-
+  Long objects (fish, carrot, banana, cucumber, spatula): grasp across the MIDDLE of the body, fingers
+  closing across it, so the object stays level instead of hanging from one end.
+- >-
   Many success checks require the gripper to be clearly away from the object at the end (often more than
   25 cm): after releasing, move the gripper away (e.g. up and back) and keep acting until the episode ends.
 - >-

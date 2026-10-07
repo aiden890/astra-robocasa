@@ -168,7 +168,7 @@ def _task_parts(demo: Demo) -> list[dict]:
     n_img = sum(1 for f in d["frames"] if f.get("image"))
     header = (f"DEMONSTRATION (a successful episode of the same kind of task in a DIFFERENT kitchen; {len(d['frames'])} "
               f"turns, {n_img} images). Its instruction was: \"{d['instruction']}\".\n"
-              "For each turn you see the image the controller received (left overview camera, when shown), then its "
+              "For each turn you see the image the controller received (an overview camera named in the turn label, when shown), then its "
               "state, the scene as read off that image, its plan and the commands it sent; the next turn starts after "
               "they were executed. Copy the strategy (order of sub-goals, gripper orientation, how it aligned, approach "
               "and retreat), NOT its numbers: positions and heights in your kitchen differ.")
