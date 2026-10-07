@@ -97,7 +97,7 @@ function showOutput() {
   [["input-token","input_tokens"],["output-token","output_tokens"],["cache-token","cached_input_tokens"],["total-token","total_tokens"]].forEach(([id,key])=>el(id).textContent=token(row.usage?.[key]));
   el("action-phase").textContent=query?"거리 조회 · 로봇 정지 · 행동 값은 미적용":"시뮬레이터에 적용하는 행동";
   el("repeat").textContent=query?"":row.response.repeat+" native 스텝 반복";
-  el("action").textContent=query?"거리 조회가 있으므로 이 응답의 action/repeat는 적용하지 않습니다.":JSON.stringify(row.response.action,null,2);
+  el("action").textContent=JSON.stringify(row.response.action,null,2)+(query?"\n거리 조회 응답: 이 벡터는 로봇에 적용하지 않습니다.":"");
   const group=calls.filter(c=>c.step===row.step);
   const requests=group.flatMap(c=>c.response.queries||[]);
   const answers=row.query_answers?.length?row.query_answers:group.flatMap(c=>c.query_answers||[]);

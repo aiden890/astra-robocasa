@@ -193,7 +193,14 @@ def publish(root, job, result, active):
         "condition": job["condition"],
         "model": "gpt-6-astra",
         "robot": "PandaOmron",
-        "status": "complete" if normal else "running" if active else "error",
+        "status": "user-stopped"
+        if result.get("user_assessment") == "failed"
+        else "complete"
+        if normal
+        else "running"
+        if active
+        else "error",
+        "user_assessment": result.get("user_assessment"),
         "task_success": result.get("task_success"),
         "steps": step,
         "fps": 20,
@@ -213,20 +220,22 @@ def supervise(root, plan):
     fcntl.flock(lock, fcntl.LOCK_EX | fcntl.LOCK_NB)
     (root / "study.pid").write_text(str(os.getpid()))
     jobs = plan["jobs"]
-    active, finished, failed, attempts, children = {}, {}, {}, {}, {}
+    active, finished, failed, attempts, children, assessed = {}, {}, {}, {}, {}, {}
     for job in jobs:
         pid_file = root / "pids" / (job["id"] + ".json")
         result_file = root / "results" / job["namespace"] / job["scene"] / "result.json"
         result = json.loads(result_file.read_text()) if result_file.exists() else {}
         if valid_evaluation(result):
             finished[job["id"]] = result
+        elif result.get("user_assessment") == "failed":
+            assessed[job["id"]] = result
         if pid_file.exists():
             old = json.loads(pid_file.read_text())
             attempts[job["id"]] = old["attempt"]
             if alive(old["pid"], argv(root, job)):
                 job["container"] = old["container"]
                 active[job["id"]] = (old["pid"], job)
-    limit, last_ramp = 8, time.monotonic()
+    limit, last_ramp = plan.get("initial_parallel", 8), time.monotonic()
     while True:
         if (root / "STOP_REQUESTED").exists():
             return  # An exact stop operation must separately stop existing clients.
@@ -255,7 +264,10 @@ def supervise(root, plan):
         pending = [
             j
             for j in jobs
-            if j["id"] not in active and j["id"] not in finished and j["id"] not in failed
+            if j["id"] not in active
+            and j["id"] not in finished
+            and j["id"] not in failed
+            and j["id"] not in assessed
         ]
         try:
             sample = resource_sample()
@@ -338,6 +350,8 @@ def supervise(root, plan):
             else "recovery-needed",
             "expected": len(jobs),
             "normal_results": len(finished),
+            "user_assessed_failures": assessed,
+            "assessed_results": len(finished) + len(assessed),
             "results": finished,
             "failed": failed,
             "active": [
@@ -347,7 +361,10 @@ def supervise(root, plan):
                 [
                     j
                     for j in jobs
-                    if j["id"] not in active and j["id"] not in finished and j["id"] not in failed
+                    if j["id"] not in active
+                    and j["id"] not in finished
+                    and j["id"] not in failed
+                    and j["id"] not in assessed
                 ]
             ),
             "parallel_limit": limit,
@@ -357,13 +374,18 @@ def supervise(root, plan):
         atomic_json(root / "status.json", state)
         records = []
         for job in jobs:
-            if job["id"] not in active and job["id"] not in finished and job["id"] not in failed:
+            if (
+                job["id"] not in active
+                and job["id"] not in finished
+                and job["id"] not in failed
+                and job["id"] not in assessed
+            ):
                 continue
             try:
                 row = publish(
                     root,
                     job,
-                    finished.get(job["id"], failed.get(job["id"], {})),
+                    finished.get(job["id"], failed.get(job["id"], assessed.get(job["id"], {}))),
                     job["id"] in active,
                 )
                 if row:

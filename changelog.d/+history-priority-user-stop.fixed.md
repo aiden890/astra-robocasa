@@ -1,0 +1,1 @@
+Preserve user-assessed stopped history trials without redispatching or counting them as native results. Keep video search filters fixed, scroll the library independently, and display action vectors beside model explanations.
