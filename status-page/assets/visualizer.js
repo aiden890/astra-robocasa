@@ -171,7 +171,8 @@ function renderQueryImages(row){
         const color=['#ff5466','#51e4ff','#ffe066','#a78bfa'][index%4];ctx.strokeStyle=color;ctx.fillStyle=color;ctx.lineWidth=2;ctx.beginPath();ctx.arc(q.u,q.v,Math.max(5,q.radius||0),0,2*Math.PI);ctx.stroke();
         ctx.beginPath();ctx.moveTo(q.u-8,q.v);ctx.lineTo(q.u+8,q.v);ctx.moveTo(q.u,q.v-8);ctx.lineTo(q.u,q.v+8);ctx.stroke();
         const text=(index+1)+': '+(Number.isFinite(a?.pixel_depth_m)?(a.pixel_depth_m*100).toFixed(2)+' cm':'Z ?');
-        const width=ctx.measureText(text).width+8,x=Math.max(0,Math.min(q.u+10,canvas.width-width)),y=Math.max(15,Math.min(q.v-10-index%2*16,canvas.height-3));
+        ctx.fillText(String(index+1),Math.min(q.u+9,canvas.width-12),Math.min(q.v+5,canvas.height-3));
+        const width=ctx.measureText(text).width+8,x=6,y=18+index*22;
         ctx.fillStyle='rgba(0,0,0,0.85)';ctx.fillRect(x,y-13,width,17);ctx.fillStyle=color;ctx.fillText(text,x+4,y);
       });
     };img.src=sameOriginPath(item.url);
