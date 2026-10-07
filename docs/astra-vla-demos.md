@@ -6,6 +6,8 @@ Every real `gpt-6-astra` run of the VLA-output variant: one chunk of 16 x 12-D R
 | # | phase | task | scene | shots | result | turns | steps | credits / API $ | time | videos |
 |---|---|---|---|---|---|---|---|---|---|---|
 | 1 | ? | OpenCabinet | scene 0 (OpenCabinet-8106356) | 1 | fail (interrupted) | 11 | 176/1800 | 71.6 cr / $2.86 | 4.4 min | [debug_sim.mp4](../runs/vla12/V1-OpenCabinet-scene0-1shot/debug_sim.mp4) · [video.mp4](../runs/vla12/V1-OpenCabinet-scene0-1shot/video.mp4) |
+| 2 | ? | OpenCabinet | scene 0 (OpenCabinet-8106356) | 1 | SUCCESS (success) | 39 | 620/1800 | 216.3 cr / $8.65 | 15.4 min | [debug_sim.mp4](../runs/vla12/V2-OpenCabinet-scene0-1shot/debug_sim.mp4) · [video.mp4](../runs/vla12/V2-OpenCabinet-scene0-1shot/video.mp4) |
+| 3 | ? | PrepareCoffee | scene 0 (PrepareCoffee-8806552) | 1 | interrupted (no summary) | - | - | - | - | - |
 
 ## Run details
 
@@ -18,3 +20,22 @@ Every real `gpt-6-astra` run of the VLA-output variant: one chunk of 16 x 12-D R
 - Videos: debug (sim time): [debug_sim.mp4](../runs/vla12/V1-OpenCabinet-scene0-1shot/debug_sim.mp4) · raw cameras: [video.mp4](../runs/vla12/V1-OpenCabinet-scene0-1shot/video.mp4)
 - Run directory: `runs/vla12/V1-OpenCabinet-scene0-1shot` (trace.jsonl, calls/, turns/, replay/)
 - Note: First VLA-output run (16 x 12-D chunks, open loop), OpenCabinet scene 0, 1-shot, 1800 steps. Stopped by Claude at turn 11 / step 176 because the shared subscription's weekly meter rose 89% -> 91% in 10 turns (other users had moved it from 49% to 89% earlier). Not a task result. The chunks were well formed every turn and the measured motion matched the model's stated plan (e.g. asked ~12 cm forward/14 cm up, got +9.3/+12.0); it turned the fingers forward, retracted, re-aligned and closed on the left handle at turn 11. ~24k input tokens per call with almost no prompt-cache hits (1 of 11), 71.6 estimated credits for 11 calls (~6.5 per call vs ~2.1 for skill turns).
+
+### 2. `V2-OpenCabinet-scene0-1shot`
+
+- Result: SUCCESS (success); turns 39; native steps 620/1800; wall time 15.4 min
+- Settings: task OpenCabinet, scene 0 (OpenCabinet-8106356), 1-shot, step budget 1800, max turns 112, model gpt-6-astra (effort low), Codex codex-cli 0.159.2, git 302fb5a
+- Prompt: system prompt md5 `2baf94d5`; in-context demos: primer, OpenCabinet
+- Tokens: input 984,364 (cached 273,408), output 25,364; spend 216.3 cr / $8.65
+- Videos: debug (sim time): [debug_sim.mp4](../runs/vla12/V2-OpenCabinet-scene0-1shot/debug_sim.mp4) · raw cameras: [video.mp4](../runs/vla12/V2-OpenCabinet-scene0-1shot/video.mp4)
+- Run directory: `runs/vla12/V2-OpenCabinet-scene0-1shot` (trace.jsonl, calls/, turns/, replay/)
+- Note: SUCCESS at turn 39 / step 620 (1800 budget), OpenCabinet scene 0, 1-shot, VLA output (16 x 12-D chunks, open loop). First Astra success on OpenCabinet in any variant (skill runs P4, P7, P8, P9 on this task all failed). Sequence: fingers turned forward (turn 3), grasped the left handle at turn 9 (opening 0.26), pulled it along the hinge arc in ~7 cm chunks to turn 20, released and dropped below the door, crossed to the right door (turns 21-27), grasped it at turn 30 (0.25) and swung it to the stop (turn 39). No regrasp failures. 216.3 estimated credits (984k input, 27% cached); weekly meter 9% -> 12%.
+
+### 3. `V3-PrepareCoffee-scene0-1shot`
+
+- Result: interrupted (no summary); turns -; native steps -; wall time -
+- Settings: task PrepareCoffee, scene 0 (PrepareCoffee-8806552), 1-shot, step budget 1800, max turns 112, model gpt-6-astra (effort low), Codex codex-cli 0.159.2, git 302fb5a
+- Prompt: system prompt md5 `24aecfed`; in-context demos: primer, PrepareCoffee
+- Tokens: input 0 (cached 0), output 0; spend -
+- Videos: -
+- Run directory: `runs/vla12/V3-PrepareCoffee-scene0-1shot` (trace.jsonl, calls/, turns/, replay/)
