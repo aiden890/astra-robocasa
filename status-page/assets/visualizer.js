@@ -127,23 +127,18 @@ function showOutput() {
 }
 function renderActionLegend(action,query){
   const supported=selected?.robot==='PandaOmron'&&Array.isArray(action)&&action.length===12;
-  el('action-legend').hidden=!supported;el('action-components').replaceChildren();if(!supported)return;
-  const meanings=[
-    '손끝 이동 Δx · 로봇 베이스 좌표계 X축',
-    '손끝 이동 Δy · 로봇 베이스 좌표계 Y축',
-    '손끝 이동 Δz · 로봇 베이스 좌표계 Z축 (양수: 위)',
-    '손끝 회전 Δrx · X축 회전벡터 성분',
-    '손끝 회전 Δry · Y축 회전벡터 성분',
-    '손끝 회전 Δrz · Z축 회전벡터 성분',
-    '그리퍼 · +1 닫기 / −1 열기 / 0 개폐 목표 변화 없음',
-    '이동 베이스 · 전후 방향 속도 입력',
-    '이동 베이스 · 좌우 방향 속도 입력',
-    '이동 베이스 · 수직축 회전(yaw) 속도 입력',
-    '몸통 높이 관절 · JOINT_POSITION 입력',
-    '모드 · ≤0: 현재 팔 위치 기준 / >0: 이동 베이스 추종용 팔 목표 기준'
+  el('action-legend').hidden=!supported;el('action').hidden=supported;el('action-components').replaceChildren();if(!supported)return;
+  const value=i=>Number(action[i]).toLocaleString('en-US',{maximumFractionDigits:4});
+  const rows=[
+    ['1–3','손끝 이동','X '+value(0)+' · Y '+value(1)+' · Z '+value(2)],
+    ['4–6','손끝 회전','X '+value(3)+' · Y '+value(4)+' · Z '+value(5)],
+    ['7','그리퍼',value(6)+' · '+(action[6]>0?'닫기':action[6]<0?'열기':'개폐 목표 유지')],
+    ['8–10','이동 베이스','전후 '+value(7)+' · 좌우 '+value(8)+' · 회전 '+value(9)],
+    ['11','몸통 높이',value(10)],
+    ['12','팔 목표 갱신 모드',value(11)+' · '+(action[11]>0?'이동 베이스 추종 목표 기준':'현재 팔 위치 기준')]
   ];
-  meanings.forEach((meaning,i)=>{const tr=document.createElement('tr');for(const value of [(i+1)+'번 / ['+i+']',String(action[i]),meaning]){const td=document.createElement('td');td.textContent=value;tr.append(td);}el('action-components').append(tr);});
-  el('action-controller-note').textContent='PandaOmron · HYBRID_MOBILE_BASE / OSC_POSE · 이동 1.0은 목표 변화 0.05m, 회전 1.0은 0.5rad로 스케일됩니다. 실제 이동량은 물리·충돌에 따라 달라집니다. 회전은 Euler 각도가 아닌 회전벡터입니다. repeat만큼 20Hz에서 반복 적용합니다.'+(query?' 이 호출은 거리 조회이므로 모든 행동 성분과 repeat는 미적용입니다.':'');
+  for(const row of rows){const tr=document.createElement('tr');for(const text of row){const td=document.createElement('td');td.textContent=text;tr.append(td);}el('action-components').append(tr);}
+  el('action-controller-note').textContent=(query?'거리 조회 호출: 위 명령은 로봇에 적용하지 않습니다. ':'')+'값은 −1~+1 컨트롤러 입력입니다. 손끝 이동·회전은 로봇 베이스 좌표계 기준이며, 이동 1은 0.05m, 회전 1은 0.5rad 목표 변화입니다. 회전은 회전벡터이며 실제 움직임은 물리·충돌에 따라 달라집니다.';
 }
 function renderQuerySummary(row){
   el('query-rows').replaceChildren();
