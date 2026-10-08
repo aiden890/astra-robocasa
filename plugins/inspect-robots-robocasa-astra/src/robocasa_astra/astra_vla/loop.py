@@ -25,6 +25,7 @@ def run_episode(
     demo_parts: list[dict],
     condition: str = "rgb",
     resume: bool = False,
+    context: str = "full",
 ) -> dict:
     """Resume the same decision and native chunk without applying acknowledged rows again."""
     run_dir = Path(run_dir)
@@ -95,8 +96,8 @@ def run_episode(
                 instruction,
                 state,
                 obs["dataset_state"],
-                last_results,
-                memory.render(),
+                last_results if context == "full" else [],
+                memory.render() if context == "full" else "",
                 [v["caption"] for v in obs["views"]],
                 cfg.task,
             )
@@ -261,5 +262,6 @@ def run_episode(
         "cost_is_lower_bound": unknown > 0,
         "config": asdict(cfg),
         "condition": condition,
+        "context": context,
         "output_format": "vla12-chunk16",
     }

@@ -49,6 +49,7 @@ def prepare(argv: list[str] | None = None):
     )
     parser.add_argument("--condition", choices=CONDITIONS, default="rgb")
     parser.add_argument("--effort", choices=("low", "medium", "high"), default="low")
+    parser.add_argument("--context", choices=("full", "none"), default="full", help="none omits prior chunk feedback, recent turns and accumulated notes from model inputs")
     parser.add_argument("--budget", type=int)
     parser.add_argument("--output", type=Path)
     parser.add_argument("--resume", type=Path, help="adopt/recover this existing unfinished run")
@@ -82,6 +83,7 @@ def prepare(argv: list[str] | None = None):
             "--primer",
             "--condition",
             "--effort",
+            "--context",
             "--budget",
             "--max-turns",
             "--attempt-budget",
@@ -119,7 +121,7 @@ def prepare(argv: list[str] | None = None):
         demos = vla_demos(args.task, args.shots, primer=args.primer)
         block = demo_parts(demos)
         (run_dir / "system_prompt.md").write_text(
-            system_prompt(load_profile(), args.task, bool(block))
+            system_prompt(load_profile(), args.task, bool(block), context=args.context)
             + "\n\n"
             + instructions(args.condition)
         )
@@ -139,6 +141,7 @@ def prepare(argv: list[str] | None = None):
             "shots": args.shots,
             "primer": args.primer,
             "condition": args.condition,
+            "context": args.context,
             "budget": budget,
             "protocol_horizon": scene["horizon"],
             "max_turns": cfg.max_turns,

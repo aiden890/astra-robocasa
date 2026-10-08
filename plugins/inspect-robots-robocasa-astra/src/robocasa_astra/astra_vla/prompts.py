@@ -96,7 +96,7 @@ def vla_demos(task: str, shots: int = 0, *, primer: bool = False) -> list[Demo]:
     return [d for d in demos if primer or d.data["kind"] != "primer"]
 
 
-def system_prompt(profile: dict, task: str | None = None, shown_demos: bool = False) -> str:
+def system_prompt(profile: dict, task: str | None = None, shown_demos: bool = False, *, context: str = "full") -> str:
     """Static instructions for the whole episode (the app-server thread's base instructions)."""
     success = SUCCESS_CONDITIONS.get(task)
     parts = [
@@ -142,7 +142,18 @@ def system_prompt(profile: dict, task: str | None = None, shown_demos: bool = Fa
         "the task checker registers success, so "
         "as long as you keep receiving turns the task is NOT complete yet."
     )
-    return "\n\n".join(parts)
+    text = "\n\n".join(parts)
+    if context == "none":
+        text = text.replace("you get new images and what the chunk did.", "you get new images and the current robot state.")
+        text = text.replace("you get new images, the state and what the chunk did.", "you get new images and the current robot state.")
+        text = text.replace("which sub-goal you are on and whether your last ", "the sub-goal indicated by the current observation; describe this ")
+        text = text.replace("chunk had the intended effect", "observation only")
+        text = text.replace(
+            '"memory": rewrite your running notes: what you achieved, what you learned (heights that worked, motions that failed and why), what remains; under 120 words',
+            '"memory": a brief note about the CURRENT observation only; these notes are recorded for review but never supplied in later requests'
+        )
+        text += "\n\nCONTEXT ABLATION: each request is independent. Previous actions, their execution feedback, recent turn history and accumulated notes are NOT provided. Use only the current RGB observations, current robot state, task goal and control rules. Do not assume knowledge of earlier attempts."
+    return text
 
 
 def turn_text(
