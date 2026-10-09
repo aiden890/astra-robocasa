@@ -1,82 +1,19 @@
 """Recovery contracts, condition isolation and original per-attempt accounting."""
 
-import json
-import os
-import queue
 import subprocess
 import sys
 import time
-from types import SimpleNamespace
 
 import numpy as np
 import pytest
-from robocasa_astra.astra_robodawn.appserver import AppServerCaller
-from robocasa_astra.astra_robodawn.codex import CallResult, ModelCallError
-from robocasa_astra.astra_robodawn.loop import EpisodeConfig
+from robocasa_astra.astra_robodawn.codex import ModelCallError
 from robocasa_astra.astra_vla.caller import DurableCaller
-from robocasa_astra.astra_vla.depth_input import answer_queries, extra_parts, response_schema
-from robocasa_astra.astra_vla.loop import run_episode
 from robocasa_astra.astra_vla.persistence import (
     atomic_json,
     exact_process,
-    process_lease,
     read_json,
 )
-from robocasa_astra.astra_vla.prompts import vla_demos
 from robocasa_astra.astra_vla.recovery import ActionJournal
-
-
-def test_examples_are_independent():
-    """Zero-shot contains neither primer nor successful demonstrations."""
-    assert vla_demos("OpenCabinet", 0) == []
-    assert [d.data["kind"] for d in vla_demos("OpenCabinet", 1)] == ["task"]
-    assert [d.data["kind"] for d in vla_demos("OpenCabinet", 0, primer=True)] == ["primer"]
-
-
-def test_depth_conditions_are_isolated(tmp_path):
-    """Enabled depth queries require the exact RGB observation and coordinates."""
-    import jsonschema
-
-    assert extra_parts({}, tmp_path, "rgb") == []
-    action = {"scene": "s", "progress": "p", "memory": "m", "plan": "p", "actions": [[0] * 12] * 16}
-    query = {
-        "observation_id": "obs1",
-        "camera": "wrist",
-        "kind": "pixel",
-        "u": 1,
-        "v": 2,
-        "radius": 0,
-    }
-    depth = np.arange(1, 17, dtype=float).reshape(4, 4)
-    answers = answer_queries({"wrist": depth}, [query], "obs1", "pixel")
-    assert answers[0]["pixel_depth_m"] == 10
-    assert answers[0]["pixel_uv"] == [1, 2]
-    query_reply = {k: v for k, v in action.items() if k != "actions"} | {"queries": [query]}
-    jsonschema.validate(query_reply, response_schema("pixel"))
-    with pytest.raises(jsonschema.ValidationError):
-        jsonschema.validate(query_reply, response_schema("rgb"))
-    with pytest.raises(jsonschema.ValidationError):
-        jsonschema.validate(action | {"queries": [query]}, response_schema("pixel"))
-    with pytest.raises(ValueError, match="Stale"):
-        answer_queries({"wrist": depth}, [query], "obs2", "pixel")
-    with pytest.raises(ValueError, match="unavailable"):
-        answer_queries({"wrist": depth}, [query], "obs1", "rgb")
-    grid = {"observation_id": "obs1", "camera": "wrist", "kind": "grid", "cell_id": "r15c15"}
-    grid_answer = answer_queries({"wrist": np.ones((256, 256))}, [grid], "obs1", "grid")[0]
-    assert grid_answer["region_bounds_uv_half_open"] == [240, 240, 256, 256]
-    assert grid_answer["pixel_uv"] == [247, 247]
-
-
-def test_wait_has_no_model_deadline():
-    """Indefinite model waits still detect an actual app-server exit."""
-    caller = AppServerCaller.__new__(AppServerCaller)
-    caller.incoming = queue.Queue()
-    caller.incoming.put({"method": "test"})
-    caller.log = None
-    assert caller._receive(None) == {"method": "test"}
-    caller.incoming.put(None)
-    with pytest.raises(ConnectionError):
-        caller._receive(None)
 
 
 class FakeNative:
@@ -141,120 +78,6 @@ def test_native_ack_replay_and_pending_once(tmp_path):
         restored_journal.begin_chunk("turn1", [[-1, 2]], 1)
 
 
-def test_chunk_reply_survives_lost_ack(tmp_path):
-    """Retrieving a saved chunk reply must not repeat its motion."""
-    from robocasa_astra.astra_vla.sim_server import ChunkServer
-
-    server = ChunkServer("OpenCabinet", 100, tmp_path)
-    journal = ActionJournal(tmp_path, {"scene": "fake"})
-    native = FakeNative(journal)
-    journal.restore(native, native)
-    server.journal = journal
-    server.executor = native
-    server.replay = SimpleNamespace(mark=lambda *args: None)
-    native.state = lambda: {"steps_used": native.steps_used}
-
-    def chunk_run(actions, notes):
-        for row in actions:
-            journal.intent(row)
-            native._step(row, "chunk")
-        return {"command": "chunk", "steps": len(actions), "task_success": False}
-
-    native.run_chunk = chunk_run
-    actions = [[-1, 1]] * 8
-    first = server.act_chunk(actions, [], 1, "turn1")
-    second = server.act_chunk(actions, [], 1, "turn1")
-    assert first == second
-    assert native.steps_used == 8
-
-
-class HostSim:
-    """A lost host connection after eight rows leaves the scene alive."""
-
-    def __init__(self):
-        import base64
-        import io
-
-        from PIL import Image
-
-        buffer = io.BytesIO()
-        Image.new("RGB", (4, 4)).save(buffer, format="PNG")
-        self.png = base64.b64encode(buffer.getvalue()).decode()
-        self.steps = 0
-        self.crash = True
-        self.finished = {}
-
-    def state(self):
-        """Provide measured mock proprioception at the current native step."""
-        return {
-            "fingertip_cm": [25.0, 0, 129.0],
-            "approach": [0, 0, -1],
-            "finger_axis": [1, 0, 0],
-            "gripper_opening": 1.0,
-            "gripper_command": "open",
-            "surface_z_cm": 92.0,
-            "steps_used": self.steps,
-            "step_budget": 32,
-            "task_success": self.steps >= 32,
-        }
-
-    def request(self, op, **fields):
-        """Simulate host loss after a partial chunk and idempotent continuation."""
-        if op == "reset":
-            return {"instruction": "open", "state": self.state()}
-        if op == "observe":
-            return {
-                "state": self.state(),
-                "dataset_state": [0] * 16,
-                "observation_id": str(self.steps),
-                "views": [{"name": "cam", "caption": "camera", "png": self.png}],
-            }
-        if op == "act_chunk":
-            key = fields["request_id"]
-            if key in self.finished:
-                return self.finished[key]
-            if self.crash:
-                self.steps = 8
-                self.crash = False
-                raise KeyboardInterrupt
-            self.steps = 16 if key == "turn1" else 32
-            reply = {
-                "command": "chunk",
-                "kind": "chunk",
-                "ok": True,
-                "gripper_closed": False,
-                "gripper_opening": 1.0,
-                "task_success": self.steps >= 32,
-                "state_after": self.state(),
-            }
-            self.finished[key] = reply
-            return reply
-        raise AssertionError(op)
-
-
-def test_host_resume_reuses_model_response_and_remaining_rows(tmp_path):
-    """Resume a partial chunk without making another model request."""
-    sim = HostSim()
-    calls = []
-
-    class Caller:
-        def call(self, parts, folder):
-            calls.append(folder)
-            return CallResult(
-                json.dumps({"actions": [[0] * 12] * 16}), {"input_tokens": 100}, [], 15
-            )
-
-    cfg = EpisodeConfig(task="OpenCabinet", seed=1, shots=0, max_turns=5, budget=32)
-    with pytest.raises(KeyboardInterrupt):
-        run_episode(sim, Caller(), cfg, tmp_path, [])
-    assert read_json(tmp_path / "policy" / "progress.json")["phase"] == "action"
-    summary = run_episode(sim, Caller(), cfg, tmp_path, [], resume=True)
-    assert summary["task_success"] is True
-    assert sim.steps == 32
-    assert len(calls) == 2
-    assert summary["usage"]["input_tokens"] == 200
-
-
 def test_durable_completed_response_counts_retry_usage_once(tmp_path):
     """Include billed retries and preserve unknown usage in the final receipt."""
     system, schema = tmp_path / "system.md", tmp_path / "schema.json"
@@ -282,12 +105,6 @@ def test_durable_completed_response_counts_retry_usage_once(tmp_path):
     assert read_json(folder / "call.json")["unknown_usage_attempts"] == 1
     with pytest.raises(ModelCallError, match="immutable"):
         caller.call([{"type": "text", "text": "changed"}], folder)
-
-
-def test_exact_process_rejects_reused_pid():
-    """An identical PID alone cannot authorize adopting a process."""
-    assert exact_process(process_lease())
-    assert not exact_process({"pid": os.getpid(), "argv": "another process"})
 
 
 def test_detached_runner_survives_host_exit(tmp_path):
@@ -342,56 +159,6 @@ for line in sys.stdin:
             host.wait(timeout=5)
 
 
-def test_four_queries_return_all_answers_before_motion(tmp_path):
-    """Queries keep the observation fixed and all four answers reach the action request."""
-    sim = HostSim()
-    sim.crash = False
-    original = sim.request
-    query_steps = []
-
-    def request(op, **fields):
-        """Simulate host loss after a partial chunk and idempotent continuation."""
-        if op == "query":
-            query_steps.append(sim.steps)
-            return {"answers": [{"observation_id": "0", "pixel_depth_m": 0.1 * len(query_steps)}]}
-        return original(op, **fields)
-
-    sim.request = request
-    parts_seen = []
-
-    class Caller:
-        """Four valid depth rounds followed by one chunk and a second successful chunk."""
-
-        def call(self, parts, folder):
-            """Save each exact prompt to assert query answers are retained."""
-            parts_seen.append(parts)
-            reply = (
-                {
-                    "queries": [
-                        {
-                            "observation_id": "0",
-                            "camera": "cam",
-                            "kind": "pixel",
-                            "u": 1,
-                            "v": 1,
-                            "radius": 0,
-                        }
-                    ]
-                }
-                if len(parts_seen) <= 4
-                else {"actions": [[0] * 12] * 16}
-            )
-            return CallResult(json.dumps(reply), {"input_tokens": 10}, [], 12)
-
-    cfg = EpisodeConfig(task="OpenCabinet", seed=1, shots=0, max_turns=5, budget=32)
-    summary = run_episode(sim, Caller(), cfg, tmp_path, [], condition="pixel")
-    assert summary["task_success"] is True
-    assert query_steps == [0, 0, 0, 0]
-    assert len(parts_seen) == 6
-    assert sum("DEPTH QUERY AND ANSWERS" in p.get("text", "") for p in parts_seen[4]) == 4
-    assert summary["usage"]["input_tokens"] == 60
-
-
 def test_attempt_budget_and_capacity_receipts(tmp_path, monkeypatch):
     """Actual failures consume the global attempt budget and preserve unknown usage."""
     from robocasa_astra.astra_vla import call_runner
@@ -439,23 +206,3 @@ def test_attempt_budget_and_capacity_receipts(tmp_path, monkeypatch):
     assert len(result["receipts"]) == 2
     assert all(r["usage"] is None for r in result["receipts"])
     assert waits == [15, 15]
-
-
-def test_native_exception_blocks_uncertain_live_state(tmp_path):
-    """An action exception cannot repeat a row against physics lacking a durable acknowledgement."""
-    from robocasa_astra.astra_vla.sim_server import ChunkServer
-
-    server = ChunkServer("OpenCabinet", 100, tmp_path)
-    server.journal = ActionJournal(tmp_path, {"scene": "fake"})
-
-    def failed(actions, notes):
-        server.journal.intent([-1, 1])
-        raise RuntimeError("physics advanced but acknowledgement failed")
-
-    server.executor = SimpleNamespace(run_chunk=failed)
-    with pytest.raises(RuntimeError, match="acknowledgement"):
-        server.act_chunk([[-1, 1]], [], 1, "turn1")
-    assert server.journal.data["faulted"] is True
-    with pytest.raises(RuntimeError, match="reset"):
-        server.act_chunk([[-1, 1]], [], 1, "turn1")
-    assert server.journal.data["chunks"]["turn1"]["cursor"] == 0

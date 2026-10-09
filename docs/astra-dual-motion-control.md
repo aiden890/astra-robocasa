@@ -52,10 +52,15 @@ trace. Model response and episode wall time have no fixed timeout.
 
 ## Validation
 
-Nine focused control test cases remain: precision worker bounds, host resume without
+Seventeen essential related cases remain across the five VLA test files.
+Nine control cases cover: precision worker bounds, host resume without
 another model call, destination arrival/lost replies, stale observations, three native
 termination cases, interrupted ACK replay and stall-budget preservation. Redundant
 schema, configuration, input-shape and overlapping recovery checks were removed.
+The other eight cover native action mapping, checkpoint digest/replay integrity,
+detached model calls, retry accounting and budget, spatial projection, frozen
+observation guards and query-answer delivery to the model. There are no excluded
+or skipped cases in this focused set.
 
 The physical controller is mocked in this suite. Native Spark speed/reachability
 calibration and real model evaluation of destination transit have not been run.

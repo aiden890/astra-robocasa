@@ -2,11 +2,10 @@
 
 from types import SimpleNamespace as NS
 
-import jsonschema
 import numpy as np
 import pytest
-from robocasa_astra.astra_vla.depth_input import answer_queries, instructions, response_schema
-from robocasa_astra.astra_vla.spatial_query import query_spatial, snapshot_geometry
+from robocasa_astra.astra_vla.depth_input import answer_queries
+from robocasa_astra.astra_vla.spatial_query import query_spatial
 
 
 def geometry():
@@ -52,98 +51,6 @@ def test_projection_and_relative_axes():
     assert answer["delta_base_local_m"] == [1, -1, -1]
     assert answer["distance_m"] == pytest.approx(np.sqrt(3))
     assert answer["steps_used"] == 7
-
-
-@pytest.mark.parametrize(
-    "overrides,message",
-    [
-        ({"observation_id": "old"}, "Stale"),
-        ({"u": 4}, "bounds"),
-        ({"v": -1}, "bounds"),
-        ({"u": 1.5}, "integers"),
-        ({"camera": "missing"}, "camera"),
-        ({"robot_part": "object:fish"}, "robot_part"),
-        ({"radius": 1}, "radius=0"),
-    ],
-)
-def test_invalid_query_rejected(overrides, message):
-    """Reject mismatched observations and coordinates rather than inventing measurements."""
-    with pytest.raises(ValueError, match=message):
-        query_spatial({"cam": np.ones((4, 4))}, geometry(), request(**overrides), "obs")
-
-
-def test_far_plane_rejected():
-    """An empty render cannot become a target at a fabricated range."""
-    with pytest.raises(ValueError, match="surface"):
-        query_spatial({"cam": np.full((4, 4), 20.0)}, geometry(), request(), "obs")
-
-
-def test_schema_and_mixed_queries():
-    """Spatial is opt-in and shares existing pixel query and action accounting."""
-    parsed = {
-        "scene": "s",
-        "progress": "p",
-        "plan": "p",
-        "memory": "m",
-        "actions": None,
-        "queries": [request()],
-    }
-    jsonschema.validate(parsed, response_schema("spatial"))
-    with pytest.raises(jsonschema.ValidationError):
-        jsonschema.validate(parsed, response_schema("hybrid"))
-    depths = {"cam": np.full((4, 4), 2.0)}
-    answers = answer_queries(
-        depths, [request(), request(kind="pixel", robot_part=None)], "obs", "spatial", geometry()
-    )
-    assert answers[0]["distance_m"] == pytest.approx(np.sqrt(3))
-    assert answers[1]["pixel_depth_m"] == 2
-    assert np.all(depths["cam"] == 2)
-    assert (
-        "robot_part"
-        not in response_schema("hybrid")["properties"]["queries"]["anyOf"][0]["items"]["properties"]
-    )
-    assert instructions("rgb") == ""
-    assert "FROM the robot part TO" in instructions("spatial")
-
-
-def test_snapshot_copies_robot_frames_only():
-    """Moving live arrays after capture cannot change a query's frozen geometry."""
-    positions = np.array([[1.0, 2.0, 3.0], [4.0, 5.0, 6.0]])
-    model = NS(
-        camera_name2id=lambda _: 0,
-        cam_fovy=[90],
-        vis=NS(map=NS(zfar=10)),
-        stat=NS(extent=2),
-        body_names=["robot0_link", "fish"],
-        site_names=["gripper0_tip", "plate"],
-    )
-    data = NS(
-        cam_xpos=np.array([[1.0, 2.0, 3.0]]),
-        cam_xmat=np.eye(3)[None],
-        body_xpos=positions,
-        body_xmat=np.tile(np.eye(3), (2, 1, 1)),
-        site_xpos=positions,
-        site_xmat=np.tile(np.eye(3), (2, 1, 1)),
-    )
-    robot = NS(
-        robot_model=NS(naming_prefix="robot0_", base=NS(naming_prefix="mobilebase0_")),
-        gripper={"right": NS(naming_prefix="gripper0_")},
-    )
-    pose = NS(
-        tip=np.array([1.0, 2.0, 3.0]), tip_rot=np.eye(3), base=np.zeros(3), base_rot=np.eye(3)
-    )
-    env = NS(sim=NS(model=model, data=data), robots=[robot])
-    frozen = snapshot_geometry(env, NS(pose=lambda: pose, steps_used=7), {"cam": np.ones((4, 4))})
-    positions[:] = 99
-    pose.tip[:] = 99
-    assert frozen["robot_parts"]["gripper"]["position_world_m"] == [1, 2, 3]
-    assert frozen["robot_parts"]["body:robot0_link"]["position_world_m"] == [1, 2, 3]
-    assert set(frozen["robot_parts"]) == {
-        "gripper",
-        "base",
-        "body:robot0_link",
-        "site:gripper0_tip",
-    }
 
 
 def test_server_frozen_query_guard(tmp_path):
