@@ -26,7 +26,8 @@ import numpy as np
 from ..astra_robodawn.sim_server import Server
 from .chunk_runner import ChunkExecutor
 from .depth_input import answer_queries, attach_previews, render_depths
-from .persistence import atomic_json, digest, locked, process_lease
+from .motion_control import prepare_actions
+from .persistence import atomic_json, digest, locked, process_lease, read_json
 from .recovery import ActionJournal
 
 
@@ -36,6 +37,9 @@ class ChunkServer(Server):
     def __init__(self, task, budget, output, scene_dir=None, condition="rgb"):
         super().__init__(task, budget, output, scene_dir)
         self.condition = condition
+        self.motion_control = read_json(Path(output) / "config.json", {}).get(
+            "motion_control", "legacy"
+        )
         self.journal = None
         self.depths = {}
         self.geometry = None
@@ -94,6 +98,7 @@ class ChunkServer(Server):
                 "seed": seed,
                 "scene_hash": scene_hash,
                 "condition": self.condition,
+                **({"motion_control": "dual"} if self.motion_control == "dual" else {}),
             },
         )
         self.journal.restore(self.sim.env, self.executor)
@@ -165,15 +170,26 @@ class ChunkServer(Server):
         }
 
     def act_chunk(
-        self, actions: list, notes: list[str], turn: int, request_id: str | None = None
+        self,
+        actions: list,
+        notes: list[str],
+        turn: int,
+        request_id: str | None = None,
+        motion_mode: str | None = None,
     ) -> dict:
         """Continue only remaining rows, returning a persisted result after lost
         acknowledgements."""
         if self.journal.data.get("faulted"):
             raise RuntimeError("native step failed; reset the frozen checkpoint before continuing")
+        if self.motion_control == "dual":
+            bounded, guard_notes = prepare_actions(actions, motion_mode, self.motion_control)
+            actions = bounded.tolist()
+            notes = [*notes, *guard_notes]
+        elif motion_mode is not None:
+            raise ValueError("legacy worker cannot select motion_mode")
         self.turn = turn
         request_id = request_id or f"turn{turn}"
-        chunk = self.journal.begin_chunk(request_id, actions, turn)
+        chunk = self.journal.begin_chunk(request_id, actions, turn, motion_mode)
         if "result" in chunk:
             return chunk["result"]
         first = chunk["start_step"]
@@ -186,6 +202,8 @@ class ChunkServer(Server):
             self.journal.data["faulted"] = True
             self.journal.save()
             raise
+        if motion_mode is not None:
+            result["command"] = motion_mode + ": " + result["command"]
         self.replay.mark(result["command"], first, self.executor.steps_used, turn)
         result["steps"] = self.executor.steps_used - first
         result["resumed_rows"] = resumed_rows
@@ -194,6 +212,10 @@ class ChunkServer(Server):
             result["note"] = (
                 result.get("note", "") + f"; resumed after {resumed_rows} acknowledged rows"
             )
+        result["chunk_length"] = len(actions)
+        result["motion_mode"] = motion_mode
+        result["bounded_actions"] = actions
+        result["executed_actions"] = actions[:result["steps"]]
         result["state_after"] = self.executor.state()
         self.journal.finish_chunk(request_id, result)
         return result
@@ -213,6 +235,7 @@ class ChunkServer(Server):
                 request.get("notes") or [],
                 int(request.get("turn", 0)),
                 request.get("request_id"),
+                request.get("motion_mode"),
             )
         if op == "close":
             result = self.close()

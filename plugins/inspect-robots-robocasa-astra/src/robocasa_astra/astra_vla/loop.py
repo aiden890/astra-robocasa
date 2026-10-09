@@ -10,9 +10,9 @@ from pathlib import Path
 from ..astra_robodawn.codex import ModelCallError
 from ..astra_robodawn.cost import add_usage, estimate
 from ..astra_robodawn.loop import EpisodeConfig, _save_views
-from .action_format import validate_chunk
 from .depth_input import QUERY_ROUNDS, extra_parts
 from .memory import ChunkMemory
+from .motion_control import prepare_actions
 from .persistence import append_json, atomic_json, read_json
 from .prompts import image_part, text_part, turn_text
 
@@ -26,6 +26,7 @@ def run_episode(
     condition: str = "rgb",
     resume: bool = False,
     context: str = "full",
+    motion_control: str = "legacy",
 ) -> dict:
     """Resume the same decision and native chunk without applying acknowledged rows again."""
     run_dir = Path(run_dir)
@@ -142,14 +143,21 @@ def run_episode(
                             }
                         )
                     if not parsed.get("queries"):
-                        chunk, notes = validate_chunk(parsed.get("actions"))
+                        chunk, notes = prepare_actions(
+                            parsed.get("actions"), parsed.get("motion_mode"), motion_control
+                        )
                         progress.update(
-                            phase="action", response=parsed, actions=chunk.tolist(), notes=notes
+                            phase="action",
+                            response=parsed,
+                            actions=chunk.tolist(),
+                            notes=notes,
+                            motion_mode=parsed.get("motion_mode"),
                         )
                         atomic_json(progress_path, progress)
                         break
                     if (
                         parsed.get("actions") is not None
+                        or parsed.get("motion_mode") is not None
                         or condition not in ("pixel", "grid", "hybrid", "spatial")
                         or round_number >= QUERY_ROUNDS
                     ):
@@ -172,12 +180,16 @@ def run_episode(
                     progress.update(parts=parts, query_round=round_number + 1)
                     atomic_json(progress_path, progress)
             parsed = progress["response"]
+            mode_fields = (
+                {"motion_mode": progress["motion_mode"]} if motion_control == "dual" else {}
+            )
             result = sim.request(
                 "act_chunk",
                 actions=progress["actions"],
                 notes=progress["notes"],
                 turn=turn,
                 request_id=f"turn{turn}",
+                **mode_fields,
             )
         except (ModelCallError, ValueError, json.JSONDecodeError) as exc:
             # An actual unusable response is not a successful native evaluation. Preserve all
@@ -263,5 +275,8 @@ def run_episode(
         "config": asdict(cfg),
         "condition": condition,
         "context": context,
-        "output_format": "vla12-chunk16",
+        "motion_control": motion_control,
+        "output_format": "vla12-dual-variable-chunk"
+        if motion_control == "dual"
+        else "vla12-chunk16",
     }

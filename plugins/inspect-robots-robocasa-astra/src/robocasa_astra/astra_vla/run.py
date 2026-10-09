@@ -71,7 +71,15 @@ def main() -> None:
             )
         try:
             summary = run_episode(
-                sim, caller, cfg, run_dir, block, config["condition"], bool(args.resume), config.get("context", "full")
+                sim,
+                caller,
+                cfg,
+                run_dir,
+                block,
+                config["condition"],
+                bool(args.resume),
+                config.get("context", "full"),
+                config.get("motion_control", "legacy"),
             )
         except BaseException:
             sim.detach()  # keyboard interrupt, transport error and host exit preserve the native

@@ -15,6 +15,8 @@ from ..astra_robodawn.codex import MODEL
 from ..astra_robodawn.loop import EpisodeConfig
 from .action_format import CHUNK
 from .depth_input import CONDITIONS, instructions, response_schema
+from .motion_control import PROFILES, adapt_prompt
+from .motion_control import response_schema as motion_schema
 from .persistence import atomic_json, read_json
 from .prompts import PROFILE_PATH, demo_parts, load_profile, parts_text, system_prompt, vla_demos
 
@@ -49,7 +51,13 @@ def prepare(argv: list[str] | None = None):
     )
     parser.add_argument("--condition", choices=CONDITIONS, default="rgb")
     parser.add_argument("--effort", choices=("low", "medium", "high"), default="low")
-    parser.add_argument("--context", choices=("full", "none"), default="full", help="none omits prior chunk feedback, recent turns and accumulated notes from model inputs")
+    parser.add_argument(
+        "--context",
+        choices=("full", "none"),
+        default="full",
+        help="none omits prior feedback, recent turns and accumulated notes from model inputs",
+    )
+    parser.add_argument("--motion-control", choices=("dual", "legacy"), default="dual")
     parser.add_argument("--budget", type=int)
     parser.add_argument("--output", type=Path)
     parser.add_argument("--resume", type=Path, help="adopt/recover this existing unfinished run")
@@ -84,6 +92,7 @@ def prepare(argv: list[str] | None = None):
             "--condition",
             "--effort",
             "--context",
+            "--motion-control",
             "--budget",
             "--max-turns",
             "--attempt-budget",
@@ -120,16 +129,20 @@ def prepare(argv: list[str] | None = None):
         )
         demos = vla_demos(args.task, args.shots, primer=args.primer)
         block = demo_parts(demos)
-        (run_dir / "system_prompt.md").write_text(
-            system_prompt(load_profile(), args.task, bool(block), context=args.context)
-            + "\n\n"
-            + instructions(args.condition)
+        prompt = system_prompt(load_profile(), args.task, bool(block), context=args.context)
+        if args.motion_control == "dual":
+            prompt = adapt_prompt(prompt)
+        (run_dir / "system_prompt.md").write_text(prompt + "\n\n" + instructions(args.condition))
+        atomic_json(
+            run_dir / "response_schema.json",
+            motion_schema(response_schema(args.condition), args.motion_control),
         )
-        atomic_json(run_dir / "response_schema.json", response_schema(args.condition))
         atomic_json(run_dir / "demo_block.json", block)
         (run_dir / "demo_block.txt").write_text(parts_text(block))
         config = {
-            "variant": "vla12-depth-recovery",
+            "variant": "vla12-dual-motion-recovery",
+            "motion_control": args.motion_control,
+            "motion_profiles": PROFILES if args.motion_control == "dual" else None,
             "transport": json.loads(os.environ["ASTRA_SPARK_TRANSPORT"])
             if os.environ.get("ASTRA_SPARK_TRANSPORT")
             else None,

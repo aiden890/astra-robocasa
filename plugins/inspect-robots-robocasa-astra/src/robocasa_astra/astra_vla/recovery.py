@@ -82,9 +82,17 @@ class ActionJournal:
         self.data["restored_at"] = time.time()
         self.save()
 
-    def begin_chunk(self, request_id: str, actions: list, turn: int) -> dict:
+    def begin_chunk(
+        self, request_id: str, actions: list, turn: int, motion_mode: str | None = None
+    ) -> dict:
         """Bind a request ID to immutable actions, retaining a completed reply forever."""
-        identity = digest({"actions": actions, "turn": turn})
+        identity = digest(
+            {
+                "actions": actions,
+                "turn": turn,
+                **({"motion_mode": motion_mode} if motion_mode is not None else {}),
+            }
+        )
         chunks = self.data["chunks"]
         if request_id in chunks and chunks[request_id]["identity"] != identity:
             raise ValueError("request ID reused with different actions")
