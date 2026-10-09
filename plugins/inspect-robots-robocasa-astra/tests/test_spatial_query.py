@@ -150,6 +150,11 @@ def test_query_answer_reaches_next_model_call_and_trace(tmp_path):
             self.calls += 1
             if self.calls == 1:
                 assert any("AVAILABLE ROBOT PARTS" in p.get("text", "") for p in parts)
+                response = {"queries": [{**request(), "radius": 2}], "actions": None}
+            elif self.calls == 2:
+                assert sim.steps == 0
+                text = " ".join(p.get("text", "") for p in parts)
+                assert "radius=0" in text and "No motion occurred" in text
                 response = {"queries": [request()], "actions": None}
             else:
                 assert sim.steps == 0
@@ -164,9 +169,9 @@ def test_query_answer_reaches_next_model_call_and_trace(tmp_path):
     cfg = EpisodeConfig(task="OpenCabinet", seed=1, shots=0, max_turns=2, budget=16)
     summary = run_episode(sim, caller, cfg, tmp_path, [], condition="spatial")
     assert summary["task_success"] is True
-    assert summary["usage"]["input_tokens"] == 200
-    assert summary["usage"]["output_tokens"] == 20
+    assert summary["usage"]["input_tokens"] == 300
+    assert summary["usage"]["output_tokens"] == 30
     trace = json.loads((tmp_path / "trace.jsonl").read_text().splitlines()[0])
-    assert trace["query_history"][0]["answers"][0]["distance_m"] == pytest.approx(np.sqrt(3))
-    assert trace["latency_s"] == 30
-    assert caller.calls == 2
+    assert trace["query_history"][1]["answers"][0]["distance_m"] == pytest.approx(np.sqrt(3))
+    assert trace["latency_s"] == 45
+    assert caller.calls == 3

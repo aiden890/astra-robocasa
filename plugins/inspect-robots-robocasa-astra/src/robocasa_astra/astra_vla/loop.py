@@ -10,6 +10,7 @@ from pathlib import Path
 from ..astra_robodawn.codex import ModelCallError
 from ..astra_robodawn.cost import add_usage, estimate
 from ..astra_robodawn.loop import EpisodeConfig, _save_views
+from ..astra_robodawn.sim_client import SimulatorError
 from .depth_input import QUERY_ROUNDS, extra_parts
 from .memory import ChunkMemory
 from .motion_control import prepare_response
@@ -169,14 +170,32 @@ def run_episode(
                         or round_number >= QUERY_ROUNDS
                     ):
                         raise ValueError("invalid query round or simultaneous actions/queries")
-                    answers = sim.request(
-                        "query", queries=parsed["queries"], observation_id=obs["observation_id"]
-                    )["answers"]
                     entry = {
                         "round": round_number + 1,
                         "queries": parsed["queries"],
-                        "answers": answers,
+                        "answers": [],
                     }
+                    try:
+                        if any(
+                            q.get("kind") == "spatial" and q.get("radius") != 0
+                            for q in parsed["queries"]
+                        ):
+                            raise ValueError("spatial query requires radius=0; correct the query")
+                        entry["answers"] = sim.request(
+                            "query", queries=parsed["queries"], observation_id=obs["observation_id"]
+                        )["answers"]
+                    except (ValueError, SimulatorError) as exc:
+                        if isinstance(exc, SimulatorError) and not str(exc).startswith(
+                            "ValueError:"
+                        ):
+                            raise
+                        # Query validation never advances physics. Give the original rejection
+                        # back to the model, keeping the same observation and bounded rounds.
+                        entry["error"] = str(exc)
+                        entry["retry_instruction"] = (
+                            "No motion occurred. Correct this query using the same observation_id, "
+                            "or return a valid motion. Spatial queries require radius=0."
+                        )
                     progress["query_history"].append(entry)
                     parts = [
                         *parts,
