@@ -18,10 +18,8 @@ def test_profiles_bound_vectors_without_changing_binary_fields():
     raw = np.ones((4, 12))
     raw[:, 4] = -1
     p, notes = prepare_actions(raw, "precision", "dual")
-    t, _ = prepare_actions(raw, "transit", "dual")
     assert np.allclose(np.linalg.norm(p[:, 5:8], axis=1), 0.2)
     assert np.allclose(np.linalg.norm(p[:, 8:11], axis=1), 0.15)
-    assert np.allclose(np.linalg.norm(t[:, 5:8], axis=1), 1.0)
     assert np.all(p[:, :4] == 0.1)
     assert np.array_equal(p[:, [4, 11]], raw[:, [4, 11]])
     assert len(notes) == 3
@@ -30,7 +28,7 @@ def test_profiles_bound_vectors_without_changing_binary_fields():
     assert np.allclose(bounded, p)
 
 
-@pytest.mark.parametrize("mode,rows", [("precision", 0), ("precision", 5), ("transit", 17)])
+@pytest.mark.parametrize("mode,rows", [("precision", 0), ("precision", 5), ("precision", 17)])
 def test_length_limits(mode, rows):
     """Worker rejects too-long chunks instead of silently losing model commands."""
     with pytest.raises(ValueError, match="rows"):
@@ -40,7 +38,7 @@ def test_length_limits(mode, rows):
 def test_invalid_mode_and_nonfinite_and_legacy():
     """Unspecified dual modes fail closed; legacy retains the old 16-row format."""
     for mode in (None, "fast", ""):
-        with pytest.raises(ValueError, match="requires motion_mode"):
+        with pytest.raises(ValueError, match="require motion_mode"):
             prepare_actions([[0] * 12], mode, "dual")
     with pytest.raises(ValueError, match="NaN"):
         prepare_actions([[float("nan")] * 12], "precision", "dual")
@@ -62,6 +60,7 @@ def test_schema_and_prompt_conditions_are_independent():
         "actions": [[0] * 12],
         "queries": None,
         "motion_mode": "precision",
+        "transit_target": None,
     }
     jsonschema.validate(obj, s)
     obj["motion_mode"] = "unknown"
@@ -97,7 +96,7 @@ def test_worker_guard_and_mode_bound_idempotence(tmp_path):
     assert result["motion_mode"] == "precision" and result["chunk_length"] == 2
     assert server.act_chunk(raw, [], 1, "t1", "precision") == result
     assert len(calls) == 1
-    with pytest.raises(ValueError, match="reused"):
+    with pytest.raises(ValueError, match="target only"):
         server.act_chunk(raw, [], 1, "t1", "transit")
     with pytest.raises(ValueError, match="rows"):
         server.act_chunk([[1] * 12] * 5, [], 2, "t2", "precision")
@@ -159,7 +158,8 @@ def test_experiment_config_records_dual_default_and_legacy_override(tmp_path):
     assert "motion_mode" not in json.loads((run / "response_schema.json").read_text())["required"]
 
 
-def test_dual_host_resume_keeps_mode_and_original_reply(tmp_path):
+@pytest.mark.parametrize("interrupt_mode", ["precision", "transit"])
+def test_dual_host_resume_keeps_mode_and_original_reply(tmp_path, interrupt_mode):
     """Host loss during precision execution reuses its saved decision, then switches to transit."""
     import base64
     import io
@@ -205,9 +205,9 @@ def test_dual_host_resume_keeps_mode_and_original_reply(tmp_path):
                 }
             if op == "act_chunk":
                 self.seen.append(fields)
-                if self.interrupt:
+                if self.interrupt and fields["motion_mode"] == interrupt_mode:
                     self.interrupt = False
-                    self.steps = 2
+                    self.steps = 2 if interrupt_mode == "precision" else 6
                     raise KeyboardInterrupt
                 self.steps = 4 if fields["motion_mode"] == "precision" else 20
                 return {
@@ -227,7 +227,15 @@ def test_dual_host_resume_keeps_mode_and_original_reply(tmp_path):
             mode = "precision" if self.count == 1 else "transit"
             raw = [[0, 0, 0, 0, -1, 1, 0, 0, 0, 0, 0, -1]] * (4 if self.count == 1 else 16)
             return CallResult(
-                json.dumps({"actions": raw, "motion_mode": mode}),
+                json.dumps(
+                    {
+                        "actions": raw if mode == "precision" else None,
+                        "motion_mode": mode,
+                        "transit_target": None
+                        if mode == "precision"
+                        else {"position_world_m": [0.5, 0, 0.8], "observation_id": "4"},
+                    }
+                ),
                 {"input_tokens": 100, "output_tokens": 20},
                 [],
                 15.0,
@@ -238,12 +246,18 @@ def test_dual_host_resume_keeps_mode_and_original_reply(tmp_path):
     with pytest.raises(KeyboardInterrupt):
         run_episode(sim, caller, cfg, tmp_path, [], motion_control="dual")
     summary = run_episode(sim, caller, cfg, tmp_path, [], resume=True, motion_control="dual")
-    assert sim.seen[0] == sim.seen[1]
+    repeated = 0 if interrupt_mode == "precision" else 1
+    assert sim.seen[repeated] == sim.seen[repeated + 1]
     assert sim.seen[0]["motion_mode"] == "precision"
     assert sim.seen[0]["actions"][0][5] == 0.2
     assert sim.seen[2]["motion_mode"] == "transit"
+    assert sim.seen[2]["actions"] is None
+    assert sim.seen[2]["transit_target"] == {
+        "position_world_m": [0.5, 0, 0.8],
+        "observation_id": "4",
+    }
     assert caller.count == 2 and summary["usage"]["input_tokens"] == 200
-    assert summary["output_format"] == "vla12-dual-variable-chunk"
+    assert summary["output_format"] == "precision-vla12-transit-world-target"
     records = [json.loads(line) for line in (tmp_path / "trace.jsonl").read_text().splitlines()]
     assert records[0]["response"]["actions"][0][5] == 1
     assert records[0]["latency_s"] == 15.0

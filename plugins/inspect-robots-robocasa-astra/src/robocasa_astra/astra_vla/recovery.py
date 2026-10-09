@@ -55,6 +55,10 @@ class ActionJournal:
             {"action": np.asarray(action).tolist(), "digest": native_digest(env, executor)}
         )
         current = self.data["current_chunk"]
+        if current and "target" in self.data["chunks"][current]:
+            from .target_transit import transit_error
+
+            self.data["actions"][-1]["transit_error_m"] = transit_error(env, executor, self)
         if current:
             self.data["chunks"][current]["cursor"] += 1
         self.data["pending"] = None

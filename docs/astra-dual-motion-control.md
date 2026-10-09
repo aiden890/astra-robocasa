@@ -1,43 +1,58 @@
-# Astra: two motion modes
+# Astra: precision actions and destination transit
 
-This branch extends `codex/vla-pixel-robot-distance`. New runs default to
-`--motion-control dual`; `--motion-control legacy` keeps the fixed 16-row format.
-Perception conditions, including `--condition spatial`, remain independent.
+This branch extends pixel-to-robot distance queries. New runs default to
+--motion-control dual; --motion-control legacy retains the original fixed
+16-row format. Perception conditions remain independent.
 
-| Mode | Native rows per decision | Translation norm | Rotation norm | Base/torso component |
-| --- | --- | --- | --- | --- |
-| precision | 1 to 4 | 0.20 | 0.15 | 0.10 |
-| transit | 1 to 16 | 1.0 | 1.0 | 1.0 |
+| Mode | Model output | Native execution |
+| --- | --- | --- |
+| precision | 1 to 4 dataset-order 12-D Cartesian delta rows | Translation norm <=0.20, rotation norm <=0.15, base/torso components <=0.10 |
+| transit | Absolute fingertip destination in world XYZ metres | Native OSC_POSE servo until arrival, stall or step limit |
 
-The values are normalized native controller inputs, not cm or rad/s. Frequency
-remains 20 Hz. These initial bounds need native calibration; they are not proven
-collision-safe speeds. Transit permits coarse movement in clear space. Precision
-limits individual motions and returns observations sooner near contact or a goal.
-It does not use an automatic target servo, path planner, force sensor or obstacle
-checker. The model still outputs the 12-D Cartesian delta rows and chooses the
-mode, direction and length. Input image/depth/relative-distance queries are unchanged.
+A transit response uses motion_mode=transit, actions=null and
+transit_target={position_world_m:[x,y,z],observation_id:current_id}.
+A precision response uses motion_mode=precision, actions=[...], transit_target=null.
+A depth query uses actions=null, motion_mode=null, transit_target=null.
+When queries are enabled, a motion response uses queries=null. scene, progress,
+plan and memory fields remain unchanged. Prior demonstration chunks describe
+legacy control; the current mode contract takes precedence.
 
-The native worker enforces bounds even if the policy exceeds them. It preserves
-the gripper and arm/base selector: the new motion_mode field is independent of
-index 4, which still switches arm/base control. A gripper may need 10 to 16 native
-steps, so a precision grasp may span several model turns.
+Transit assumes a clear route to a free-space approach point. The executor holds
+the initial fingertip orientation, gripper command and stationary base, using
+the existing physical OSC controller. It does not teleport joints, add an IK
+solver or plan around obstacles. The model does not supply low-level transit
+rows or make additional calls during a single destination move. Orientation and
+gripper changes remain precision actions.
 
-An action response adds `"motion_mode": "precision"` or `"transit"` and supplies
-1..4 or 1..16 rows respectively. A query response uses actions=null and
-motion_mode=null. The model sees the enforced limits in its system prompt.
-Config stores the control setting and profiles. Progress stores the selected
-mode and bounded actions; original model output stays in the call response/trace.
-Worker feedback stores the actual executed actions and mode. The checkpoint request
-identity includes the mode, so a lost acknowledgement cannot silently switch
-profiles. Resume adopts the original config and rejects configuration/source changes.
-Existing experiments must continue from their original source commit; do not
-restart or migrate them to this branch.
+Arrival requires <=1 cm position error and <=5 degrees orientation error.
+Stop after 160 native steps, 20 steps without 2 mm progress, task success or the
+episode step budget. Frequency stays 20 Hz. Native controller inputs are capped
+at 0.5 per component by the existing arm servo. No arrival guarantee is made for
+unreachable or blocked destinations. Feedback reports target_reached, remaining
+position/orientation error, stop_reason, actual native actions and steps.
+
+Each target binds its source observation ID. Observations expose current
+fingertip_world_m, independent of depth. Spatial queries return surface world
+coordinates; choose a free-space offset rather than the measured surface itself.
+No hidden object coordinates are added.
+
+## Recovery and provenance
+
+The worker checkpoints the immutable absolute destination, initial orientation,
+gripper command and every acknowledged native action. Restoring the frozen scene
+replays acknowledged actions and validates state digests before continuing the
+same target. The remaining servo step cap and stall history survive interruption.
+A completed request returns its saved response without moving again. Reusing a
+request ID with a different destination is rejected.
+
+Source/config identities distinguish this contract from previous dual chunk runs.
+Existing experiments must keep their recorded source commit. Do not migrate their
+checkpoints. Raw model output, usage and latency remain in original receipts and
+trace. Model response and episode wall time have no fixed timeout.
 
 ## Validation
 
-Focused action, spatial-query and recovery tests: 40 passed, 1 skipped (official
-RoboCasa import unavailable), 1 deselected (pre-existing depth schema fixture
-failure reproduced on the parent branch). Scoped Ruff check/format and git diff
-checks pass. Mock host interruption reuses a precision reply and transitions
-to transit without an extra call; original requested rows and usage remain recorded.
-Native speed calibration and real model evaluation have not been run.
+Focused destination, schema, precision and recovery suite: 51 passed, one skipped\n(official RoboCasa import unavailable), one deselected (previously verified\nparent-branch depth fixture failure). Scoped Ruff check and format passed.\nThe tests exercise arrival, stale
+observations, stalled/unreachable targets, task success, budget stops, lost replies
+and interrupted physical-step replay. Native Spark speed/reachability calibration
+and real model evaluation of destination transit have not been run.

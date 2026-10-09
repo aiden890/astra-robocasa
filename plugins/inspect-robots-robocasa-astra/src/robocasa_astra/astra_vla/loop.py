@@ -12,7 +12,7 @@ from ..astra_robodawn.cost import add_usage, estimate
 from ..astra_robodawn.loop import EpisodeConfig, _save_views
 from .depth_input import QUERY_ROUNDS, extra_parts
 from .memory import ChunkMemory
-from .motion_control import prepare_actions
+from .motion_control import prepare_response
 from .persistence import append_json, atomic_json, read_json
 from .prompts import image_part, text_part, turn_text
 
@@ -102,6 +102,13 @@ def run_episode(
                 [v["caption"] for v in obs["views"]],
                 cfg.task,
             )
+            if motion_control == "dual":
+                text += "\n\nTRANSIT COORDINATES: " + json.dumps(
+                    {
+                        "observation_id": obs.get("observation_id"),
+                        "fingertip_world_m": obs.get("fingertip_world_m"),
+                    }
+                )
             parts = list(demo_parts) + [image_part(p) for p in paths] + [text_part(text)]
             parts += extra_parts(obs, run_dir / "turns" / f"turn{turn:03d}", condition)
             record = {
@@ -143,13 +150,12 @@ def run_episode(
                             }
                         )
                     if not parsed.get("queries"):
-                        chunk, notes = prepare_actions(
-                            parsed.get("actions"), parsed.get("motion_mode"), motion_control
-                        )
+                        actions, notes, target = prepare_response(parsed, motion_control)
                         progress.update(
                             phase="action",
                             response=parsed,
-                            actions=chunk.tolist(),
+                            actions=actions,
+                            transit_target=target,
                             notes=notes,
                             motion_mode=parsed.get("motion_mode"),
                         )
@@ -158,6 +164,7 @@ def run_episode(
                     if (
                         parsed.get("actions") is not None
                         or parsed.get("motion_mode") is not None
+                        or parsed.get("transit_target") is not None
                         or condition not in ("pixel", "grid", "hybrid", "spatial")
                         or round_number >= QUERY_ROUNDS
                     ):
@@ -181,7 +188,12 @@ def run_episode(
                     atomic_json(progress_path, progress)
             parsed = progress["response"]
             mode_fields = (
-                {"motion_mode": progress["motion_mode"]} if motion_control == "dual" else {}
+                {
+                    "motion_mode": progress["motion_mode"],
+                    "transit_target": progress.get("transit_target"),
+                }
+                if motion_control == "dual"
+                else {}
             )
             result = sim.request(
                 "act_chunk",
@@ -276,7 +288,7 @@ def run_episode(
         "condition": condition,
         "context": context,
         "motion_control": motion_control,
-        "output_format": "vla12-dual-variable-chunk"
+        "output_format": "precision-vla12-transit-world-target"
         if motion_control == "dual"
         else "vla12-chunk16",
     }

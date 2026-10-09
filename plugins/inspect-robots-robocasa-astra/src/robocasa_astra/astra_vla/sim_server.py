@@ -98,7 +98,7 @@ class ChunkServer(Server):
                 "seed": seed,
                 "scene_hash": scene_hash,
                 "condition": self.condition,
-                **({"motion_control": "dual"} if self.motion_control == "dual" else {}),
+                **({"motion_control": "dual-target-v1"} if self.motion_control == "dual" else {}),
             },
         )
         self.journal.restore(self.sim.env, self.executor)
@@ -127,6 +127,8 @@ class ChunkServer(Server):
             return self.last_observation
         reply = super().observe()
         reply["dataset_state"] = self.executor.dataset_state()
+        if self.motion_control == "dual":
+            reply["fingertip_world_m"] = self.executor.pose().tip.tolist()
         if self.condition != "rgb":
             self.depths = render_depths(self.sim.env, reply["views"])
         if self.condition == "spatial":
@@ -176,11 +178,20 @@ class ChunkServer(Server):
         turn: int,
         request_id: str | None = None,
         motion_mode: str | None = None,
+        transit_target: dict | None = None,
     ) -> dict:
         """Continue only remaining rows, returning a persisted result after lost
         acknowledgements."""
         if self.journal.data.get("faulted"):
             raise RuntimeError("native step failed; reset the frozen checkpoint before continuing")
+        if self.motion_control == "dual" and motion_mode == "transit":
+            if actions is not None:
+                raise ValueError("transit uses target only")
+            from .target_transit import run_transit
+
+            return run_transit(self, transit_target, turn, request_id or f"turn{turn}")
+        if transit_target is not None:
+            raise ValueError("transit_target only allowed in dual transit mode")
         if self.motion_control == "dual":
             bounded, guard_notes = prepare_actions(actions, motion_mode, self.motion_control)
             actions = bounded.tolist()
@@ -215,7 +226,7 @@ class ChunkServer(Server):
         result["chunk_length"] = len(actions)
         result["motion_mode"] = motion_mode
         result["bounded_actions"] = actions
-        result["executed_actions"] = actions[:result["steps"]]
+        result["executed_actions"] = actions[: result["steps"]]
         result["state_after"] = self.executor.state()
         self.journal.finish_chunk(request_id, result)
         return result
@@ -236,6 +247,7 @@ class ChunkServer(Server):
                 int(request.get("turn", 0)),
                 request.get("request_id"),
                 request.get("motion_mode"),
+                request.get("transit_target"),
             )
         if op == "close":
             result = self.close()

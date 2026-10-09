@@ -132,7 +132,15 @@ def prepare(argv: list[str] | None = None):
         prompt = system_prompt(load_profile(), args.task, bool(block), context=args.context)
         if args.motion_control == "dual":
             prompt = adapt_prompt(prompt)
-        (run_dir / "system_prompt.md").write_text(prompt + "\n\n" + instructions(args.condition))
+        depth_note = instructions(args.condition)
+        if args.motion_control == "dual":
+            depth_note = depth_note.replace(
+                "Exactly one field must be non-null.",
+                "For precision set actions non-null and transit_target=null; "
+                "for transit set actions=null, queries=null and transit_target non-null; "
+                "for queries set actions=null, motion_mode=null and transit_target=null.",
+            ).replace("then return actions.", "then return a precision action or transit target.")
+        (run_dir / "system_prompt.md").write_text(prompt + "\n\n" + depth_note)
         atomic_json(
             run_dir / "response_schema.json",
             motion_schema(response_schema(args.condition), args.motion_control),
@@ -140,7 +148,7 @@ def prepare(argv: list[str] | None = None):
         atomic_json(run_dir / "demo_block.json", block)
         (run_dir / "demo_block.txt").write_text(parts_text(block))
         config = {
-            "variant": "vla12-dual-motion-recovery",
+            "variant": "precision-vla12-transit-world-target-recovery",
             "motion_control": args.motion_control,
             "motion_profiles": PROFILES if args.motion_control == "dual" else None,
             "transport": json.loads(os.environ["ASTRA_SPARK_TRANSPORT"])

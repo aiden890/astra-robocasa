@@ -1,0 +1,1 @@
+Change Astra dual transit from low-level action chunks to an observation-bound Cartesian world destination, with native OSC execution and per-step recovery.\n
