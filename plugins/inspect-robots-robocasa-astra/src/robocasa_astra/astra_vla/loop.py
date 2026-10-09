@@ -150,7 +150,7 @@ def run_episode(
                         break
                     if (
                         parsed.get("actions") is not None
-                        or condition not in ("pixel", "grid", "hybrid")
+                        or condition not in ("pixel", "grid", "hybrid", "spatial")
                         or round_number >= QUERY_ROUNDS
                     ):
                         raise ValueError("invalid query round or simultaneous actions/queries")

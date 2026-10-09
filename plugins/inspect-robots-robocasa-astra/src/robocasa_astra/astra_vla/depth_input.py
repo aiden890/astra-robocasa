@@ -15,19 +15,22 @@ from ..depth import normalize_depth_buffer, preview_depth, validate_depth
 from ..depth_query import query_depth
 from .prompts import RESPONSE_SCHEMA, image_part, text_part
 
-CONDITIONS = ("rgb", "color", "pixel", "grid", "hybrid")
+CONDITIONS = ("rgb", "color", "pixel", "grid", "hybrid", "spatial")
 QUERY_ROUNDS = 4
 
 
 def response_schema(condition: str) -> dict:
     """Queries and actions are mutually exclusive; hybrid enables images and pixel queries."""
     schema = copy.deepcopy(RESPONSE_SCHEMA)
-    query_kind = "pixel" if condition == "hybrid" else condition
-    if condition in ("pixel", "grid", "hybrid"):
+    query_kind = "pixel" if condition in ("hybrid", "spatial") else condition
+    if condition in ("pixel", "grid", "hybrid", "spatial"):
         fields = {
             "observation_id": {"type": "string"},
             "camera": {"type": "string"},
-            "kind": {"type": "string", "enum": [query_kind]},
+            "kind": {
+                "type": "string",
+                "enum": ["pixel", "spatial"] if condition == "spatial" else [query_kind],
+            },
         }
         if query_kind == "pixel":
             fields.update(
@@ -39,6 +42,8 @@ def response_schema(condition: str) -> dict:
             )
         else:
             fields["cell_id"] = {"type": "string", "pattern": "^r(0[0-9]|1[0-5])c(0[0-9]|1[0-5])$"}
+        if condition == "spatial":
+            fields["robot_part"] = {"anyOf": [{"type": "string"}, {"type": "null"}]}
         schema["properties"]["queries"] = {
             "type": "array",
             "minItems": 1,
@@ -70,7 +75,7 @@ def instructions(condition: str) -> str:
     )
     if condition == "color":
         return image_note
-    kind = "pixel" if condition == "hybrid" else condition
+    kind = "pixel" if condition in ("hybrid", "spatial") else condition
     query_note = (
         f"DEPTH QUERY: instead of actions, return queries (kind={kind}), "
         "using the current observation_id and camera name. Coordinates (u,v) "
@@ -84,8 +89,26 @@ def instructions(condition: str) -> str:
     )
     query_note += (
         "At most four query rounds per observation, then return actions. "
-        "A query does not advance physics. Always include both fields: for a query set actions=null; for actions set queries=null. Exactly one field must be non-null."
+        "A query does not advance physics. Always include both fields: for a query set "
+        "actions=null; for actions set queries=null. Exactly one field must be non-null."
     )
+    if condition == "spatial":
+        return (
+            image_note
+            + "\n\n"
+            + query_note
+            + (
+                " For spatial distance queries use kind=spatial,u,v,radius=0,robot_part from the "
+                "AVAILABLE ROBOT PARTS list. Receive surface world position, "
+                "straight-line distance "
+                "to that robot origin and vectors FROM the robot part TO the pixel in world, "
+                "part-local and base-local axes in metres. Base axes: x forward,y left,z up. "
+                "gripper is fingertip-center grip site, not wrist or nearest finger surface. "
+                "Occluded targets cannot be measured; selecting background measures background. "
+                "Distance does not prove reachability or a collision-free path. For kind=pixel "
+                "set robot_part=null. Spatial and pixel queries share the four-round budget."
+            )
+        )
     if condition == "hybrid":
         return (
             image_note
@@ -140,7 +163,9 @@ def extra_parts(obs: dict, folder: Path, condition: str) -> list[dict]:
             + json.dumps([v["name"] for v in obs["views"]])
         )
     ]
-    if condition in ("color", "hybrid"):
+    if condition == "spatial":
+        parts.append(text_part("AVAILABLE ROBOT PARTS: " + json.dumps(obs["robot_parts"])))
+    if condition in ("color", "hybrid", "spatial"):
         folder.mkdir(parents=True, exist_ok=True)
         for view in obs["depth_views"]:
             path = folder / f"{view['name']}-depth.png"
@@ -152,9 +177,25 @@ def extra_parts(obs: dict, folder: Path, condition: str) -> list[dict]:
     return parts
 
 
-def answer_queries(depths: dict, requests: list, observation_id: str, condition: str) -> list[dict]:
+def answer_queries(
+    depths: dict, requests: list, observation_id: str, condition: str, geometry: dict | None = None
+) -> list[dict]:
     """Validate every query before returning any answers or advancing an action."""
-    if condition not in ("pixel", "grid", "hybrid") or not 1 <= len(requests) <= 32:
+    if condition not in ("pixel", "grid", "hybrid", "spatial") or not 1 <= len(requests) <= 32:
         raise ValueError("depth query unavailable or invalid batch size")
+    if condition == "spatial":
+        from .spatial_query import query_spatial
+
+        if geometry is None:
+            raise ValueError("missing frozen geometry")
+        answers = []
+        for request in requests:
+            if request.get("kind") == "spatial":
+                answers.append(query_spatial(depths, geometry, request, observation_id))
+            else:
+                if request.get("robot_part") is not None:
+                    raise ValueError("pixel query requires robot_part=null")
+                answers.append(query_depth(depths, request, observation_id, {"pixel"}))
+        return answers
     kind = "pixel" if condition == "hybrid" else condition
     return [query_depth(depths, request, observation_id, {kind}) for request in requests]

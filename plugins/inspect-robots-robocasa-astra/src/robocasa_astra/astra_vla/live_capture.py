@@ -1,10 +1,13 @@
 """Persist numbered native frames to the Lab mount for continuous live playback."""
 
 from __future__ import annotations
+
 import os
 from pathlib import Path
+
 import numpy as np
 from PIL import Image, ImageDraw
+
 from ..astra_robodawn.recorder import VIDEO_CAMERAS
 from ..depth import normalize_depth_buffer
 from .persistence import atomic_json
@@ -25,7 +28,7 @@ def capture(env, obs, output: Path, step: int, condition: str):
             image = env.sim.render(width=256, height=256, camera_name=camera)
         image = np.asarray(image)[::-1].astype(np.uint8)
         rgb.append(Image.fromarray(image).resize((256, 256)))
-        if condition in ("color", "hybrid"):
+        if condition in ("color", "hybrid", "spatial"):
             _, raw = env.sim.render(width=256, height=256, camera_name=camera, depth=True)
             z = get_real_depth_map(env.sim, normalize_depth_buffer(raw))[::-1]
             gray = np.nan_to_num(255 * (1 - np.clip(z, 0, 2) / 2), nan=0).astype(np.uint8)

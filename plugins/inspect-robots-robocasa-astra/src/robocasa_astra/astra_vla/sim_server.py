@@ -38,6 +38,7 @@ class ChunkServer(Server):
         self.condition = condition
         self.journal = None
         self.depths = {}
+        self.geometry = None
         self.observation_id = None
         self.start_reply = None
         self.last_observation = None
@@ -69,6 +70,9 @@ class ChunkServer(Server):
                 if (self.output / name).exists():
                     shutil.move(str(self.output / name), str(archive / name))
         self.last_observation = None
+        self.geometry = None
+        self.depths = {}
+        self.observation_id = None
         reply = super().reset(seed)
         self.executor = ChunkExecutor(self.sim.env, self.budget, on_step=self._on_step)
         scene_hash = (
@@ -120,9 +124,17 @@ class ChunkServer(Server):
         reply["dataset_state"] = self.executor.dataset_state()
         if self.condition != "rgb":
             self.depths = render_depths(self.sim.env, reply["views"])
+        if self.condition == "spatial":
+            from .spatial_query import snapshot_geometry
+
+            self.geometry = snapshot_geometry(self.sim.env, self.executor, self.depths)
+            reply["robot_parts"] = {
+                name: value["description"] for name, value in self.geometry["robot_parts"].items()
+            }
         self.observation_id = digest(
             {
                 "steps": self.executor.steps_used,
+                **({"spatial_geometry": self.geometry} if self.condition == "spatial" else {}),
                 "views": reply["views"],
                 "depth_sha256": {
                     camera: hashlib.sha256(depth.tobytes()).hexdigest()
@@ -131,17 +143,25 @@ class ChunkServer(Server):
             }
         )
         reply["observation_id"] = self.observation_id
-        if self.condition in ("color", "hybrid"):
+        if self.condition == "spatial":
+            atomic_json(
+                self.output / "worker" / "geometry" / f"{self.observation_id}.json", self.geometry
+            )
+        if self.condition in ("color", "hybrid", "spatial"):
             attach_previews(reply, self.depths)
         self.last_observation = reply
         return reply
 
     def query(self, requests, observation_id):
         """Answer against the exact latest RGB observation without stepping physics."""
-        if observation_id != self.observation_id:
+        if self.observation_id is None or observation_id != self.observation_id:
             raise ValueError("stale observation_id")
+        if self.last_observation["state"]["steps_used"] != self.executor.steps_used:
+            raise ValueError("physics advanced after observation")
         return {
-            "answers": answer_queries(self.depths, requests, self.observation_id, self.condition)
+            "answers": answer_queries(
+                self.depths, requests, self.observation_id, self.condition, self.geometry
+            )
         }
 
     def act_chunk(
@@ -238,7 +258,7 @@ def main() -> None:
         "--scene-dir", help="common frozen scene folder to restore (exact initial state)"
     )
     parser.add_argument(
-        "--condition", choices=("rgb", "color", "pixel", "grid", "hybrid"), default="rgb"
+        "--condition", choices=("rgb", "color", "pixel", "grid", "hybrid", "spatial"), default="rgb"
     )
     parser.add_argument("--socket")
     args = parser.parse_args()
