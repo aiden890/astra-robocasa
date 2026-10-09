@@ -10,14 +10,36 @@ This branch extends pixel-to-robot distance queries. New runs default to
 | transit | Absolute fingertip destination in world XYZ metres | Native OSC_POSE servo until arrival, stall or step limit |
 
 A transit response uses motion_mode=transit, actions=null and
-transit_target={position_world_m:[x,y,z],observation_id:current_id}.
+transit_target={position_world_m:[x,y,z],observation_id:current_id,
+purpose:pre_precision|transport,grasp_confirmed:false|true}.
 A precision response uses motion_mode=precision, actions=[...], transit_target=null.
 A depth query uses actions=null, motion_mode=null, transit_target=null.
 When queries are enabled, a motion response uses queries=null. scene, progress,
 plan and memory fields remain unchanged. Prior demonstration chunks describe
 legacy control; the current mode contract takes precedence.
 
-Transit assumes a clear route to a free-space approach point. The executor holds
+## Mode selection policy
+
+Precision handles actual contact and fine manipulation: alignment, grasping/regrasp,
+turning or pushing, insertion, release and small corrections. Transit handles other
+destination travel: approach to the position immediately before a precision operation
+(pre_precision), or transport of an object already securely grasped (transport).
+Holding a secured object during travel does not itself require precision.
+
+Intermediate obstacles and external disturbances are absent by experimental
+assumption during transit. This implementation adds no obstacle planner. A transit
+ends at a pre-manipulation destination; the model observes the outcome and uses
+precision for the next contact, fine adjustment or release.
+
+For transport the model must confirm the actual grasp from current observations and
+feedback, explaining the evidence in progress. Closing the gripper alone is not grasp
+confirmation. The output contract requires grasp_confirmed=true for transport; the
+worker also rejects transport with an open gripper command before any native step.
+These checks enforce the declared policy, not an independent physical attachment
+detector. pre_precision may use either gripper state and does not require a grasp.
+If attachment is uncertain, use precision to establish or correct the grasp.
+
+Transit assumes a clear route to a pre-manipulation destination. The executor holds
 the initial fingertip orientation, gripper command and stationary base, using
 the existing physical OSC controller. It does not teleport joints, add an IK
 solver or plan around obstacles. The model does not supply low-level transit

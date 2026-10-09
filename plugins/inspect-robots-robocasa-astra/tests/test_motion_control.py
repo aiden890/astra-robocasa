@@ -112,7 +112,12 @@ def test_dual_host_resume_keeps_mode_and_original_reply(tmp_path):
                         "motion_mode": mode,
                         "transit_target": None
                         if mode == "precision"
-                        else {"position_world_m": [0.5, 0, 0.8], "observation_id": "4"},
+                        else {
+                            "position_world_m": [0.5, 0, 0.8],
+                            "observation_id": "4",
+                            "purpose": "pre_precision",
+                            "grasp_confirmed": False,
+                        },
                     }
                 ),
                 {"input_tokens": 100, "output_tokens": 20},
@@ -133,6 +138,8 @@ def test_dual_host_resume_keeps_mode_and_original_reply(tmp_path):
     assert sim.seen[2]["transit_target"] == {
         "position_world_m": [0.5, 0, 0.8],
         "observation_id": "4",
+        "purpose": "pre_precision",
+        "grasp_confirmed": False,
     }
     assert caller.count == 2 and summary["usage"]["input_tokens"] == 200
     assert summary["output_format"] == "precision-vla12-transit-world-target"

@@ -98,7 +98,11 @@ class ChunkServer(Server):
                 "seed": seed,
                 "scene_hash": scene_hash,
                 "condition": self.condition,
-                **({"motion_control": "dual-target-v1"} if self.motion_control == "dual" else {}),
+                **(
+                    {"motion_control": "dual-target-purpose-v2"}
+                    if self.motion_control == "dual"
+                    else {}
+                ),
             },
         )
         self.journal.restore(self.sim.env, self.executor)

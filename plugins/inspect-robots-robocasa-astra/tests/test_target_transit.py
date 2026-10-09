@@ -11,7 +11,12 @@ from robocasa_astra.astra_vla.sim_server import ChunkServer
 
 def target(x=0.05):
     """World destination in metres, not a relative offset."""
-    return {"position_world_m": [x, 0, 0], "observation_id": "obs0"}
+    return {
+        "position_world_m": [x, 0, 0],
+        "observation_id": "obs0",
+        "purpose": "pre_precision",
+        "grasp_confirmed": False,
+    }
 
 
 def server(tmp_path, monkeypatch, *, frozen=False, budget=1000, interrupt=None, success_at=None):
@@ -74,6 +79,19 @@ def test_destination_reached_and_lost_reply_is_idempotent(tmp_path, monkeypatch)
     assert s.executor.steps_used == steps
     with pytest.raises(ValueError, match="reused"):
         s.act_chunk(None, [], 1, "t1", "transit", target(0.1))
+    transport = server(tmp_path / "transport", monkeypatch)
+    carry = {**target(), "purpose": "transport", "grasp_confirmed": False}
+    with pytest.raises(ValueError, match="confirmed grasp"):
+        transport.act_chunk(None, [], 1, "carry", "transit", carry)
+    carry["grasp_confirmed"] = True
+    with pytest.raises(ValueError, match="closed gripper"):
+        transport.act_chunk(None, [], 1, "carry", "transit", carry)
+    assert transport.executor.steps_used == 0
+    transport.executor.gripper_cmd = 1
+    carried = transport.act_chunk(None, [], 1, "carry", "transit", carry)
+    assert carried["target_reached"] and carried["next_motion"] == "precision"
+    assert transport.executor.gripper_cmd == 1
+    assert all(row[11] == 1 for row in carried["executed_actions"])
 
 
 def test_stale_observation_rejected_before_motion(tmp_path, monkeypatch):

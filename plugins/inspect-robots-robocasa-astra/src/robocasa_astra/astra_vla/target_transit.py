@@ -26,8 +26,10 @@ TARGET_SCHEMA = {
             "maxItems": 3,
         },
         "observation_id": {"type": "string"},
+        "purpose": {"type": "string", "enum": ["pre_precision", "transport"]},
+        "grasp_confirmed": {"type": "boolean"},
     },
-    "required": ["position_world_m", "observation_id"],
+    "required": ["position_world_m", "observation_id", "purpose", "grasp_confirmed"],
     "additionalProperties": False,
 }
 
@@ -35,13 +37,25 @@ TARGET_SCHEMA = {
 def validate_target(target):
     """Require a finite absolute world position bound to its source observation."""
     if not isinstance(target, dict) or set(target) != set(TARGET_SCHEMA["required"]):
-        raise ValueError("transit requires position_world_m and observation_id")
+        raise ValueError(
+            "transit requires destination, observation_id, purpose and grasp_confirmed"
+        )
     xyz = np.asarray(target["position_world_m"], dtype=float)
     if xyz.shape != (3,) or not np.isfinite(xyz).all():
         raise ValueError("transit position_world_m must contain three finite numbers")
     if not isinstance(target["observation_id"], str) or not target["observation_id"]:
         raise ValueError("transit requires observation_id")
-    return {"position_world_m": xyz.tolist(), "observation_id": target["observation_id"]}
+    purpose, confirmed = target["purpose"], target["grasp_confirmed"]
+    if purpose not in ("pre_precision", "transport") or not isinstance(confirmed, bool):
+        raise ValueError("transit requires a valid purpose and boolean grasp_confirmed")
+    if purpose == "transport" and not confirmed:
+        raise ValueError("transport requires a confirmed grasp; use precision to grasp first")
+    return {
+        "position_world_m": xyz.tolist(),
+        "observation_id": target["observation_id"],
+        "purpose": purpose,
+        "grasp_confirmed": confirmed,
+    }
 
 
 def run_transit(server, target, turn, request_id):
@@ -50,7 +64,7 @@ def run_transit(server, target, turn, request_id):
     journal, executor = server.journal, server.executor
     if journal.data.get("faulted"):
         raise RuntimeError("native step failed; reset the frozen checkpoint before continuing")
-    identity = digest({"transit_target": target, "turn": turn, "version": 1})
+    identity = digest({"transit_target": target, "turn": turn, "version": 2})
     chunks = journal.data["chunks"]
     if request_id in chunks:
         if chunks[request_id]["identity"] != identity:
@@ -67,6 +81,8 @@ def run_transit(server, target, turn, request_id):
         current = journal.data["current_chunk"]
         if current and "result" not in chunks[current]:
             raise ValueError("another chunk is unfinished")
+        if target["purpose"] == "transport" and executor.gripper_cmd <= 0:
+            raise ValueError("transport requires a closed gripper command; use precision first")
         pose = executor.pose()
         chunk = {
             "identity": identity,
@@ -87,7 +103,7 @@ def run_transit(server, target, turn, request_id):
     xyz = np.asarray(chunk["target"]["position_world_m"])
     rotation = np.asarray(chunk["hold_rotation_world"])
     executor.gripper_cmd = chunk["gripper_cmd"]
-    caption = "transit to world metres " + str(xyz.tolist())
+    caption = "transit " + target["purpose"] + " to world metres " + str(xyz.tolist())
     # Reconstruct stall tracking from committed post-step errors. An ack cannot lose progress.
     history = [
         entry["transit_error_m"]
@@ -141,6 +157,8 @@ def run_transit(server, target, turn, request_id):
         "kind": "transit",
         "motion_mode": "transit",
         "transit_target": target,
+        "next_motion": "precision" if reached else "reassess",
+        "grasp_confirmation_source": "model_observation" if target["grasp_confirmed"] else None,
         "ok": reached,
         "target_reached": reached,
         "stop_reason": reason,
