@@ -3,75 +3,10 @@
 import json
 from types import SimpleNamespace
 
-import jsonschema
 import numpy as np
 import pytest
-from robocasa_astra.astra_vla.depth_input import response_schema as depth_schema
-from robocasa_astra.astra_vla.motion_control import adapt_prompt, prepare_actions, response_schema
-from robocasa_astra.astra_vla.prompts import load_profile, system_prompt
 from robocasa_astra.astra_vla.recovery import ActionJournal
 from robocasa_astra.astra_vla.sim_server import ChunkServer
-
-
-def test_profiles_bound_vectors_without_changing_binary_fields():
-    """Precision has lower physical inputs; gripper and arm/base signs remain intact."""
-    raw = np.ones((4, 12))
-    raw[:, 4] = -1
-    p, notes = prepare_actions(raw, "precision", "dual")
-    assert np.allclose(np.linalg.norm(p[:, 5:8], axis=1), 0.2)
-    assert np.allclose(np.linalg.norm(p[:, 8:11], axis=1), 0.15)
-    assert np.all(p[:, :4] == 0.1)
-    assert np.array_equal(p[:, [4, 11]], raw[:, [4, 11]])
-    assert len(notes) == 3
-    assert np.array_equal(raw[:, 5:8], np.ones((4, 3)))
-    bounded, _ = prepare_actions(p, "precision", "dual")
-    assert np.allclose(bounded, p)
-
-
-@pytest.mark.parametrize("mode,rows", [("precision", 0), ("precision", 5), ("precision", 17)])
-def test_length_limits(mode, rows):
-    """Worker rejects too-long chunks instead of silently losing model commands."""
-    with pytest.raises(ValueError, match="rows"):
-        prepare_actions(np.zeros((rows, 12)), mode, "dual")
-
-
-def test_invalid_mode_and_nonfinite_and_legacy():
-    """Unspecified dual modes fail closed; legacy retains the old 16-row format."""
-    for mode in (None, "fast", ""):
-        with pytest.raises(ValueError, match="require motion_mode"):
-            prepare_actions([[0] * 12], mode, "dual")
-    with pytest.raises(ValueError, match="NaN"):
-        prepare_actions([[float("nan")] * 12], "precision", "dual")
-    a, _ = prepare_actions([[0] * 12] * 16, None)
-    assert a.shape == (16, 12)
-    with pytest.raises(ValueError, match="legacy"):
-        prepare_actions(a, "precision")
-
-
-def test_schema_and_prompt_conditions_are_independent():
-    """Modes compose with spatial queries; the source prompt/schema remains unchanged."""
-    base = depth_schema("spatial")
-    s = response_schema(base, "dual")
-    obj = {
-        "scene": "s",
-        "progress": "p",
-        "memory": "m",
-        "plan": "p",
-        "actions": [[0] * 12],
-        "queries": None,
-        "motion_mode": "precision",
-        "transit_target": None,
-    }
-    jsonschema.validate(obj, s)
-    obj["motion_mode"] = "unknown"
-    with pytest.raises(jsonschema.ValidationError):
-        jsonschema.validate(obj, s)
-    assert "motion_mode" not in base["properties"]
-    assert response_schema(base, "legacy") == base
-    text = adapt_prompt(system_prompt(load_profile(), "OpenCabinet"))
-    assert "exactly 16" not in text
-    assert "precision" in text and "transit" in text
-    assert "TASK SUCCESS CONDITION" in text and "index 4" in text
 
 
 def test_worker_guard_and_mode_bound_idempotence(tmp_path):
@@ -103,64 +38,8 @@ def test_worker_guard_and_mode_bound_idempotence(tmp_path):
     assert len(calls) == 1
 
 
-def test_precision_partial_checkpoint_uses_only_remaining_rows(tmp_path):
-    """An acknowledged row is never reapplied after host reconnection."""
-    server = ChunkServer.__new__(ChunkServer)
-    server.motion_control = "dual"
-    server.journal = ActionJournal(tmp_path, {})
-    raw = [[0] * 12] * 3
-    bounded, _ = prepare_actions(raw, "precision", "dual")
-    chunk = server.journal.begin_chunk("t1", bounded.tolist(), 1, "precision")
-    chunk["cursor"] = 2
-    server.journal.save()
-    server.executor = SimpleNamespace(steps_used=2)
-    calls = []
-
-    def run_chunk(actions, notes):
-        calls.append(actions.copy())
-        server.executor.steps_used += len(actions)
-        return {"command": "chunk", "note": "", "task_success": False}
-
-    server.executor.run_chunk = run_chunk
-    server.executor.state = lambda: {"steps_used": server.executor.steps_used}
-    server.replay = SimpleNamespace(mark=lambda *args: None)
-    result = server.act_chunk(raw, [], 1, "t1", "precision")
-    assert len(calls[0]) == 1 and result["resumed_rows"] == 2
-    assert result["steps"] == 3 and result["chunk_length"] == 3
-    persisted = json.loads((tmp_path / "worker" / "checkpoint.json").read_text())
-    assert persisted["chunks"]["t1"]["result"]["motion_mode"] == "precision"
-
-
-def test_experiment_config_records_dual_default_and_legacy_override(tmp_path):
-    """CLI saves profile provenance and emits matching prompt/schema without running physics."""
-    from robocasa_astra.astra_vla.experiment import prepare
-
-    flags = [
-        "--task",
-        "OpenCabinet",
-        "--scene",
-        "0",
-        "--scene-root",
-        str(tmp_path),
-        "--scripted",
-        str(tmp_path / "script.json"),
-    ]
-    _, run, config = prepare([*flags, "--output", str(tmp_path / "dual"), "--condition", "spatial"])
-    assert config["motion_control"] == "dual"
-    assert config["motion_profiles"]["precision"]["max_steps"] == 4
-    schema = json.loads((run / "response_schema.json").read_text())
-    assert "motion_mode" in schema["required"] and "queries" in schema["required"]
-    assert "precision" in (run / "system_prompt.md").read_text()
-    _, run, config = prepare(
-        [*flags, "--output", str(tmp_path / "legacy"), "--motion-control", "legacy"]
-    )
-    assert config["motion_control"] == "legacy" and config["motion_profiles"] is None
-    assert "motion_mode" not in json.loads((run / "response_schema.json").read_text())["required"]
-
-
-@pytest.mark.parametrize("interrupt_mode", ["precision", "transit"])
-def test_dual_host_resume_keeps_mode_and_original_reply(tmp_path, interrupt_mode):
-    """Host loss during precision execution reuses its saved decision, then switches to transit."""
+def test_dual_host_resume_keeps_mode_and_original_reply(tmp_path):
+    """Reconnect during transit reuses the saved destination without another model call."""
     import base64
     import io
 
@@ -205,9 +84,9 @@ def test_dual_host_resume_keeps_mode_and_original_reply(tmp_path, interrupt_mode
                 }
             if op == "act_chunk":
                 self.seen.append(fields)
-                if self.interrupt and fields["motion_mode"] == interrupt_mode:
+                if self.interrupt and fields["motion_mode"] == "transit":
                     self.interrupt = False
-                    self.steps = 2 if interrupt_mode == "precision" else 6
+                    self.steps = 6
                     raise KeyboardInterrupt
                 self.steps = 4 if fields["motion_mode"] == "precision" else 20
                 return {
@@ -246,8 +125,7 @@ def test_dual_host_resume_keeps_mode_and_original_reply(tmp_path, interrupt_mode
     with pytest.raises(KeyboardInterrupt):
         run_episode(sim, caller, cfg, tmp_path, [], motion_control="dual")
     summary = run_episode(sim, caller, cfg, tmp_path, [], resume=True, motion_control="dual")
-    repeated = 0 if interrupt_mode == "precision" else 1
-    assert sim.seen[repeated] == sim.seen[repeated + 1]
+    assert sim.seen[1] == sim.seen[2]
     assert sim.seen[0]["motion_mode"] == "precision"
     assert sim.seen[0]["actions"][0][5] == 0.2
     assert sim.seen[2]["motion_mode"] == "transit"

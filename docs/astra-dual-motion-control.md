@@ -52,7 +52,10 @@ trace. Model response and episode wall time have no fixed timeout.
 
 ## Validation
 
-Focused destination, schema, precision and recovery suite: 51 passed, one skipped\n(official RoboCasa import unavailable), one deselected (previously verified\nparent-branch depth fixture failure). Scoped Ruff check and format passed.\nThe tests exercise arrival, stale
-observations, stalled/unreachable targets, task success, budget stops, lost replies
-and interrupted physical-step replay. Native Spark speed/reachability calibration
-and real model evaluation of destination transit have not been run.
+Nine focused control test cases remain: precision worker bounds, host resume without
+another model call, destination arrival/lost replies, stale observations, three native
+termination cases, interrupted ACK replay and stall-budget preservation. Redundant
+schema, configuration, input-shape and overlapping recovery checks were removed.
+
+The physical controller is mocked in this suite. Native Spark speed/reachability
+calibration and real model evaluation of destination transit have not been run.
